@@ -75,7 +75,7 @@ export default function App() {
       .catch(console.error);
   }, []);
 
-  // 3) Gera thumbs e faz scan (mantendo o que já veio do config)
+  // 3) Gera thumbs e faz scan inicial (mantendo o que já veio do config)
   useEffect(() => {
     if (!thumbsDir || folders.length === 0) return;
     async function doThumbs() {
@@ -85,7 +85,7 @@ export default function App() {
       );
     }
     doThumbs();
-  }, [thumbsDir, folders]);
+  }, [thumbsDir]);
 
   // 4) Persistência
   useEffect(() => { ipcRenderer.invoke('save-folders', folders); }, [folders]);
@@ -106,8 +106,9 @@ export default function App() {
     setForm({ tipo:'', nome:path.basename(p), ano:'', path:p });
     setModalOpen(true);
   };
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    await ipcRenderer.invoke('generate-thumbnails', [{ path: form.path }]);
     const data = scanFolder(form.path, thumbsDir);
     setFolders(prev => [...prev, { ...form, ...data }]);
     setModalOpen(false);
