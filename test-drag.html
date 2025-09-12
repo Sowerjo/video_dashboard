@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Drag and Drop</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #222; color: white; }
+        .container { display: flex; gap: 20px; }
+        .item { 
+            width: 100px; 
+            height: 100px; 
+            background: #ff0000; 
+            margin: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            cursor: grab;
+            user-select: none;
+        }
+        .item:active { cursor: grabbing; }
+        .item.dragging { opacity: 0.5; transform: scale(1.1); }
+        .ghost { border: 2px dashed #fff; background: transparent !important; }
+    </style>
+</head>
+<body>
+    <h1>Teste de Drag and Drop</h1>
+    <div class="container" id="container">
+        <div class="item" draggable="true" data-index="0">1</div>
+        <div class="item" draggable="true" data-index="1">2</div>
+        <div class="item" draggable="true" data-index="2">3</div>
+        <div class="item" draggable="true" data-index="3">4</div>
+    </div>
+    
+    <script>
+        let draggedElement = null;
+        let draggedIndex = null;
+        
+        const container = document.getElementById('container');
+        const items = container.querySelectorAll('.item');
+        
+        items.forEach(item => {
+            item.addEventListener('dragstart', (e) => {
+                draggedElement = e.target;
+                draggedIndex = parseInt(e.target.dataset.index);
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                console.log('Drag started:', draggedIndex);
+            });
+            
+            item.addEventListener('dragend', (e) => {
+                e.target.classList.remove('dragging');
+                document.querySelectorAll('.ghost').forEach(g => g.remove());
+                console.log('Drag ended');
+            });
+            
+            item.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            
+            item.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                if (e.target !== draggedElement) {
+                    const targetIndex = parseInt(e.target.dataset.index);
+                    console.log('Drag enter:', targetIndex);
+                    
+                    // Remove ghost anterior
+                    document.querySelectorAll('.ghost').forEach(g => g.remove());
+                    
+                    // Adiciona novo ghost
+                    const ghost = document.createElement('div');
+                    ghost.className = 'item ghost';
+                    ghost.textContent = 'DROP';
+                    
+                    if (targetIndex < draggedIndex) {
+                        e.target.parentNode.insertBefore(ghost, e.target);
+                    } else {
+                        e.target.parentNode.insertBefore(ghost, e.target.nextSibling);
+                    }
+                }
+            });
+            
+            item.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (e.target !== draggedElement) {
+                    const targetIndex = parseInt(e.target.dataset.index);
+                    console.log('Drop on:', targetIndex, 'from:', draggedIndex);
+                    
+                    // Simula reordenação
+                    alert(`Movendo item ${draggedIndex + 1} para posição ${targetIndex + 1}`);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

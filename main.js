@@ -19,6 +19,9 @@ const ffmpegPath = getBinPath(
 // Pasta de thumbs em userData
 const thumbsDir = path.join(app.getPath('userData'), 'thumbs');
 
+// Caminho de meta do app (separado do electron-store para evitar conflitos)
+const metaPath = path.join(app.getPath('userData'), 'user-meta.json');
+
 // Cria janela e carrega HTML
 function createWindow() {
   const win = new BrowserWindow({
@@ -43,14 +46,38 @@ app.on('activate',   () => { if (BrowserWindow.getAllWindows().length === 0) cre
 
 // --- IPC Handlers ---
 
-// Ler config.json manualmente
+// Ler config de meta (separado do electron-store). Fallback para antigo config.json se existir
 ipcMain.handle('load-config', () => {
-  const cfgPath = path.join(app.getPath('userData'), 'config.json');
-  if (!fs.existsSync(cfgPath)) return {};
+  const legacyCfgPath = path.join(app.getPath('userData'), 'config.json'); // usado por electron-store por padrão
   try {
-    return JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-  } catch {
-    return {};
+    if (fs.existsSync(metaPath)) {
+      const cfg = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+      return cfg || {};
+    }
+    // Fallback de migração: tentar ler legado (pode conter videoOrders salvo manualmente)
+    if (fs.existsSync(legacyCfgPath)) {
+      const legacy = JSON.parse(fs.readFileSync(legacyCfgPath, 'utf8'));
+      // Apenas retornar campos relevantes caso existam
+      return {
+        folders: legacy.folders || [],
+        watchedVideos: legacy.watchedVideos || [],
+        videoOrders: legacy.videoOrders || {}
+      };
+    }
+  } catch (e) {
+    console.warn('Falha ao ler config/meta:', e);
+  }
+  return {};
+});
+
+// Salvar config/meta em arquivo separado para não conflitar com electron-store
+ipcMain.handle('save-config', (e, cfg) => {
+  try {
+    fs.writeFileSync(metaPath, JSON.stringify(cfg, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Erro ao salvar user-meta.json:', err);
+    return false;
   }
 });
 
@@ -79,6 +106,13 @@ ipcMain.handle('clear-positions', (e, videoPaths) => {
   const positions = store.get('positions', {});
   for (const p of videoPaths) delete positions[p];
   store.set('positions', positions);
+  return true;
+});
+
+// Handlers para anotações de vídeos
+ipcMain.handle('load-annotations', () => store.get('videoAnnotations', {}));
+ipcMain.handle('save-annotations', (e, annotations) => {
+  store.set('videoAnnotations', annotations);
   return true;
 });
 

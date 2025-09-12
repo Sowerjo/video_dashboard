@@ -16,11 +16,11 @@ export const DashboardContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 36px;
-  padding: 46px 42px;
+  padding: 100px 42px 46px 42px;
   min-height: 100vh;
   justify-content: flex-start;
   align-items: flex-start;
-  background: #000;
+  background: transparent;
 `;
 
 // 🔻 Barra superior dos botões
@@ -29,7 +29,7 @@ export const TopBar = styled.div`
   align-items: center;
   gap: 16px;
   margin: 32px 0 18px 0;
-  background: #111;
+  background: rgba(17,17,17,0.6);
   border-radius: 19px;
   box-shadow: 0 2px 14px #ff000033;
   padding: 12px 24px;
@@ -37,7 +37,7 @@ export const TopBar = styled.div`
 `;
 
 export const Tile = styled.div`
-  background: #111;
+  background: rgba(17,17,17,0.6);
   box-shadow: 0 8px 38px #22000099, 0 0 22px #ff000088;
   border-radius: 26px;
   width: 330px;
@@ -53,12 +53,14 @@ export const Tile = styled.div`
   transition: 
     transform 0.24s cubic-bezier(.16,1.01,.36,1),
     box-shadow 0.3s,
-    border-color 0.28s;
+    border-color 0.28s,
+    background 0.25s;
+  backdrop-filter: blur(6px) saturate(1.05);
 
   &:hover {
     transform: scale(1.06);
     box-shadow: 0 14px 48px #ff0000cc;
-    background: #1a0000;
+    background: rgba(26,0,0,0.75);
   }
 `;
 
@@ -127,7 +129,7 @@ export const ModalOverlay = styled.div`
 `;
 
 export const Modal = styled.div`
-  background: #111;
+  background: rgba(17,17,17,0.85);
   border-radius: 22px;
   padding: 38px 46px;
   min-width: 410px;
@@ -137,6 +139,7 @@ export const Modal = styled.div`
   display: flex;
   flex-direction: column;
   border: 2px solid #ff0000;
+  backdrop-filter: blur(8px) saturate(1.05);
 `;
 
 export const ModalInput = styled.input`
@@ -206,8 +209,8 @@ export const Spinner = styled.div`
   margin: 0 auto;
 
   @keyframes spin {
-    0% { transform: rotate(0deg);}
-    100% { transform: rotate(360deg);}
+    0% { transform: rotate(0deg);} 
+    100% { transform: rotate(360deg);} 
   }
 `;
 
@@ -227,10 +230,12 @@ export const ThemeSwitch = styled.button`
 `;
 export const AppContainer = styled.div`
   padding: 24px;
-  background: #000;
+  background: transparent;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 `;
-// Barra de progresso
+
 export const ProgressBarContainer = styled.div`
   width: 60vw;
   margin: 100px auto;
@@ -246,4 +251,41 @@ export const ProgressBarFill = styled.div`
   background: linear-gradient(90deg, #ff0000, #a30000);
   border-radius: 10px;
   transition: width 0.3s ease;
+`;
+
+// Camada de fundo desfocada
+export const BackgroundLayer = styled.div`
+  position: fixed;
+  inset: 0;
+  background-image: url('topo.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(10px) brightness(0.35) saturate(1.05);
+  transform: scale(1.05);
+  z-index: 0;
+  pointer-events: none;
+`;
+
+// Vinheta para aumentar contraste nas bordas
+export const VignetteOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.35) 80%, rgba(0,0,0,0.6) 100%);
+`;
+
+// Logo fixo no topo central
+export const LogoOverlay = styled.img`
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 72px;
+  width: auto;
+  z-index: 2; /* acima do conteúdo, não bloqueia cliques */
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 2px 10px rgba(0,0,0,0.55));
 `;

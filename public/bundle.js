@@ -41970,30 +41970,34 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _Dashboard__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Dashboard */ "./src/Dashboard.jsx");
-/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
-/* harmony import */ var _styles__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./styles */ "./src/styles.js");
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var _Dashboard__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Dashboard */ "./src/Dashboard.jsx");
+/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
+/* harmony import */ var _styles__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./styles */ "./src/styles.js");
+/* harmony import */ var react_icons_fa__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-icons/fa */ "./node_modules/react-icons/fa/index.mjs");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
-function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
 function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 // src/App.jsx
+
+
 
 
 
@@ -42059,6 +42063,60 @@ var themes = {
     shadow: "#aaa"
   }
 };
+
+// util: reordena lista
+var reorder = function reorder(list, startIndex, endIndex) {
+  var result = _toConsumableArray(list);
+  var _result$splice = result.splice(startIndex, 1),
+    _result$splice2 = _slicedToArray(_result$splice, 1),
+    removed = _result$splice2[0];
+  result.splice(endIndex, 0, removed);
+  return result;
+};
+
+// util: aplica ordem customizada de vídeos a um array de vídeos
+var sortVideosByOrder = function sortVideosByOrder(videos) {
+  var orderArr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  if (!Array.isArray(videos) || videos.length === 0) return videos;
+  if (!Array.isArray(orderArr) || orderArr.length === 0) return videos;
+  var idx = new Map(orderArr.map(function (p, i) {
+    return [p, i];
+  }));
+  var present = videos.filter(function (v) {
+    return idx.has(v.path);
+  }).sort(function (a, b) {
+    return idx.get(a.path) - idx.get(b.path);
+  });
+  var missing = videos.filter(function (v) {
+    return !idx.has(v.path);
+  });
+  return [].concat(_toConsumableArray(present), _toConsumableArray(missing));
+};
+
+// util: aplica ordem de vídeos recursivamente por path
+var _applyVideoOrdersRec = function applyVideoOrdersRec(folder, ordersMap) {
+  var curOrder = ordersMap[folder.path];
+  var newVideos = sortVideosByOrder(folder.videos || [], curOrder);
+  var newSubs = (folder.subfolders || []).map(function (sf) {
+    return _applyVideoOrdersRec(sf, ordersMap);
+  });
+  return _objectSpread(_objectSpread({}, folder), {}, {
+    videos: newVideos,
+    subfolders: newSubs
+  });
+};
+
+// util: atualiza uma pasta específica (por path) na árvore
+var _updateFolderByPath = function updateFolderByPath(folder, targetPath, updater) {
+  if (folder.path === targetPath) return updater(folder);
+  var subs = folder.subfolders || [];
+  if (subs.length === 0) return folder;
+  return _objectSpread(_objectSpread({}, folder), {}, {
+    subfolders: subs.map(function (sf) {
+      return _updateFolderByPath(sf, targetPath, updater);
+    })
+  });
+};
 function App() {
   var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState2 = _slicedToArray(_useState, 2),
@@ -42072,23 +42130,49 @@ function App() {
     _useState6 = _slicedToArray(_useState5, 2),
     watched = _useState6[0],
     setWatched = _useState6[1];
-  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
     _useState8 = _slicedToArray(_useState7, 2),
-    modalOpen = _useState8[0],
-    setModalOpen = _useState8[1];
-  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+    videoOrders = _useState8[0],
+    setVideoOrders = _useState8[1]; // { [folderPath]: [videoPath, ...] }
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState0 = _slicedToArray(_useState9, 2),
+    modalOpen = _useState0[0],
+    setModalOpen = _useState0[1];
+  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
       tipo: '',
       nome: '',
       ano: '',
       path: ''
     }),
-    _useState0 = _slicedToArray(_useState9, 2),
-    form = _useState0[0],
-    setForm = _useState0[1];
-  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(localStorage.getItem('theme') || 'dark'),
     _useState10 = _slicedToArray(_useState1, 2),
-    theme = _useState10[0],
-    setTheme = _useState10[1];
+    form = _useState10[0],
+    setForm = _useState10[1];
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(localStorage.getItem('theme') || 'dark'),
+    _useState12 = _slicedToArray(_useState11, 2),
+    theme = _useState12[0],
+    setTheme = _useState12[1];
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState14 = _slicedToArray(_useState13, 2),
+    isReordering = _useState14[0],
+    setIsReordering = _useState14[1];
+  // Estado para controlar o menu hambúrguer
+  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState16 = _slicedToArray(_useState15, 2),
+    showMenu = _useState16[0],
+    setShowMenu = _useState16[1];
+
+  // Fechar menu ao clicar fora
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var handleClickOutside = function handleClickOutside(event) {
+      if (showMenu && !event.target.closest('.hamburger-menu')) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return function () {
+      return document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     localStorage.setItem('theme', theme);
   }, [theme]);
@@ -42110,7 +42194,8 @@ function App() {
               cfg = _context.sent;
               if (cfg.folders) setFolders(cfg.folders);
               if (cfg.watchedVideos) setWatched(cfg.watchedVideos);
-            case 5:
+              if (cfg.videoOrders) setVideoOrders(cfg.videoOrders);
+            case 6:
             case "end":
               return _context.stop();
           }
@@ -42128,9 +42213,10 @@ function App() {
     })["catch"](console.error);
   }, []);
 
-  // 3) Gera thumbs e faz scan (mantendo o que já veio do config)
+  // 3) Gera thumbs e faz scan (mantendo o que já veio do config) e aplica ordem customizada de vídeos
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     if (!thumbsDir || folders.length === 0) return;
+    if (isReordering) return; // evitar sobrescrever enquanto houver reordenação
     function doThumbs() {
       return _doThumbs.apply(this, arguments);
     }
@@ -42143,8 +42229,12 @@ function App() {
               return ipcRenderer.invoke('generate-thumbnails', folders);
             case 2:
               setFolders(function (prev) {
-                return prev.map(function (f) {
+                var scanned = prev.map(function (f) {
                   return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
+                });
+                // aplica ordem customizada de vídeos recursivamente
+                return scanned.map(function (f) {
+                  return _applyVideoOrdersRec(f, videoOrders);
                 });
               });
             case 3:
@@ -42156,7 +42246,7 @@ function App() {
       return _doThumbs.apply(this, arguments);
     }
     doThumbs();
-  }, [thumbsDir, folders]);
+  }, [thumbsDir, /* aplica novamente quando ordem mudar */videoOrders, isReordering]);
 
   // 4) Persistência
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
@@ -42165,13 +42255,24 @@ function App() {
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     ipcRenderer.invoke('save-watched', watched);
   }, [watched]);
+  // Salva config.json preferencialmente (ordem customizada e demais dados)
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke('save-config', {
+      folders: folders,
+      watchedVideos: watched,
+      videoOrders: videoOrders
+    });
+  }, [folders, watched, videoOrders]);
 
-  // Handlers (iguais aos anteriores)...
+  // Handlers... (mantidos)
   var handleRefresh = function handleRefresh() {
     ipcRenderer.invoke('generate-thumbnails', folders).then(function () {
       setFolders(function (prev) {
-        return prev.map(function (f) {
+        var scanned = prev.map(function (f) {
           return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
+        });
+        return scanned.map(function (f) {
+          return _applyVideoOrdersRec(f, videoOrders);
         });
       });
     });
@@ -42291,36 +42392,273 @@ function App() {
       return _ref3.apply(this, arguments);
     };
   }();
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(styled_components__WEBPACK_IMPORTED_MODULE_3__.ThemeProvider, {
+
+  // NOVO: Reordenar pastas (playlists)
+  var handleReorderFolders = function handleReorderFolders(from, to) {
+    if (from === to) return;
+    setFolders(function (prev) {
+      return reorder(prev, from, to);
+    });
+  };
+
+  // NOVO: Reordenar subpastas dentro de uma pasta específica
+  var handleReorderSubfolders = function handleReorderSubfolders(folderPath, from, to) {
+    if (from === to) return;
+    setFolders(function (prev) {
+      return prev.map(function (f) {
+        return _updateFolderByPath(f, folderPath, function (folder) {
+          var newSubs = reorder(folder.subfolders || [], from, to);
+          return _objectSpread(_objectSpread({}, folder), {}, {
+            subfolders: newSubs
+          });
+        });
+      });
+    });
+  };
+
+  // NOVO: Reordenar vídeos dentro de uma pasta (ou subpasta) por path da pasta
+  var handleReorderVideos = function handleReorderVideos(folderPath, from, to) {
+    setIsReordering(true);
+    setFolders(function (prev) {
+      return prev.map(function (f) {
+        return _updateFolderByPath(f, folderPath, function (folder) {
+          var newVideos = reorder(folder.videos || [], from, to);
+          // atualiza orders map
+          setVideoOrders(function (vo) {
+            return _objectSpread(_objectSpread({}, vo), {}, _defineProperty({}, folderPath, newVideos.map(function (v) {
+              return v.path;
+            })));
+          });
+          return _objectSpread(_objectSpread({}, folder), {}, {
+            videos: newVideos
+          });
+        });
+      });
+    });
+    // libera flag na próxima volta do event loop
+    setTimeout(function () {
+      return setIsReordering(false);
+    }, 0);
+  };
+
+  // NOVO: Resetar ordem por playlist (voltar ao sistema de arquivos)
+  var handleResetOrder = function handleResetOrder(folderPath) {
+    setIsReordering(true);
+    // remove ordem customizada de vídeos desta pasta
+    setVideoOrders(function (vo) {
+      var copy = _objectSpread({}, vo);
+      delete copy[folderPath];
+      return copy;
+    });
+    // re-scaneia esta pasta para restaurar ordem padrão de vídeos e subpastas
+    setFolders(function (prev) {
+      return prev.map(function (f) {
+        return _updateFolderByPath(f, folderPath, function (folder) {
+          var scanned = scanFolder(folder.path, thumbsDir);
+          return _objectSpread(_objectSpread({}, folder), {}, {
+            videos: scanned.videos,
+            subfolders: scanned.subfolders
+          });
+        });
+      });
+    });
+    setTimeout(function () {
+      return setIsReordering(false);
+    }, 0);
+  };
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(styled_components__WEBPACK_IMPORTED_MODULE_4__.ThemeProvider, {
     theme: themes[theme]
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.AppContainer, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.TopBar, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.AddButton, {
-    onClick: openModal
-  }, "Adicionar Pasta +"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.AddButton, {
-    onClick: handleRefresh
-  }, "Atualizar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.AddButton, {
-    as: "label"
-  }, "Importar", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.BackgroundLayer, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.VignetteOverlay, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.LogoOverlay, {
+    src: "topo.png",
+    alt: "Logo"
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.AppContainer, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.TopBar, {
+    style: {
+      background: "transparent",
+      border: "none",
+      boxShadow: "none",
+      padding: 0,
+      margin: 0,
+      position: "relative"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    className: "hamburger-menu",
+    style: {
+      position: "absolute",
+      top: "20px",
+      left: "20px",
+      zIndex: 999999
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      return setShowMenu(!showMenu);
+    },
+    style: {
+      background: "rgba(26, 26, 26, 0.9)",
+      border: "2px solid #ff0000",
+      color: "#ff0000",
+      padding: "12px",
+      borderRadius: "8px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      transition: "all 0.3s ease",
+      boxShadow: showMenu ? "0 0 15px #ff000066" : "0 0 8px #ff000033",
+      backdropFilter: "blur(10px)"
+    },
+    title: "Menu de A\xE7\xF5es"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaBars, {
+    size: 18
+  })), showMenu && /*#__PURE__*/(0,react_dom__WEBPACK_IMPORTED_MODULE_1__.createPortal)(/*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    className: "hamburger-menu",
+    style: {
+      position: "fixed",
+      top: "72px",
+      left: "20px",
+      background: "rgba(26, 26, 26, 0.95)",
+      border: "2px solid #ff0000",
+      borderRadius: "12px",
+      boxShadow: "0 8px 25px rgba(255, 0, 0, 0.4)",
+      zIndex: 2147483647,
+      minWidth: "200px",
+      overflow: "hidden",
+      backdropFilter: "blur(15px)"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      padding: "8px 0"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      openModal();
+      setShowMenu(false);
+    },
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaPlus, {
+    size: 14,
+    color: "#ff0000"
+  }), "Adicionar Pasta"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      handleRefresh();
+      setShowMenu(false);
+    },
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaSync, {
+    size: 14,
+    color: "#ff0000"
+  }), "Atualizar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", {
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaFileImport, {
+    size: 14,
+    color: "#ff0000"
+  }), "Importar", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
     type: "file",
     accept: "application/json",
-    onChange: handleImport,
+    onChange: function onChange(e) {
+      handleImport(e);
+      setShowMenu(false);
+    },
     style: {
       display: 'none'
     }
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.AddButton, {
-    onClick: handleExport
-  }, "Exportar")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_Dashboard__WEBPACK_IMPORTED_MODULE_1__["default"], {
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      handleExport();
+      setShowMenu(false);
+    },
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaFileExport, {
+    size: 14,
+    color: "#ff0000"
+  }), "Exportar"))), document.body))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_Dashboard__WEBPACK_IMPORTED_MODULE_2__["default"], {
     folders: folders,
     watched: watched,
     onWatchedToggle: handleWatchedToggle,
     onClearWatched: handleClearWatched,
-    onDeleteFolder: handleDeleteFolder
-  }), modalOpen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.ModalOverlay, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.Modal, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.CloseButton, {
+    onDeleteFolder: handleDeleteFolder,
+    onReorderFolders: handleReorderFolders,
+    onReorderVideos: handleReorderVideos,
+    onReorderSubfolders: handleReorderSubfolders,
+    onResetOrder: handleResetOrder
+  }), modalOpen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalOverlay, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.Modal, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.CloseButton, {
     onClick: function onClick() {
       return setModalOpen(false);
     }
   }, "\xD7"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
     onSubmit: handleSubmit
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Tipo:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.ModalInput, {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Tipo:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
     required: true,
     value: form.tipo,
     onChange: function onChange(e) {
@@ -42328,7 +42666,7 @@ function App() {
         tipo: e.target.value
       }));
     }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Nome:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.ModalInput, {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Nome:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
     required: true,
     value: form.nome,
     onChange: function onChange(e) {
@@ -42336,7 +42674,7 @@ function App() {
         nome: e.target.value
       }));
     }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Ano:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.ModalInput, {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Ano:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
     required: true,
     type: "number",
     value: form.ano,
@@ -42379,13 +42717,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react_icons_fa__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-icons/fa */ "./node_modules/react-icons/fa/index.mjs");
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
 function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
@@ -42403,7 +42745,11 @@ var Dashboard = function Dashboard(_ref) {
     watched = _ref.watched,
     onWatchedToggle = _ref.onWatchedToggle,
     onClearWatched = _ref.onClearWatched,
-    onDeleteFolder = _ref.onDeleteFolder;
+    onDeleteFolder = _ref.onDeleteFolder,
+    onReorderFolders = _ref.onReorderFolders,
+    onReorderVideos = _ref.onReorderVideos,
+    onReorderSubfolders = _ref.onReorderSubfolders,
+    onResetOrder = _ref.onResetOrder;
   var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState2 = _slicedToArray(_useState, 2),
     expanded = _useState2[0],
@@ -42428,13 +42774,171 @@ var Dashboard = function Dashboard(_ref) {
     _useState10 = _slicedToArray(_useState1, 2),
     positions = _useState10[0],
     setPositions = _useState10[1];
+  // NOVO: estado para anotações dos vídeos
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
+    _useState12 = _slicedToArray(_useState11, 2),
+    videoAnnotations = _useState12[0],
+    setVideoAnnotations = _useState12[1];
+  // Estados para interface de anotações
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState14 = _slicedToArray(_useState13, 2),
+    showAnnotations = _useState14[0],
+    setShowAnnotations = _useState14[1]; // Sempre começa oculta
+  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState16 = _slicedToArray(_useState15, 2),
+    editingAnnotation = _useState16[0],
+    setEditingAnnotation = _useState16[1];
+  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState18 = _slicedToArray(_useState17, 2),
+    newAnnotationText = _useState18[0],
+    setNewAnnotationText = _useState18[1];
+  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState20 = _slicedToArray(_useState19, 2),
+    newAnnotationTopic = _useState20[0],
+    setNewAnnotationTopic = _useState20[1];
+  // Estado para throttling do salvamento de posição
+  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    _useState22 = _slicedToArray(_useState21, 2),
+    lastSaveTime = _useState22[0],
+    setLastSaveTime = _useState22[1];
+  var savePositionRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   var fullscreenVideoRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)();
   var loadedPanelsRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)({});
+
+  // Drag state
+  var _useState23 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState24 = _slicedToArray(_useState23, 2),
+    dragFolderIdx = _useState24[0],
+    setDragFolderIdx = _useState24[1];
+  // NOVO: estados para reordenação visual de playlists
+  var _useState25 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState26 = _slicedToArray(_useState25, 2),
+    displayFolders = _useState26[0],
+    setDisplayFolders = _useState26[1];
+  var _useState27 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState28 = _slicedToArray(_useState27, 2),
+    dragFolderOriginIdx = _useState28[0],
+    setDragFolderOriginIdx = _useState28[1];
+  var _useState29 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState30 = _slicedToArray(_useState29, 2),
+    dragFolderHoverIdx = _useState30[0],
+    setDragFolderHoverIdx = _useState30[1];
+  var _useState31 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState32 = _slicedToArray(_useState31, 2),
+    ghostFolderIdx = _useState32[0],
+    setGhostFolderIdx = _useState32[1];
+  // NOVO: estados para reordenação visual de vídeos
+  var _useState33 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState34 = _slicedToArray(_useState33, 2),
+    draggingVideoFolderPath = _useState34[0],
+    setDraggingVideoFolderPath = _useState34[1];
+  var _useState35 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState36 = _slicedToArray(_useState35, 2),
+    tempVideos = _useState36[0],
+    setTempVideos = _useState36[1];
+  var _useState37 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState38 = _slicedToArray(_useState37, 2),
+    dragVideoOriginIndex = _useState38[0],
+    setDragVideoOriginIndex = _useState38[1];
+  var _useState39 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState40 = _slicedToArray(_useState39, 2),
+    dragVideoHoverIndex = _useState40[0],
+    setDragVideoHoverIndex = _useState40[1];
+  var _useState41 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState42 = _slicedToArray(_useState41, 2),
+    dragVideoPath = _useState42[0],
+    setDragVideoPath = _useState42[1];
+  var _useState43 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState44 = _slicedToArray(_useState43, 2),
+    ghostVideoIndex = _useState44[0],
+    setGhostVideoIndex = _useState44[1];
+  // NOVO: estados para reordenação de subpastas
+  var _useState45 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState46 = _slicedToArray(_useState45, 2),
+    draggingSubFolderParentPath = _useState46[0],
+    setDraggingSubFolderParentPath = _useState46[1];
+  var _useState47 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState48 = _slicedToArray(_useState47, 2),
+    tempSubfolders = _useState48[0],
+    setTempSubfolders = _useState48[1];
+  var _useState49 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState50 = _slicedToArray(_useState49, 2),
+    dragSubOriginIdx = _useState50[0],
+    setDragSubOriginIdx = _useState50[1];
+  var _useState51 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState52 = _slicedToArray(_useState51, 2),
+    dragSubHoverIdx = _useState52[0],
+    setDragSubHoverIdx = _useState52[1];
+  var _useState53 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState54 = _slicedToArray(_useState53, 2),
+    ghostSubIdx = _useState54[0],
+    setGhostSubIdx = _useState54[1];
+
+  // Função para salvar posição com throttling
+  var savePositionThrottled = function savePositionThrottled(videoPath, position) {
+    var now = Date.now();
+
+    // Limpa timeout anterior se existir
+    if (savePositionRef.current) {
+      clearTimeout(savePositionRef.current);
+    }
+
+    // Salva imediatamente se passou mais de 8 segundos desde o último salvamento
+    if (now - lastSaveTime > 8000) {
+      ipcRenderer.invoke("save-position", {
+        videoPath: videoPath,
+        position: position
+      });
+      setPositions(function (p) {
+        return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, videoPath, position));
+      });
+      setLastSaveTime(now);
+    } else {
+      // Agenda salvamento para daqui a 2 segundos
+      savePositionRef.current = setTimeout(function () {
+        ipcRenderer.invoke("save-position", {
+          videoPath: videoPath,
+          position: position
+        });
+        setPositions(function (p) {
+          return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, videoPath, position));
+        });
+        setLastSaveTime(Date.now());
+      }, 2000);
+    }
+  };
+
+  // Função para salvar posição imediatamente (para pause, seek, etc.)
+  var savePositionImmediate = function savePositionImmediate(videoPath, position) {
+    if (savePositionRef.current) {
+      clearTimeout(savePositionRef.current);
+    }
+    ipcRenderer.invoke("save-position", {
+      videoPath: videoPath,
+      position: position
+    });
+    setPositions(function (p) {
+      return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, videoPath, position));
+    });
+    setLastSaveTime(Date.now());
+  };
 
   // carrega posições salvas
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     ipcRenderer.invoke("load-positions").then(setPositions);
   }, []);
+
+  // carrega anotações salvas
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke("load-annotations").then(setVideoAnnotations);
+  }, []);
+
+  // salva anotações quando mudarem
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (Object.keys(videoAnnotations).length > 0) {
+      ipcRenderer.invoke("save-annotations", videoAnnotations);
+    }
+  }, [videoAnnotations]);
 
   // limpa cache quando watched ou positions mudam
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
@@ -42446,15 +42950,16 @@ var Dashboard = function Dashboard(_ref) {
     var beforeUnload = function beforeUnload() {
       var v = fullscreenVideoRef.current;
       if (v && fullscreenVideo) {
-        ipcRenderer.invoke("save-position", {
-          videoPath: fullscreenVideo,
-          position: v.currentTime
-        });
+        savePositionImmediate(fullscreenVideo, v.currentTime);
       }
     };
     window.addEventListener("beforeunload", beforeUnload);
     return function () {
-      return window.removeEventListener("beforeunload", beforeUnload);
+      window.removeEventListener("beforeunload", beforeUnload);
+      // Limpa timeout pendente
+      if (savePositionRef.current) {
+        clearTimeout(savePositionRef.current);
+      }
     };
   }, [fullscreenVideo]);
 
@@ -42472,6 +42977,42 @@ var Dashboard = function Dashboard(_ref) {
       };
     }
   }, [expanded, subfolderOpen, fullscreen]);
+
+  // Funções para gerenciar anotações
+  var addAnnotation = function addAnnotation() {
+    if (!newAnnotationTopic.trim() || !newAnnotationText.trim() || !fullscreenVideo) return;
+    var newAnnotation = {
+      id: Date.now(),
+      topic: newAnnotationTopic.trim(),
+      text: newAnnotationText.trim(),
+      createdAt: new Date().toISOString()
+    };
+    setVideoAnnotations(function (prev) {
+      return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, fullscreenVideo, [].concat(_toConsumableArray(prev[fullscreenVideo] || []), [newAnnotation])));
+    });
+    setNewAnnotationTopic("");
+    setNewAnnotationText("");
+  };
+  var editAnnotation = function editAnnotation(annotationId, newTopic, newText) {
+    if (!fullscreenVideo) return;
+    setVideoAnnotations(function (prev) {
+      return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, fullscreenVideo, (prev[fullscreenVideo] || []).map(function (ann) {
+        return ann.id === annotationId ? _objectSpread(_objectSpread({}, ann), {}, {
+          topic: newTopic.trim(),
+          text: newText.trim()
+        }) : ann;
+      })));
+    });
+    setEditingAnnotation(null);
+  };
+  var removeAnnotation = function removeAnnotation(annotationId) {
+    if (!fullscreenVideo) return;
+    setVideoAnnotations(function (prev) {
+      return _objectSpread(_objectSpread({}, prev), {}, _defineProperty({}, fullscreenVideo, (prev[fullscreenVideo] || []).filter(function (ann) {
+        return ann.id !== annotationId;
+      })));
+    });
+  };
   var closeFS = function closeFS() {
     var v = fullscreenVideoRef.current;
     if (v && fullscreenVideo) {
@@ -42525,11 +43066,189 @@ var Dashboard = function Dashboard(_ref) {
       return _ref2.apply(this, arguments);
     };
   }();
+
+  // Helpers de drag
+  var reorder = function reorder(list, startIndex, endIndex) {
+    var result = _toConsumableArray(list);
+    var _result$splice = result.splice(startIndex, 1),
+      _result$splice2 = _slicedToArray(_result$splice, 1),
+      removed = _result$splice2[0];
+    result.splice(endIndex, 0, removed);
+    return result;
+  };
+
+  // Playlists: drag handlers
+  var onDragStartFolder = function onDragStartFolder(idx) {
+    return function (e) {
+      setDragFolderIdx(idx);
+      setDragFolderOriginIdx(idx);
+      setDragFolderHoverIdx(idx);
+      setGhostFolderIdx(idx);
+      setDisplayFolders(folders.slice());
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+    };
+  };
+  var onDragOverFolder = function onDragOverFolder(idx) {
+    return function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      // Reordenação visual em tempo real
+      if (dragFolderHoverIdx !== null && dragFolderHoverIdx !== idx && Array.isArray(displayFolders)) {
+        setDisplayFolders(function (prev) {
+          return reorder(prev, dragFolderHoverIdx, idx);
+        });
+        setDragFolderHoverIdx(idx);
+        setDragFolderIdx(idx);
+        setGhostFolderIdx(idx);
+      }
+    };
+  };
+  var onDropFolder = function onDropFolder(toIdx) {
+    return function (e) {
+      e.preventDefault();
+      var fromIdx = dragFolderOriginIdx !== null && dragFolderOriginIdx !== void 0 ? dragFolderOriginIdx : parseInt(e.dataTransfer.getData('text/plain'), 10);
+      var finalIdx = dragFolderHoverIdx !== null && dragFolderHoverIdx !== void 0 ? dragFolderHoverIdx : toIdx;
+      if (Number.isInteger(fromIdx) && Number.isInteger(finalIdx)) onReorderFolders(fromIdx, finalIdx);
+      // limpar estados temporários
+      setDragFolderIdx(null);
+      setDragFolderOriginIdx(null);
+      setDragFolderHoverIdx(null);
+      setGhostFolderIdx(null);
+      setDisplayFolders(null);
+    };
+  };
+  var onDragEndFolder = function onDragEndFolder() {
+    setDragFolderIdx(null);
+    setDragFolderOriginIdx(null);
+    setDragFolderHoverIdx(null);
+    setGhostFolderIdx(null);
+    setDisplayFolders(null);
+  };
+
+  // Vídeos: drag handlers (versão final otimizada)
+  var onDragStartVideo = function onDragStartVideo(folderObj, fromIndex) {
+    return function (e) {
+      e.stopPropagation();
+      var v = folderObj.videos[fromIndex];
+      setDraggingVideoFolderPath(folderObj.path);
+      setTempVideos(folderObj.videos.slice());
+      setDragVideoOriginIndex(fromIndex);
+      setDragVideoHoverIndex(null); // Inicia como null para detectar primeiro hover
+      setGhostVideoIndex(null);
+      setDragVideoPath((v === null || v === void 0 ? void 0 : v.path) || null);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({
+        folderPath: folderObj.path,
+        fromIndex: fromIndex
+      }));
+    };
+  };
+  var onDragOverVideo = function onDragOverVideo(folderObj, hoverIndex) {
+    return function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      if (draggingVideoFolderPath === folderObj.path) {
+        // Se é o primeiro hover ou mudou de posição
+        if (dragVideoHoverIndex !== hoverIndex) {
+          var currentHover = dragVideoHoverIndex !== null && dragVideoHoverIndex !== void 0 ? dragVideoHoverIndex : dragVideoOriginIndex;
+          setTempVideos(function (prev) {
+            return reorder(prev, currentHover, hoverIndex);
+          });
+          setDragVideoHoverIndex(hoverIndex);
+          setGhostVideoIndex(hoverIndex);
+        }
+      }
+    };
+  };
+  var onDropVideo = function onDropVideo(folderObj) {
+    return function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (draggingVideoFolderPath === folderObj.path && Number.isInteger(dragVideoOriginIndex) && Number.isInteger(dragVideoHoverIndex) && dragVideoOriginIndex !== dragVideoHoverIndex) {
+        onReorderVideos(folderObj.path, dragVideoOriginIndex, dragVideoHoverIndex);
+      }
+      // limpar estados temporários
+      setDraggingVideoFolderPath(null);
+      setTempVideos([]);
+      setDragVideoOriginIndex(null);
+      setDragVideoHoverIndex(null);
+      setGhostVideoIndex(null);
+      setDragVideoPath(null);
+    };
+  };
+  var onDragEndVideo = function onDragEndVideo() {
+    // Fallback: se drop não foi capturado, mas temos origem e hover válidos, efetiva reordenação
+    if (draggingVideoFolderPath && Number.isInteger(dragVideoOriginIndex) && Number.isInteger(dragVideoHoverIndex) && dragVideoOriginIndex !== dragVideoHoverIndex) {
+      onReorderVideos(draggingVideoFolderPath, dragVideoOriginIndex, dragVideoHoverIndex);
+    }
+    setDraggingVideoFolderPath(null);
+    setTempVideos([]);
+    setDragVideoOriginIndex(null);
+    setDragVideoHoverIndex(null);
+    setGhostVideoIndex(null);
+    setDragVideoPath(null);
+  };
+
+  // Subpastas: drag handlers
+  var onDragStartSub = function onDragStartSub(parentFolder, fromIdx) {
+    return function (e) {
+      e.stopPropagation();
+      setDraggingSubFolderParentPath(parentFolder.path);
+      setTempSubfolders(parentFolder.subfolders.slice());
+      setDragSubOriginIdx(fromIdx);
+      setDragSubHoverIdx(fromIdx);
+      setGhostSubIdx(fromIdx);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({
+        parentPath: parentFolder.path,
+        fromIdx: fromIdx
+      }));
+    };
+  };
+  var onDragOverSub = function onDragOverSub(parentFolder, hoverIdx) {
+    return function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      if (draggingSubFolderParentPath === parentFolder.path && dragSubHoverIdx !== hoverIdx) {
+        setTempSubfolders(function (prev) {
+          return reorder(prev, dragSubHoverIdx !== null && dragSubHoverIdx !== void 0 ? dragSubHoverIdx : hoverIdx, hoverIdx);
+        });
+        setDragSubHoverIdx(hoverIdx);
+        setGhostSubIdx(hoverIdx);
+      }
+    };
+  };
+  var onDropSub = function onDropSub(parentFolder) {
+    return function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (draggingSubFolderParentPath === parentFolder.path && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx)) {
+        onReorderSubfolders(parentFolder.path, dragSubOriginIdx, dragSubHoverIdx);
+      }
+      // limpar estados temporários
+      setDraggingSubFolderParentPath(null);
+      setTempSubfolders([]);
+      setDragSubOriginIdx(null);
+      setDragSubHoverIdx(null);
+      setGhostSubIdx(null);
+    };
+  };
+  var onDragEndSub = function onDragEndSub() {
+    if (draggingSubFolderParentPath && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx)) {
+      onReorderSubfolders(draggingSubFolderParentPath, dragSubOriginIdx, dragSubHoverIdx);
+    }
+    setDraggingSubFolderParentPath(null);
+    setTempSubfolders([]);
+    setDragSubOriginIdx(null);
+    setDragSubHoverIdx(null);
+    setGhostSubIdx(null);
+  };
   var renderPanel = function renderPanel(folder, closePanel, idx) {
     var _folder$subfolders;
-    if (loadedPanelsRef.current[idx]) {
-      return loadedPanelsRef.current[idx];
-    }
+    // Removido cache para permitir re-renderizações durante drag e atualizações em tempo real
     var panel = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.ModalOverlay, {
       onClick: closePanel
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.Modal, {
@@ -42559,7 +43278,20 @@ var Dashboard = function Dashboard(_ref) {
       }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
-        flex: "0 0 260px"
+        flex: "0 0 260px",
+        position: "relative"
+      },
+      onMouseEnter: function onMouseEnter(e) {
+        var buttons = e.currentTarget.querySelectorAll('.playlist-action-btn');
+        buttons.forEach(function (btn) {
+          return btn.style.opacity = '1';
+        });
+      },
+      onMouseLeave: function onMouseLeave(e) {
+        var buttons = e.currentTarget.querySelectorAll('.playlist-action-btn');
+        buttons.forEach(function (btn) {
+          return btn.style.opacity = '0';
+        });
       }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h2", {
       style: {
@@ -42568,6 +43300,7 @@ var Dashboard = function Dashboard(_ref) {
         textShadow: "0 0 5px #ff0000aa"
       }
     }, folder.nome), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      className: "playlist-action-btn",
       style: {
         marginTop: 8,
         background: "#ff0000",
@@ -42578,7 +43311,9 @@ var Dashboard = function Dashboard(_ref) {
         cursor: "pointer",
         boxShadow: "0 0 6px #ff0000aa",
         display: "flex",
-        alignItems: "center"
+        alignItems: "center",
+        opacity: 0,
+        transition: "opacity 0.3s ease"
       },
       title: "Limpar checks desta playlist",
       onClick: function onClick() {
@@ -42588,7 +43323,31 @@ var Dashboard = function Dashboard(_ref) {
       style: {
         marginRight: 6
       }
-    }), "Limpar Checks"), folder.tipo && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "Tipo:"), " ", folder.tipo), folder.ano && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "Ano:"), "  ", folder.ano)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    }), "Limpar Checks"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      className: "playlist-action-btn",
+      style: {
+        marginTop: 8,
+        background: "#111",
+        color: "#ff0000",
+        border: "1px solid #ff0000",
+        padding: "6px 12px",
+        borderRadius: 8,
+        cursor: "pointer",
+        boxShadow: "0 0 6px #ff000099",
+        display: "flex",
+        alignItems: "center",
+        opacity: 0,
+        transition: "opacity 0.3s ease"
+      },
+      title: "Resetar ordem desta playlist",
+      onClick: function onClick() {
+        return onResetOrder(folder.path);
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaUndo, {
+      style: {
+        marginRight: 6
+      }
+    }), "Resetar ordem"), folder.tipo && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "Tipo:"), " ", folder.tipo), folder.ano && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "Ano:"), "  ", folder.ano)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         flex: 1,
         overflowY: "auto",
@@ -42603,25 +43362,47 @@ var Dashboard = function Dashboard(_ref) {
         gap: 18,
         marginBottom: 24,
         flexWrap: "wrap"
-      }
-    }, folder.subfolders.map(function (sub, subIdx) {
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        key: sub.path,
+      },
+      onDragOver: function onDragOver(e) {
+        e.preventDefault();
+      },
+      onDrop: onDropSub(folder)
+    }, (draggingSubFolderParentPath === folder.path && tempSubfolders.length ? tempSubfolders : folder.subfolders).map(function (sub, subIdx) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), {
+        key: sub.path
+      }, ghostSubIdx === subIdx && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          width: 200,
+          height: 120,
+          border: "2px dashed #ff4444",
+          borderRadius: 12,
+          margin: 6,
+          boxShadow: "0 0 10px #ff000066"
+        }
+      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          background: "#111",
+          background: ghostSubIdx === subIdx ? "#1a1a1a" : "#111",
           padding: "18px 16px",
           borderRadius: 14,
           minWidth: 180,
           maxWidth: 220,
-          cursor: "pointer",
-          boxShadow: "0 0 12px #ff000055",
-          transition: "background .18s"
+          cursor: "grab",
+          boxShadow: ghostSubIdx === subIdx ? '0 0 16px #ff000088' : '0 0 12px #ff000055',
+          transform: ghostSubIdx === subIdx ? 'scale(0.98)' : 'none',
+          transition: "transform .12s, box-shadow .12s, background .12s"
         },
+        draggable: true,
+        onDragStart: onDragStartSub(folder, subIdx),
+        onDragEnter: onDragOverSub(folder, subIdx),
+        onDragOver: onDragOverSub(folder, subIdx),
+        onDrop: onDropSub(folder),
+        onDragEnd: onDragEndSub,
         onClick: function onClick() {
-          return setSubfolderOpen({
+          if (draggingSubFolderParentPath === folder.path) return;
+          setSubfolderOpen({
             parentIdx: idx,
             subIdx: subIdx
           });
@@ -42647,27 +43428,86 @@ var Dashboard = function Dashboard(_ref) {
           fontSize: "0.9em",
           textShadow: "0 0 2px #ff0000aa"
         }
-      }, sub.videos.length, " v\xEDdeo(s)"));
+      }, sub.videos.length, " v\xEDdeo(s)")));
     })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.VideosContainer, {
       style: {
         flexWrap: "wrap",
         gap: "28px 24px",
         alignItems: "flex-start",
-        justifyContent: "flex-start"
+        justifyContent: "flex-start",
+        minHeight: "200px",
+        // Garante área de drop
+        padding: "10px"
+      },
+      onDragEnter: function onDragEnter(e) {
+        e.preventDefault();
+        if (draggingVideoFolderPath === folder.path && Number.isInteger(dragVideoOriginIndex)) {
+          var videos = tempVideos.length ? tempVideos : folder.videos;
+          var lastIdx = Math.max(0, videos.length - 1);
+          if (dragVideoHoverIndex === null) {
+            setDragVideoHoverIndex(lastIdx);
+            setGhostVideoIndex(lastIdx);
+          }
+        }
+      },
+      onDragOver: function onDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (draggingVideoFolderPath === folder.path && Number.isInteger(dragVideoOriginIndex)) {
+          var videos = tempVideos.length ? tempVideos : folder.videos;
+          var lastIdx = Math.max(0, videos.length - 1);
+          if (dragVideoHoverIndex === null) {
+            setDragVideoHoverIndex(lastIdx);
+            setGhostVideoIndex(lastIdx);
+          }
+        }
+      },
+      onDrop: function onDrop(e) {
+        e.preventDefault();
+        if (draggingVideoFolderPath === folder.path && Number.isInteger(dragVideoOriginIndex) && Number.isInteger(dragVideoHoverIndex) && dragVideoOriginIndex !== dragVideoHoverIndex) {
+          onReorderVideos(folder.path, dragVideoOriginIndex, dragVideoHoverIndex);
+        }
+        setDraggingVideoFolderPath(null);
+        setTempVideos([]);
+        setDragVideoOriginIndex(null);
+        setDragVideoHoverIndex(null);
+        setGhostVideoIndex(null);
+        setDragVideoPath(null);
       }
-    }, folder.videos.map(function (video, i) {
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        key: video.path,
+    }, (draggingVideoFolderPath === folder.path && tempVideos.length ? tempVideos : folder.videos).map(function (video, i) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), {
+        key: video.path
+      }, ghostVideoIndex === i && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          width: "320px",
+          height: "180px",
+          border: "2px dashed #ff4444",
+          borderRadius: 14,
+          margin: 2,
+          boxShadow: "0 0 12px #ff000066"
+        }
+      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
           position: "relative",
           marginBottom: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          cursor: "pointer"
+          userSelect: 'none',
+          cursor: 'grab',
+          transform: draggingVideoFolderPath === folder.path && dragVideoPath === video.path ? 'scale(1.03)' : 'none',
+          opacity: draggingVideoFolderPath === folder.path && dragVideoPath === video.path ? 0.85 : 1,
+          boxShadow: draggingVideoFolderPath === folder.path && dragVideoPath === video.path ? '0 6px 16px rgba(0,0,0,0.35)' : 'none'
         },
+        draggable: true,
+        onDragStart: onDragStartVideo(folder, i),
+        onDragEnter: onDragOverVideo(folder, i),
+        onDragOver: onDragOverVideo(folder, i),
+        onDrop: onDropVideo(folder),
+        onDragEnd: onDragEndVideo,
         onClick: function onClick() {
-          return handleFullscreen(video.path, video.nome);
+          if (draggingVideoFolderPath === folder.path) return;
+          handleFullscreen(video.path, video.nome);
         }
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
         src: video.thumb,
@@ -42678,9 +43518,12 @@ var Dashboard = function Dashboard(_ref) {
           objectFit: "cover",
           borderRadius: 14,
           background: "#000",
-          marginBottom: 4
+          marginBottom: 4,
+          boxShadow: draggingVideoFolderPath === folder.path && dragVideoPath === video.path ? '0 0 14px #ff000088' : 'none',
+          pointerEvents: 'none'
         },
-        loading: "lazy"
+        loading: "lazy",
+        draggable: false
       }), watched.includes(video.path) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaCheck, {
         size: 24,
         color: "#ff0000",
@@ -42704,55 +43547,89 @@ var Dashboard = function Dashboard(_ref) {
         },
         onClick: function onClick(e) {
           e.stopPropagation();
+          if (draggingVideoFolderPath === folder.path) return;
           handleFullscreen(video.path, video.nome);
         },
         title: "Expandir v\xEDdeo"
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaExpandAlt, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.VideoName, null, video.nome));
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaExpandAlt, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.VideoName, null, video.nome)));
     }))))));
-    loadedPanelsRef.current[idx] = panel;
     return panel;
   };
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.DashboardContainer, null, folders.map(function (folder, idx) {
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.DashboardContainer, null, (displayFolders !== null && displayFolders !== void 0 ? displayFolders : folders).map(function (folder, idx) {
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), {
       key: folder.path + folder.nome
+    }, ghostFolderIdx === idx && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        height: 10,
+        borderRadius: 8,
+        margin: "8px 0",
+        border: "2px dashed #ff4444",
+        boxShadow: "0 0 12px #ff000066"
+      }
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      draggable: expanded !== idx,
+      onDragStart: expanded !== idx ? onDragStartFolder(idx) : undefined,
+      onDragOver: expanded !== idx ? onDragOverFolder(idx) : undefined,
+      onDrop: expanded !== idx ? onDropFolder(idx) : undefined,
+      onMouseEnter: function onMouseEnter(e) {
+        var deleteBtn = e.currentTarget.querySelector('.delete-playlist-btn');
+        if (deleteBtn) deleteBtn.style.opacity = '1';
+      },
+      onMouseLeave: function onMouseLeave(e) {
+        var deleteBtn = e.currentTarget.querySelector('.delete-playlist-btn');
+        if (deleteBtn) deleteBtn.style.opacity = '0';
+      }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_FolderTile__WEBPACK_IMPORTED_MODULE_1__["default"], {
       folder: folder,
+      index: idx,
+      isDragging: dragFolderIdx === idx,
+      isGhost: ghostFolderIdx === idx,
+      onDelete: function onDelete() {
+        return onDeleteFolder(idx);
+      },
       onClick: function onClick() {
-        return setExpanded(idx);
+        return setExpanded(expanded === idx ? null : idx);
       }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      className: "delete-playlist-btn",
       style: {
         position: "absolute",
-        top: 12,
-        right: 12,
-        border: "none",
-        background: "rgba(255,255,255,0.07)",
+        top: 10,
+        right: 10,
+        background: "#111",
         color: "#ff0000",
+        border: "1px solid #ff0000",
+        padding: "6px 12px",
         borderRadius: 8,
-        padding: 6,
-        cursor: "pointer"
+        cursor: "pointer",
+        boxShadow: "0 0 6px #ff000099",
+        display: "flex",
+        alignItems: "center",
+        opacity: 0,
+        transition: "opacity 0.3s ease"
       },
       onClick: function onClick(e) {
         e.stopPropagation();
-        delete loadedPanelsRef.current[idx];
         onDeleteFolder(idx);
       },
       title: "Excluir playlist"
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTrashAlt, null))), expanded === idx && !subfolderOpen && renderPanel(folder, function () {
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTrashAlt, null)))), expanded === idx && !subfolderOpen && renderPanel(folder, function () {
       return setExpanded(null);
     }, idx), expanded === idx && subfolderOpen && renderPanel(folder.subfolders[subfolderOpen.subIdx], function () {
       return setSubfolderOpen(null);
     }, "".concat(idx, "-").concat(subfolderOpen.subIdx)));
   }), fullscreen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.ModalOverlay, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.Modal, {
     style: {
-      width: "70vw",
-      height: "60vh",
+      width: "95vw",
+      maxWidth: "1400px",
+      height: "95vh",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      justifyContent: "center",
+      justifyContent: "flex-start",
       background: "#181f29",
-      padding: 0
+      padding: "20px",
+      overflow: "auto"
     }
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.CloseButton, {
     onClick: closeFS
@@ -42763,8 +43640,8 @@ var Dashboard = function Dashboard(_ref) {
       borderRadius: 16,
       overflow: "hidden",
       width: "100%",
-      height: "100%",
-      maxHeight: "58vh"
+      height: "75vh",
+      marginBottom: "20px"
     }
   }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("video", {
     ref: fullscreenVideoRef,
@@ -42782,40 +43659,345 @@ var Dashboard = function Dashboard(_ref) {
     },
     onTimeUpdate: function onTimeUpdate(e) {
       var cur = e.target.currentTime;
-      ipcRenderer.invoke("save-position", {
-        videoPath: fullscreenVideo,
-        position: cur
-      });
-      setPositions(function (p) {
-        return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, fullscreenVideo, cur));
-      });
+      // Usa throttling para evitar salvamentos excessivos
+      savePositionThrottled(fullscreenVideo, cur);
     },
     onPause: function onPause(e) {
       var cur = e.target.currentTime;
-      ipcRenderer.invoke("save-position", {
-        videoPath: fullscreenVideo,
-        position: cur
-      });
-      setPositions(function (p) {
-        return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, fullscreenVideo, cur));
-      });
+      // Salva imediatamente quando pausa
+      savePositionImmediate(fullscreenVideo, cur);
     },
     onSeeked: function onSeeked(e) {
       var cur = e.target.currentTime;
-      ipcRenderer.invoke("save-position", {
-        videoPath: fullscreenVideo,
-        position: cur
-      });
-      setPositions(function (p) {
-        return _objectSpread(_objectSpread({}, p), {}, _defineProperty({}, fullscreenVideo, cur));
-      });
+      // Salva imediatamente quando busca nova posição
+      savePositionImmediate(fullscreenVideo, cur);
     }
   })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.VideoName, {
     style: {
       marginTop: 12,
       textAlign: "center"
     }
-  }, fullscreenVideoNome))));
+  }, fullscreenVideoNome), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "100%",
+      maxWidth: "800px",
+      marginTop: "20px",
+      background: "#1a1a1a",
+      borderRadius: "12px",
+      border: "2px solid #ff0000",
+      padding: "16px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginBottom: showAnnotations ? "16px" : "8px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h3", {
+    style: {
+      color: "#ff0000",
+      margin: 0,
+      display: "flex",
+      alignItems: "center",
+      gap: "8px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaStickyNote, null), " Anota\xE7\xF5es e T\xF3picos"), (videoAnnotations[fullscreenVideo] || []).length > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+    style: {
+      background: "#ff0000",
+      color: "#fff",
+      borderRadius: "12px",
+      padding: "2px 8px",
+      fontSize: "12px",
+      fontWeight: "bold"
+    }
+  }, (videoAnnotations[fullscreenVideo] || []).length)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      return setShowAnnotations(!showAnnotations);
+    },
+    style: {
+      background: "transparent",
+      border: "1px solid #ff0000",
+      color: "#ff0000",
+      borderRadius: "6px",
+      padding: "4px 8px",
+      cursor: "pointer"
+    }
+  }, showAnnotations ? "Ocultar" : "Mostrar")), !showAnnotations && (videoAnnotations[fullscreenVideo] || []).length > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      maxHeight: "120px",
+      overflowY: "auto",
+      background: "#2a2a2a",
+      borderRadius: "8px",
+      padding: "8px"
+    }
+  }, (videoAnnotations[fullscreenVideo] || []).slice(0, 3).map(function (annotation) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      key: annotation.id,
+      style: {
+        marginBottom: "6px",
+        paddingBottom: "6px",
+        borderBottom: "1px solid #444"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        color: "#ff0000",
+        fontSize: "12px",
+        fontWeight: "bold",
+        marginBottom: "2px"
+      }
+    }, annotation.topic), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        color: "#ccc",
+        fontSize: "11px",
+        lineHeight: "1.3",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap"
+      }
+    }, annotation.text));
+  }), (videoAnnotations[fullscreenVideo] || []).length > 3 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      color: "#888",
+      fontSize: "11px",
+      textAlign: "center",
+      fontStyle: "italic"
+    }
+  }, "+", (videoAnnotations[fullscreenVideo] || []).length - 3, " mais...")), showAnnotations && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      background: "#2a2a2a",
+      borderRadius: "8px",
+      padding: "12px",
+      marginBottom: "16px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      marginBottom: "8px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+    type: "text",
+    placeholder: "T\xF3pico (ex: Conceito importante, Dica, etc.)",
+    value: newAnnotationTopic,
+    onChange: function onChange(e) {
+      return setNewAnnotationTopic(e.target.value);
+    },
+    style: {
+      width: "100%",
+      padding: "8px",
+      background: "#333",
+      border: "1px solid #555",
+      borderRadius: "4px",
+      color: "#fff",
+      fontSize: "14px"
+    }
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      marginBottom: "8px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("textarea", {
+    placeholder: "Descri\xE7\xE3o da anota\xE7\xE3o...",
+    value: newAnnotationText,
+    onChange: function onChange(e) {
+      return setNewAnnotationText(e.target.value);
+    },
+    rows: 3,
+    style: {
+      width: "100%",
+      padding: "8px",
+      background: "#333",
+      border: "1px solid #555",
+      borderRadius: "4px",
+      color: "#fff",
+      fontSize: "14px",
+      resize: "vertical"
+    }
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: addAnnotation,
+    disabled: !newAnnotationTopic.trim() || !newAnnotationText.trim(),
+    style: {
+      background: newAnnotationTopic.trim() && newAnnotationText.trim() ? "#ff0000" : "#666",
+      color: "#fff",
+      border: "none",
+      borderRadius: "6px",
+      padding: "8px 16px",
+      cursor: newAnnotationTopic.trim() && newAnnotationText.trim() ? "pointer" : "not-allowed",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaPlus, {
+    size: 12
+  }), " Adicionar Anota\xE7\xE3o")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      maxHeight: "200px",
+      overflowY: "auto"
+    }
+  }, (videoAnnotations[fullscreenVideo] || []).map(function (annotation) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      key: annotation.id,
+      style: {
+        background: "#2a2a2a",
+        borderRadius: "8px",
+        padding: "12px",
+        marginBottom: "8px",
+        border: "1px solid #444"
+      }
+    }, editingAnnotation === annotation.id ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      "data-editing": annotation.id
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+      type: "text",
+      defaultValue: annotation.topic,
+      ref: function ref(el) {
+        if (el) el.focus();
+      },
+      onKeyDown: function onKeyDown(e) {
+        if (e.key === 'Enter') {
+          var container = e.target.parentNode;
+          var newTopic = container.querySelector('input').value;
+          var newText = container.querySelector('textarea').value;
+          editAnnotation(annotation.id, newTopic, newText);
+        }
+        if (e.key === 'Escape') setEditingAnnotation(null);
+      },
+      style: {
+        width: "100%",
+        padding: "6px",
+        background: "#333",
+        border: "1px solid #555",
+        borderRadius: "4px",
+        color: "#fff",
+        marginBottom: "8px"
+      }
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("textarea", {
+      defaultValue: annotation.text,
+      rows: 2,
+      onKeyDown: function onKeyDown(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+          var container = e.target.parentNode;
+          var newTopic = container.querySelector('input').value;
+          var newText = container.querySelector('textarea').value;
+          editAnnotation(annotation.id, newTopic, newText);
+        }
+        if (e.key === 'Escape') setEditingAnnotation(null);
+      },
+      style: {
+        width: "100%",
+        padding: "6px",
+        background: "#333",
+        border: "1px solid #555",
+        borderRadius: "4px",
+        color: "#fff",
+        resize: "vertical"
+      }
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: "8px",
+        display: "flex",
+        gap: "8px"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      onClick: function onClick(e) {
+        var container = e.target.closest('[data-editing]');
+        var newTopic = container.querySelector('input').value;
+        var newText = container.querySelector('textarea').value;
+        editAnnotation(annotation.id, newTopic, newText);
+      },
+      style: {
+        background: "#ff0000",
+        color: "#fff",
+        border: "none",
+        borderRadius: "4px",
+        padding: "4px 8px",
+        cursor: "pointer",
+        fontSize: "12px"
+      }
+    }, "Salvar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      onClick: function onClick() {
+        return setEditingAnnotation(null);
+      },
+      style: {
+        background: "#666",
+        color: "#fff",
+        border: "none",
+        borderRadius: "4px",
+        padding: "4px 8px",
+        cursor: "pointer",
+        fontSize: "12px"
+      }
+    }, "Cancelar"))) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: "8px"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h4", {
+      style: {
+        color: "#ff0000",
+        margin: 0,
+        fontSize: "14px",
+        fontWeight: "bold"
+      }
+    }, annotation.topic), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "flex",
+        gap: "4px"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      onClick: function onClick() {
+        return setEditingAnnotation(annotation.id);
+      },
+      style: {
+        background: "transparent",
+        border: "none",
+        color: "#ff0000",
+        cursor: "pointer",
+        padding: "2px"
+      },
+      title: "Editar"
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaEdit, {
+      size: 12
+    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      onClick: function onClick() {
+        return removeAnnotation(annotation.id);
+      },
+      style: {
+        background: "transparent",
+        border: "none",
+        color: "#ff6666",
+        cursor: "pointer",
+        padding: "2px"
+      },
+      title: "Remover"
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, {
+      size: 12
+    })))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", {
+      style: {
+        color: "#ccc",
+        margin: 0,
+        fontSize: "13px",
+        lineHeight: "1.4"
+      }
+    }, annotation.text), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("small", {
+      style: {
+        color: "#888",
+        fontSize: "11px"
+      }
+    }, new Date(annotation.createdAt).toLocaleString('pt-BR'))));
+  }), (!videoAnnotations[fullscreenVideo] || videoAnnotations[fullscreenVideo].length === 0) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("p", {
+    style: {
+      color: "#888",
+      textAlign: "center",
+      fontStyle: "italic",
+      margin: "20px 0"
+    }
+  }, "Nenhuma anota\xE7\xE3o ainda. Adicione t\xF3picos importantes sobre este v\xEDdeo!")))))));
 };
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Dashboard);
 
@@ -42887,10 +44069,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   AddButton: () => (/* binding */ AddButton),
 /* harmony export */   AppContainer: () => (/* binding */ AppContainer),
+/* harmony export */   BackgroundLayer: () => (/* binding */ BackgroundLayer),
 /* harmony export */   CloseButton: () => (/* binding */ CloseButton),
 /* harmony export */   ContentInfo: () => (/* binding */ ContentInfo),
 /* harmony export */   DashboardContainer: () => (/* binding */ DashboardContainer),
 /* harmony export */   FolderTitle: () => (/* binding */ FolderTitle),
+/* harmony export */   LogoOverlay: () => (/* binding */ LogoOverlay),
 /* harmony export */   Modal: () => (/* binding */ Modal),
 /* harmony export */   ModalInput: () => (/* binding */ ModalInput),
 /* harmony export */   ModalOverlay: () => (/* binding */ ModalOverlay),
@@ -42902,37 +44086,46 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   Tile: () => (/* binding */ Tile),
 /* harmony export */   TopBar: () => (/* binding */ TopBar),
 /* harmony export */   VideoName: () => (/* binding */ VideoName),
-/* harmony export */   VideosContainer: () => (/* binding */ VideosContainer)
+/* harmony export */   VideosContainer: () => (/* binding */ VideosContainer),
+/* harmony export */   VignetteOverlay: () => (/* binding */ VignetteOverlay)
 /* harmony export */ });
 /* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
-var _templateObject, _templateObject2, _templateObject3, _templateObject4, _templateObject5, _templateObject6, _templateObject7, _templateObject8, _templateObject9, _templateObject0, _templateObject1, _templateObject10, _templateObject11, _templateObject12, _templateObject13, _templateObject14, _templateObject15, _templateObject16, _templateObject17, _templateObject18;
+var _templateObject, _templateObject2, _templateObject3, _templateObject4, _templateObject5, _templateObject6, _templateObject7, _templateObject8, _templateObject9, _templateObject0, _templateObject1, _templateObject10, _templateObject11, _templateObject12, _templateObject13, _templateObject14, _templateObject15, _templateObject16, _templateObject17, _templateObject18, _templateObject19, _templateObject20, _templateObject21;
 function _taggedTemplateLiteral(e, t) { return t || (t = e.slice(0)), Object.freeze(Object.defineProperties(e, { raw: { value: Object.freeze(t) } })); }
 
 
 // 🔄 Animações
 var gradientMove = (0,styled_components__WEBPACK_IMPORTED_MODULE_0__.keyframes)(_templateObject || (_templateObject = _taggedTemplateLiteral(["\n  0% { background-position: 0% 50%; }\n  50% { background-position: 100% 50%; }\n  100% { background-position: 0% 50%; }\n"])));
 var glassGlow = (0,styled_components__WEBPACK_IMPORTED_MODULE_0__.keyframes)(_templateObject2 || (_templateObject2 = _taggedTemplateLiteral(["\n  0%, 100% { box-shadow: 0 0 16px #ff3333aa, 0 0 36px #44000055; }\n  50% { box-shadow: 0 0 28px #ff0000, 0 0 64px #55000088; }\n"])));
-var DashboardContainer = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject3 || (_templateObject3 = _taggedTemplateLiteral(["\n  display: flex;\n  flex-wrap: wrap;\n  gap: 36px;\n  padding: 46px 42px;\n  min-height: 100vh;\n  justify-content: flex-start;\n  align-items: flex-start;\n  background: #000;\n"])));
+var DashboardContainer = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject3 || (_templateObject3 = _taggedTemplateLiteral(["\n  display: flex;\n  flex-wrap: wrap;\n  gap: 36px;\n  padding: 100px 42px 46px 42px;\n  min-height: 100vh;\n  justify-content: flex-start;\n  align-items: flex-start;\n  background: transparent;\n"])));
 
 // 🔻 Barra superior dos botões
-var TopBar = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject4 || (_templateObject4 = _taggedTemplateLiteral(["\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  margin: 32px 0 18px 0;\n  background: #111;\n  border-radius: 19px;\n  box-shadow: 0 2px 14px #ff000033;\n  padding: 12px 24px;\n  backdrop-filter: blur(5px);\n"])));
-var Tile = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject5 || (_templateObject5 = _taggedTemplateLiteral(["\n  background: #111;\n  box-shadow: 0 8px 38px #22000099, 0 0 22px #ff000088;\n  border-radius: 26px;\n  width: 330px;\n  min-height: 240px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  padding: 22px 14px 18px 14px;\n  position: relative;\n  cursor: pointer;\n  animation: ", " 6s infinite;\n  border: 2px solid #ff0000;\n  transition: \n    transform 0.24s cubic-bezier(.16,1.01,.36,1),\n    box-shadow 0.3s,\n    border-color 0.28s;\n\n  &:hover {\n    transform: scale(1.06);\n    box-shadow: 0 14px 48px #ff0000cc;\n    background: #1a0000;\n  }\n"])), glassGlow);
+var TopBar = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject4 || (_templateObject4 = _taggedTemplateLiteral(["\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  margin: 32px 0 18px 0;\n  background: rgba(17,17,17,0.6);\n  border-radius: 19px;\n  box-shadow: 0 2px 14px #ff000033;\n  padding: 12px 24px;\n  backdrop-filter: blur(5px);\n"])));
+var Tile = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject5 || (_templateObject5 = _taggedTemplateLiteral(["\n  background: rgba(17,17,17,0.6);\n  box-shadow: 0 8px 38px #22000099, 0 0 22px #ff000088;\n  border-radius: 26px;\n  width: 330px;\n  min-height: 240px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  padding: 22px 14px 18px 14px;\n  position: relative;\n  cursor: pointer;\n  animation: ", " 6s infinite;\n  border: 2px solid #ff0000;\n  transition: \n    transform 0.24s cubic-bezier(.16,1.01,.36,1),\n    box-shadow 0.3s,\n    border-color 0.28s,\n    background 0.25s;\n  backdrop-filter: blur(6px) saturate(1.05);\n\n  &:hover {\n    transform: scale(1.06);\n    box-shadow: 0 14px 48px #ff0000cc;\n    background: rgba(26,0,0,0.75);\n  }\n"])), glassGlow);
 var Preview = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].video(_templateObject6 || (_templateObject6 = _taggedTemplateLiteral(["\n  width: 92%;\n  height: 142px;\n  border-radius: 16px;\n  object-fit: cover;\n  margin-bottom: 14px;\n  background: #200;\n  box-shadow: 0 0 14px #ff000088;\n  border: 2.5px solid #ff0000;\n  filter: brightness(1.05);\n"])));
 var FolderTitle = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject7 || (_templateObject7 = _taggedTemplateLiteral(["\n  font-weight: 700;\n  color: #fff;\n  font-size: 1.15em;\n  text-align: center;\n  margin-bottom: 2px;\n  letter-spacing: 1.2px;\n  text-shadow: 0 0 8px #ff000088;\n"])));
 var ContentInfo = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject8 || (_templateObject8 = _taggedTemplateLiteral(["\n  color: #ddd;\n  font-size: 1em;\n  text-align: center;\n  text-shadow: 0 1px 5px #44000055;\n"])));
 var AddButton = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].button(_templateObject9 || (_templateObject9 = _taggedTemplateLiteral(["\n  background: #1a0000;\n  color: #fff;\n  font-weight: bold;\n  border: 2px solid #ff0000;\n  border-radius: 16px;\n  padding: 14px 34px;\n  font-size: 1.18em;\n  margin: 0 8px 0 0;\n  cursor: pointer;\n  box-shadow: 0 0 12px #ff000044;\n  backdrop-filter: blur(4px);\n  transition:\n    box-shadow 0.17s,\n    transform 0.14s,\n    background 0.18s;\n\n  &:hover {\n    background: #ff0000;\n    color: #000;\n    box-shadow: 0 0 28px #ff0000cc;\n  }\n"])));
 var ModalOverlay = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject0 || (_templateObject0 = _taggedTemplateLiteral(["\n  position: fixed;\n  z-index: 100;\n  left: 0; top: 0; right: 0; bottom: 0;\n  background: rgba(0, 0, 0, 0.85);\n  backdrop-filter: blur(6px);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n"])));
-var Modal = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject1 || (_templateObject1 = _taggedTemplateLiteral(["\n  background: #111;\n  border-radius: 22px;\n  padding: 38px 46px;\n  min-width: 410px;\n  color: #fff;\n  box-shadow: 0 0 40px #ff000055;\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  border: 2px solid #ff0000;\n"])));
+var Modal = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject1 || (_templateObject1 = _taggedTemplateLiteral(["\n  background: rgba(17,17,17,0.85);\n  border-radius: 22px;\n  padding: 38px 46px;\n  min-width: 410px;\n  color: #fff;\n  box-shadow: 0 0 40px #ff000055;\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  border: 2px solid #ff0000;\n  backdrop-filter: blur(8px) saturate(1.05);\n"])));
 var ModalInput = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].input(_templateObject10 || (_templateObject10 = _taggedTemplateLiteral(["\n  width: 100%;\n  margin-bottom: 18px;\n  padding: 13px;\n  border-radius: 10px;\n  border: 2px solid #ff0000;\n  font-size: 1.09em;\n  background: #000;\n  color: #fff;\n  outline: none;\n\n  &:focus {\n    box-shadow: 0 0 14px #ff0000aa;\n    background: #111;\n    border: 2px solid #ff0000;\n  }\n"])));
 var CloseButton = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].button(_templateObject11 || (_templateObject11 = _taggedTemplateLiteral(["\n  background: none;\n  border: none;\n  color: #ff0000;\n  font-size: 2.3em;\n  position: absolute;\n  right: 28px;\n  top: 18px;\n  cursor: pointer;\n  transition: color 0.20s, transform 0.13s;\n  z-index: 101;\n  line-height: 1;\n\n  &:hover {\n    color: #fff;\n    transform: scale(1.25);\n    text-shadow: 0 0 10px #ff0000;\n  }\n"])));
 var VideosContainer = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject12 || (_templateObject12 = _taggedTemplateLiteral(["\n  margin-top: 8px;\n  display: flex;\n  gap: 26px;\n  flex-wrap: wrap;\n  justify-content: flex-start;\n"])));
 var VideoName = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject13 || (_templateObject13 = _taggedTemplateLiteral(["\n  margin-top: 7px;\n  font-size: 1.06em;\n  text-align: center;\n  font-weight: 600;\n  max-width: 292px;\n  word-break: break-all;\n  color: #fff;\n  text-shadow: 0 0 12px #ff0000aa;\n"])));
-var Spinner = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject14 || (_templateObject14 = _taggedTemplateLiteral(["\n  border: 6px solid #3a000050;\n  border-top: 6px solid #ff0000;\n  border-radius: 50%;\n  width: 54px;\n  height: 54px;\n  animation: spin 1.2s linear infinite;\n  margin: 0 auto;\n\n  @keyframes spin {\n    0% { transform: rotate(0deg);}\n    100% { transform: rotate(360deg);}\n  }\n"])));
+var Spinner = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject14 || (_templateObject14 = _taggedTemplateLiteral(["\n  border: 6px solid #3a000050;\n  border-top: 6px solid #ff0000;\n  border-radius: 50%;\n  width: 54px;\n  height: 54px;\n  animation: spin 1.2s linear infinite;\n  margin: 0 auto;\n\n  @keyframes spin {\n    0% { transform: rotate(0deg);} \n    100% { transform: rotate(360deg);} \n  }\n"])));
 var ThemeSwitch = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].button(_templateObject15 || (_templateObject15 = _taggedTemplateLiteral(["\n  background: transparent;\n  border: none;\n  font-size: 2.2em;\n  margin-right: 10px;\n  cursor: pointer;\n  transition: transform 0.16s;\n  color: #fff;\n\n  &:hover {\n    transform: scale(1.25) rotate(-10deg);\n    filter: drop-shadow(0 0 8px #ff0000aa);\n  }\n"])));
-var AppContainer = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject16 || (_templateObject16 = _taggedTemplateLiteral(["\n  padding: 24px;\n  background: #000;\n  min-height: 100vh;\n"])));
-// Barra de progresso
+var AppContainer = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject16 || (_templateObject16 = _taggedTemplateLiteral(["\n  padding: 24px;\n  background: transparent;\n  min-height: 100vh;\n  position: relative;\n  z-index: 1;\n"])));
 var ProgressBarContainer = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject17 || (_templateObject17 = _taggedTemplateLiteral(["\n  width: 60vw;\n  margin: 100px auto;\n  background: rgba(255,255,255,0.05);\n  border: 2px solid #A48ADE;\n  border-radius: 12px;\n  padding: 24px;\n  text-align: center;\n"])));
 var ProgressBarFill = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject18 || (_templateObject18 = _taggedTemplateLiteral(["\n  height: 16px;\n  background: linear-gradient(90deg, #ff0000, #a30000);\n  border-radius: 10px;\n  transition: width 0.3s ease;\n"])));
+
+// Camada de fundo desfocada
+var BackgroundLayer = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject19 || (_templateObject19 = _taggedTemplateLiteral(["\n  position: fixed;\n  inset: 0;\n  background-image: url('topo.png');\n  background-size: cover;\n  background-position: center;\n  background-repeat: no-repeat;\n  filter: blur(10px) brightness(0.35) saturate(1.05);\n  transform: scale(1.05);\n  z-index: 0;\n  pointer-events: none;\n"])));
+
+// Vinheta para aumentar contraste nas bordas
+var VignetteOverlay = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].div(_templateObject20 || (_templateObject20 = _taggedTemplateLiteral(["\n  position: fixed;\n  inset: 0;\n  pointer-events: none;\n  z-index: 0;\n  background: radial-gradient(120% 100% at 50% 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.35) 80%, rgba(0,0,0,0.6) 100%);\n"])));
+
+// Logo fixo no topo central
+var LogoOverlay = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].img(_templateObject21 || (_templateObject21 = _taggedTemplateLiteral(["\n  position: fixed;\n  top: 14px;\n  left: 50%;\n  transform: translateX(-50%);\n  height: 72px;\n  width: auto;\n  z-index: 2; /* acima do conte\xFAdo, n\xE3o bloqueia cliques */\n  pointer-events: none;\n  user-select: none;\n  filter: drop-shadow(0 2px 10px rgba(0,0,0,0.55));\n"])));
 
 /***/ })
 
