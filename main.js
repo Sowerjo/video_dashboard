@@ -8,9 +8,8 @@ const store   = new Store();
 
 // FFmpeg fora do ASAR
 function getBinPath(...segments) {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, 'bin', ...segments)
-    : path.join(__dirname, 'bin', ...segments);
+  const baseDir = app.isPackaged ? path.dirname(process.execPath) : __dirname;
+  return path.join(baseDir, 'bin', ...segments);
 }
 const ffmpegPath = getBinPath(
   process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
@@ -27,6 +26,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1300,
     height: 800,
+    icon: path.join(__dirname, 'icon.ico'),
     webPreferences: { nodeIntegration: true, contextIsolation: false }
   });
 
@@ -117,22 +117,58 @@ ipcMain.handle('save-annotations', (e, annotations) => {
 });
 
 // Gerar thumbnails
-ipcMain.handle('generate-thumbnails', async (e, folders) => {
-  const exts = ['.mp4','.avi','.mkv','.mov','.webm','.wmv','.flv'];
-  for (const f of folders) {
-    let files;
-    try { files = fs.readdirSync(f.path); } catch { continue; }
-    for (const file of files) {
-      if (!exts.includes(path.extname(file).toLowerCase())) continue;
-      const vp = path.join(f.path, file);
-      const safeName = file.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.jpg';
-      const tp = path.join(thumbsDir, safeName);
-      if (fs.existsSync(tp)) continue;
-      await new Promise((res, rej) => {
-        const ff = spawn(ffmpegPath, ['-y','-i',vp,'-ss','00:00:01','-frames:v','1',tp]);
-        ff.on('close', code => code===0 ? res() : rej());
-      });
+// Função recursiva para processar todas as subpastas
+function processDirectoryRecursive(dirPath, exts, callback) {
+  let files;
+  try { files = fs.readdirSync(dirPath); } catch { return; }
+  
+  for (const file of files) {
+    const fullPath = path.join(dirPath, file);
+    const stat = fs.statSync(fullPath);
+    
+    if (stat.isDirectory()) {
+      // Processa subpasta recursivamente
+      processDirectoryRecursive(fullPath, exts, callback);
+    } else if (exts.includes(path.extname(file).toLowerCase())) {
+      // Processa arquivo de vídeo
+      callback(fullPath, file);
     }
   }
-  return true;
+}
+
+ipcMain.handle('generate-thumbnails', async (e, folders) => {
+  const exts = ['.mp4','.avi','.mkv','.mov','.webm','.wmv','.flv'];
+  let totalVideos = 0;
+  let processedVideos = 0;
+  
+  // Primeiro, conta total de vídeos
+  for (const f of folders) {
+    processDirectoryRecursive(f.path, exts, () => totalVideos++);
+  }
+  
+  // Depois processa e gera thumbnails
+  for (const f of folders) {
+    processDirectoryRecursive(f.path, exts, async (videoPath, fileName) => {
+      const safeName = fileName.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.jpg';
+      const thumbPath = path.join(thumbsDir, safeName);
+      
+      if (!fs.existsSync(thumbPath)) {
+        try {
+          await new Promise((res, rej) => {
+            const ff = spawn(ffmpegPath, ['-y','-i',videoPath,'-ss','00:00:01','-frames:v','1',thumbPath]);
+            ff.on('close', code => code===0 ? res() : rej());
+            ff.on('error', rej);
+          });
+        } catch (error) {
+          console.error('Error generating thumbnail for:', videoPath, error);
+        }
+      }
+      
+      processedVideos++;
+      // Envia progresso para o renderer
+      e.sender.send('thumbnail-progress', { processed: processedVideos, total: totalVideos });
+    });
+  }
+  
+  return { success: true, total: totalVideos, processed: processedVideos };
 });

@@ -20,6 +20,7 @@ import { FaBars, FaPlus, FaSync, FaFileImport, FaFileExport } from "react-icons/
 const { ipcRenderer } = window.require("electron");
 const fs             = window.require("fs");
 const path           = window.require("path");
+const { pathToFileURL } = window.require("url");
 
 const VIDEO_EXTS = ['.mp4','.avi','.mkv','.mov','.webm','.wmv','.flv'];
 
@@ -41,7 +42,7 @@ function scanFolder(folderPath, thumbsDir) {
     } else if (VIDEO_EXTS.includes(path.extname(file).toLowerCase())) {
       const safeName = file.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '.jpg';
       const thumbPath = path.join(thumbsDir, safeName);
-      const thumbURL  = fs.existsSync(thumbPath) ? `file://${thumbPath}` : null;
+      const thumbURL  = fs.existsSync(thumbPath) ? pathToFileURL(thumbPath).href : null;
       result.videos.push({ path: full, nome: file, thumb: thumbURL });
     }
   }
@@ -71,11 +72,26 @@ const sortVideosByOrder = (videos, orderArr = []) => {
   return [...present, ...missing];
 };
 
+// util: aplica ordem customizada de subpastas a um array de subpastas
+const sortSubfoldersByOrder = (subfolders, orderArr = []) => {
+  if (!orderArr.length) return subfolders;
+  const ordered = [];
+  const remaining = [...subfolders];
+  
+  orderArr.forEach(path => {
+    const idx = remaining.findIndex(sf => sf.path === path);
+    if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+  });
+  
+  return [...ordered, ...remaining];
+};
+
 // util: aplica ordem de vídeos recursivamente por path
-const applyVideoOrdersRec = (folder, ordersMap) => {
+const applyVideoOrdersRec = (folder, ordersMap, subOrdersMap = {}) => {
   const curOrder = ordersMap[folder.path];
   const newVideos = sortVideosByOrder(folder.videos || [], curOrder);
-  const newSubs = (folder.subfolders || []).map(sf => applyVideoOrdersRec(sf, ordersMap));
+  const sortedSubs = sortSubfoldersByOrder(folder.subfolders || [], subOrdersMap[folder.path]);
+  const newSubs = sortedSubs.map(sf => applyVideoOrdersRec(sf, ordersMap, subOrdersMap));
   return { ...folder, videos: newVideos, subfolders: newSubs };
 };
 
@@ -92,12 +108,16 @@ export default function App() {
   const [folders, setFolders]     = useState([]);
   const [watched, setWatched]     = useState([]);
   const [videoOrders, setVideoOrders] = useState({}); // { [folderPath]: [videoPath, ...] }
+  const [subfolderOrders, setSubfolderOrders] = useState({}); // { [folderPath]: [subfolderPath, ...] }
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm]           = useState({ tipo:'', nome:'', ano:'', path:'' });
   const [theme, setTheme]         = useState(localStorage.getItem('theme') || 'dark');
   const [isReordering, setIsReordering] = useState(false);
   // Estado para controlar o menu hambúrguer
   const [showMenu, setShowMenu] = useState(false);
+  // Estados para feedback visual de geração de thumbnails
+  const [isGeneratingThumbs, setIsGeneratingThumbs] = useState(false);
+  const [thumbProgress, setThumbProgress] = useState({ processed: 0, total: 0 });
 
   // Fechar menu ao clicar fora
   useEffect(() => {
@@ -113,6 +133,22 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('theme', theme); }, [theme]);
 
+  // Listener para progresso de thumbnails
+  useEffect(() => {
+    const handleThumbProgress = (event, data) => {
+      setThumbProgress(data);
+      if (data.processed >= data.total) {
+        setTimeout(() => {
+          setIsGeneratingThumbs(false);
+          setThumbProgress({ processed: 0, total: 0 });
+        }, 1000); // Mostra 100% por 1 segundo antes de esconder
+      }
+    };
+
+    ipcRenderer.on('thumbnail-progress', handleThumbProgress);
+    return () => ipcRenderer.removeListener('thumbnail-progress', handleThumbProgress);
+  }, []);
+
   // 1) Leitura direta do config.json
   useEffect(() => {
     async function loadConfig() {
@@ -120,6 +156,7 @@ export default function App() {
       if (cfg.folders) setFolders(cfg.folders);
       if (cfg.watchedVideos) setWatched(cfg.watchedVideos);
       if (cfg.videoOrders) setVideoOrders(cfg.videoOrders);
+      if (cfg.subfolderOrders) setSubfolderOrders(cfg.subfolderOrders);
     }
     loadConfig();
   }, []);
@@ -136,23 +173,36 @@ export default function App() {
     if (!thumbsDir || folders.length === 0) return;
     if (isReordering) return; // evitar sobrescrever enquanto houver reordenação
     async function doThumbs() {
-      await ipcRenderer.invoke('generate-thumbnails', folders);
-      setFolders(prev => {
-        const scanned = prev.map(f => ({ ...f, ...scanFolder(f.path, thumbsDir) }));
-        // aplica ordem customizada de vídeos recursivamente
-        return scanned.map(f => applyVideoOrdersRec(f, videoOrders));
-      });
+      setIsGeneratingThumbs(true);
+      setThumbProgress({ processed: 0, total: 0 });
+      
+      try {
+        const result = await ipcRenderer.invoke('generate-thumbnails', folders);
+        console.log('Thumbnail generation completed:', result);
+        
+        // Atualiza a UI após a geração
+        setFolders(prev => {
+          const scanned = prev.map(f => ({ ...f, ...scanFolder(f.path, thumbsDir) }));
+          // aplica ordem customizada de vídeos e subpastas recursivamente
+          return scanned.map(f => applyVideoOrdersRec(f, videoOrders, subfolderOrders));
+        });
+      } catch (error) {
+        console.error('Error generating thumbnails:', error);
+        setIsGeneratingThumbs(false);
+        setThumbProgress({ processed: 0, total: 0 });
+      }
     }
     doThumbs();
-  }, [thumbsDir, /* aplica novamente quando ordem mudar */ videoOrders, isReordering]);
+  }, [thumbsDir, /* aplica novamente quando ordem mudar */ videoOrders, subfolderOrders, isReordering]);
 
   // 4) Persistência
   useEffect(() => { ipcRenderer.invoke('save-folders', folders); }, [folders]);
   useEffect(() => { ipcRenderer.invoke('save-watched', watched); }, [watched]);
+  useEffect(() => { ipcRenderer.invoke('save-config', { videoOrders, subfolderOrders }); }, [videoOrders, subfolderOrders]);
   // Salva config.json preferencialmente (ordem customizada e demais dados)
   useEffect(() => {
-    ipcRenderer.invoke('save-config', { folders, watchedVideos: watched, videoOrders });
-  }, [folders, watched, videoOrders]);
+    ipcRenderer.invoke('save-config', { folders, watchedVideos: watched, videoOrders, subfolderOrders });
+  }, [folders, watched, videoOrders, subfolderOrders]);
 
   // Handlers... (mantidos)
   const handleRefresh = () => {
@@ -160,7 +210,7 @@ export default function App() {
       .then(() => {
         setFolders(prev => {
           const scanned = prev.map(f => ({ ...f, ...scanFolder(f.path, thumbsDir) }));
-          return scanned.map(f => applyVideoOrdersRec(f, videoOrders));
+          return scanned.map(f => applyVideoOrdersRec(f, videoOrders, subfolderOrders));
         });
       });
   };
@@ -206,9 +256,13 @@ export default function App() {
 
   // NOVO: Reordenar subpastas dentro de uma pasta específica
   const handleReorderSubfolders = (folderPath, from, to) => {
+
     if (from === to) return;
     setFolders(prev => prev.map(f => updateFolderByPath(f, folderPath, (folder) => {
       const newSubs = reorder(folder.subfolders || [], from, to);
+
+      // atualiza orders map das subpastas
+      setSubfolderOrders(so => ({ ...so, [folderPath]: newSubs.map(sf => sf.path) }));
       return { ...folder, subfolders: newSubs };
     })));
   };
@@ -435,6 +489,80 @@ export default function App() {
             </Modal>
           </ModalOverlay>
         )}
+        
+        {/* Feedback visual para geração de thumbnails */}
+        {isGeneratingThumbs && (
+          <div style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            background: "linear-gradient(145deg, #1a1a1a, #0d0d0d)",
+            border: "2px solid #ff0000",
+            borderRadius: "12px",
+            padding: "16px 20px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px #ff000055",
+            backdropFilter: "blur(10px)",
+            zIndex: 10000,
+            minWidth: "280px",
+            color: "#fff"
+          }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: "12px",
+              gap: "10px"
+            }}>
+              <div style={{
+                width: "20px",
+                height: "20px",
+                border: "2px solid #ff0000",
+                borderTop: "2px solid transparent",
+                borderRadius: "50%",
+                animation: "spin 1s linear infinite"
+              }} />
+              <span style={{
+                fontWeight: "600",
+                fontSize: "14px",
+                color: "#ff0000"
+              }}>Gerando Thumbnails...</span>
+            </div>
+            
+            {thumbProgress.total > 0 && (
+              <>
+                <div style={{
+                  background: "#333",
+                  borderRadius: "8px",
+                  height: "8px",
+                  overflow: "hidden",
+                  marginBottom: "8px"
+                }}>
+                  <div style={{
+                    background: "linear-gradient(90deg, #ff0000, #ff4444)",
+                    height: "100%",
+                    width: `${(thumbProgress.processed / thumbProgress.total) * 100}%`,
+                    transition: "width 0.3s ease",
+                    borderRadius: "8px"
+                  }} />
+                </div>
+                <div style={{
+                  fontSize: "12px",
+                  color: "#ccc",
+                  textAlign: "center"
+                }}>
+                  {thumbProgress.processed} de {thumbProgress.total} vídeos processados
+                </div>
+              </>
+            )}
+          </div>
+        )}
+        
+        {/* CSS para animação de loading */}
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
       </AppContainer>
     </ThemeProvider>
   );

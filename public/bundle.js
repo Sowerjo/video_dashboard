@@ -42006,6 +42006,8 @@ var _window$require = window.require("electron"),
   ipcRenderer = _window$require.ipcRenderer;
 var fs = window.require("fs");
 var path = window.require("path");
+var _window$require2 = window.require("url"),
+  pathToFileURL = _window$require2.pathToFileURL;
 var VIDEO_EXTS = ['.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv'];
 function scanFolder(folderPath, thumbsDir) {
   var result = {
@@ -42032,7 +42034,7 @@ function scanFolder(folderPath, thumbsDir) {
       } else if (VIDEO_EXTS.includes(path.extname(file).toLowerCase())) {
         var safeName = file.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
         var thumbPath = path.join(thumbsDir, safeName);
-        var thumbURL = fs.existsSync(thumbPath) ? "file://".concat(thumbPath) : null;
+        var thumbURL = fs.existsSync(thumbPath) ? pathToFileURL(thumbPath).href : null;
         result.videos.push({
           path: full,
           nome: file,
@@ -42093,12 +42095,29 @@ var sortVideosByOrder = function sortVideosByOrder(videos) {
   return [].concat(_toConsumableArray(present), _toConsumableArray(missing));
 };
 
+// util: aplica ordem customizada de subpastas a um array de subpastas
+var sortSubfoldersByOrder = function sortSubfoldersByOrder(subfolders) {
+  var orderArr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  if (!orderArr.length) return subfolders;
+  var ordered = [];
+  var remaining = _toConsumableArray(subfolders);
+  orderArr.forEach(function (path) {
+    var idx = remaining.findIndex(function (sf) {
+      return sf.path === path;
+    });
+    if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+  });
+  return [].concat(ordered, _toConsumableArray(remaining));
+};
+
 // util: aplica ordem de vídeos recursivamente por path
 var _applyVideoOrdersRec = function applyVideoOrdersRec(folder, ordersMap) {
+  var subOrdersMap = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
   var curOrder = ordersMap[folder.path];
   var newVideos = sortVideosByOrder(folder.videos || [], curOrder);
-  var newSubs = (folder.subfolders || []).map(function (sf) {
-    return _applyVideoOrdersRec(sf, ordersMap);
+  var sortedSubs = sortSubfoldersByOrder(folder.subfolders || [], subOrdersMap[folder.path]);
+  var newSubs = sortedSubs.map(function (sf) {
+    return _applyVideoOrdersRec(sf, ordersMap, subOrdersMap);
   });
   return _objectSpread(_objectSpread({}, folder), {}, {
     videos: newVideos,
@@ -42134,32 +42153,48 @@ function App() {
     _useState8 = _slicedToArray(_useState7, 2),
     videoOrders = _useState8[0],
     setVideoOrders = _useState8[1]; // { [folderPath]: [videoPath, ...] }
-  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
     _useState0 = _slicedToArray(_useState9, 2),
-    modalOpen = _useState0[0],
-    setModalOpen = _useState0[1];
-  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+    subfolderOrders = _useState0[0],
+    setSubfolderOrders = _useState0[1]; // { [folderPath]: [subfolderPath, ...] }
+  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState10 = _slicedToArray(_useState1, 2),
+    modalOpen = _useState10[0],
+    setModalOpen = _useState10[1];
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
       tipo: '',
       nome: '',
       ano: '',
       path: ''
     }),
-    _useState10 = _slicedToArray(_useState1, 2),
-    form = _useState10[0],
-    setForm = _useState10[1];
-  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(localStorage.getItem('theme') || 'dark'),
     _useState12 = _slicedToArray(_useState11, 2),
-    theme = _useState12[0],
-    setTheme = _useState12[1];
-  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    form = _useState12[0],
+    setForm = _useState12[1];
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(localStorage.getItem('theme') || 'dark'),
     _useState14 = _slicedToArray(_useState13, 2),
-    isReordering = _useState14[0],
-    setIsReordering = _useState14[1];
-  // Estado para controlar o menu hambúrguer
+    theme = _useState14[0],
+    setTheme = _useState14[1];
   var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState16 = _slicedToArray(_useState15, 2),
-    showMenu = _useState16[0],
-    setShowMenu = _useState16[1];
+    isReordering = _useState16[0],
+    setIsReordering = _useState16[1];
+  // Estado para controlar o menu hambúrguer
+  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState18 = _slicedToArray(_useState17, 2),
+    showMenu = _useState18[0],
+    setShowMenu = _useState18[1];
+  // Estados para feedback visual de geração de thumbnails
+  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState20 = _slicedToArray(_useState19, 2),
+    isGeneratingThumbs = _useState20[0],
+    setIsGeneratingThumbs = _useState20[1];
+  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+      processed: 0,
+      total: 0
+    }),
+    _useState22 = _slicedToArray(_useState21, 2),
+    thumbProgress = _useState22[0],
+    setThumbProgress = _useState22[1];
 
   // Fechar menu ao clicar fora
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
@@ -42176,6 +42211,26 @@ function App() {
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Listener para progresso de thumbnails
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var handleThumbProgress = function handleThumbProgress(event, data) {
+      setThumbProgress(data);
+      if (data.processed >= data.total) {
+        setTimeout(function () {
+          setIsGeneratingThumbs(false);
+          setThumbProgress({
+            processed: 0,
+            total: 0
+          });
+        }, 1000); // Mostra 100% por 1 segundo antes de esconder
+      }
+    };
+    ipcRenderer.on('thumbnail-progress', handleThumbProgress);
+    return function () {
+      return ipcRenderer.removeListener('thumbnail-progress', handleThumbProgress);
+    };
+  }, []);
 
   // 1) Leitura direta do config.json
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
@@ -42195,7 +42250,8 @@ function App() {
               if (cfg.folders) setFolders(cfg.folders);
               if (cfg.watchedVideos) setWatched(cfg.watchedVideos);
               if (cfg.videoOrders) setVideoOrders(cfg.videoOrders);
-            case 6:
+              if (cfg.subfolderOrders) setSubfolderOrders(cfg.subfolderOrders);
+            case 7:
             case "end":
               return _context.stop();
           }
@@ -42222,31 +42278,53 @@ function App() {
     }
     function _doThumbs() {
       _doThumbs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var result;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
             case 0:
-              _context2.next = 2;
+              setIsGeneratingThumbs(true);
+              setThumbProgress({
+                processed: 0,
+                total: 0
+              });
+              _context2.prev = 2;
+              _context2.next = 5;
               return ipcRenderer.invoke('generate-thumbnails', folders);
-            case 2:
+            case 5:
+              result = _context2.sent;
+              console.log('Thumbnail generation completed:', result);
+
+              // Atualiza a UI após a geração
               setFolders(function (prev) {
                 var scanned = prev.map(function (f) {
                   return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
                 });
-                // aplica ordem customizada de vídeos recursivamente
+                // aplica ordem customizada de vídeos e subpastas recursivamente
                 return scanned.map(function (f) {
-                  return _applyVideoOrdersRec(f, videoOrders);
+                  return _applyVideoOrdersRec(f, videoOrders, subfolderOrders);
                 });
               });
-            case 3:
+              _context2.next = 15;
+              break;
+            case 10:
+              _context2.prev = 10;
+              _context2.t0 = _context2["catch"](2);
+              console.error('Error generating thumbnails:', _context2.t0);
+              setIsGeneratingThumbs(false);
+              setThumbProgress({
+                processed: 0,
+                total: 0
+              });
+            case 15:
             case "end":
               return _context2.stop();
           }
-        }, _callee2);
+        }, _callee2, null, [[2, 10]]);
       }));
       return _doThumbs.apply(this, arguments);
     }
     doThumbs();
-  }, [thumbsDir, /* aplica novamente quando ordem mudar */videoOrders, isReordering]);
+  }, [thumbsDir, /* aplica novamente quando ordem mudar */videoOrders, subfolderOrders, isReordering]);
 
   // 4) Persistência
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
@@ -42255,14 +42333,21 @@ function App() {
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     ipcRenderer.invoke('save-watched', watched);
   }, [watched]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke('save-config', {
+      videoOrders: videoOrders,
+      subfolderOrders: subfolderOrders
+    });
+  }, [videoOrders, subfolderOrders]);
   // Salva config.json preferencialmente (ordem customizada e demais dados)
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     ipcRenderer.invoke('save-config', {
       folders: folders,
       watchedVideos: watched,
-      videoOrders: videoOrders
+      videoOrders: videoOrders,
+      subfolderOrders: subfolderOrders
     });
-  }, [folders, watched, videoOrders]);
+  }, [folders, watched, videoOrders, subfolderOrders]);
 
   // Handlers... (mantidos)
   var handleRefresh = function handleRefresh() {
@@ -42272,7 +42357,7 @@ function App() {
           return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
         });
         return scanned.map(function (f) {
-          return _applyVideoOrdersRec(f, videoOrders);
+          return _applyVideoOrdersRec(f, videoOrders, subfolderOrders);
         });
       });
     });
@@ -42408,6 +42493,13 @@ function App() {
       return prev.map(function (f) {
         return _updateFolderByPath(f, folderPath, function (folder) {
           var newSubs = reorder(folder.subfolders || [], from, to);
+
+          // atualiza orders map das subpastas
+          setSubfolderOrders(function (so) {
+            return _objectSpread(_objectSpread({}, so), {}, _defineProperty({}, folderPath, newSubs.map(function (sf) {
+              return sf.path;
+            })));
+          });
           return _objectSpread(_objectSpread({}, folder), {}, {
             subfolders: newSubs
           });
@@ -42694,7 +42786,66 @@ function App() {
       border: "none",
       color: "#000"
     }
-  }, "Adicionar"))))));
+  }, "Adicionar")))), isGeneratingThumbs && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      background: "linear-gradient(145deg, #1a1a1a, #0d0d0d)",
+      border: "2px solid #ff0000",
+      borderRadius: "12px",
+      padding: "16px 20px",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px #ff000055",
+      backdropFilter: "blur(10px)",
+      zIndex: 10000,
+      minWidth: "280px",
+      color: "#fff"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      marginBottom: "12px",
+      gap: "10px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "20px",
+      height: "20px",
+      border: "2px solid #ff0000",
+      borderTop: "2px solid transparent",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+    style: {
+      fontWeight: "600",
+      fontSize: "14px",
+      color: "#ff0000"
+    }
+  }, "Gerando Thumbnails...")), thumbProgress.total > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      background: "#333",
+      borderRadius: "8px",
+      height: "8px",
+      overflow: "hidden",
+      marginBottom: "8px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      background: "linear-gradient(90deg, #ff0000, #ff4444)",
+      height: "100%",
+      width: "".concat(thumbProgress.processed / thumbProgress.total * 100, "%"),
+      transition: "width 0.3s ease",
+      borderRadius: "8px"
+    }
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      fontSize: "12px",
+      color: "#ccc",
+      textAlign: "center"
+    }
+  }, thumbProgress.processed, " de ", thumbProgress.total, " v\xEDdeos processados"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("style", null, "\n          @keyframes spin {\n            0% { transform: rotate(0deg); }\n            100% { transform: rotate(360deg); }\n          }\n        ")));
 }
 
 /***/ }),
@@ -43198,8 +43349,8 @@ var Dashboard = function Dashboard(_ref) {
       setDraggingSubFolderParentPath(parentFolder.path);
       setTempSubfolders(parentFolder.subfolders.slice());
       setDragSubOriginIdx(fromIdx);
-      setDragSubHoverIdx(fromIdx);
-      setGhostSubIdx(fromIdx);
+      setDragSubHoverIdx(null); // inicia como null para detectar primeiro hover
+      setGhostSubIdx(null);
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', JSON.stringify({
         parentPath: parentFolder.path,
@@ -43212,12 +43363,15 @@ var Dashboard = function Dashboard(_ref) {
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
-      if (draggingSubFolderParentPath === parentFolder.path && dragSubHoverIdx !== hoverIdx) {
-        setTempSubfolders(function (prev) {
-          return reorder(prev, dragSubHoverIdx !== null && dragSubHoverIdx !== void 0 ? dragSubHoverIdx : hoverIdx, hoverIdx);
-        });
-        setDragSubHoverIdx(hoverIdx);
-        setGhostSubIdx(hoverIdx);
+      if (draggingSubFolderParentPath === parentFolder.path) {
+        var currentHover = dragSubHoverIdx !== null && dragSubHoverIdx !== void 0 ? dragSubHoverIdx : dragSubOriginIdx;
+        if (currentHover !== hoverIdx) {
+          setTempSubfolders(function (prev) {
+            return reorder(prev, currentHover, hoverIdx);
+          });
+          setDragSubHoverIdx(hoverIdx);
+          setGhostSubIdx(hoverIdx);
+        }
       }
     };
   };
@@ -43225,7 +43379,7 @@ var Dashboard = function Dashboard(_ref) {
     return function (e) {
       e.preventDefault();
       e.stopPropagation();
-      if (draggingSubFolderParentPath === parentFolder.path && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx)) {
+      if (draggingSubFolderParentPath === parentFolder.path && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx) && dragSubOriginIdx !== dragSubHoverIdx) {
         onReorderSubfolders(parentFolder.path, dragSubOriginIdx, dragSubHoverIdx);
       }
       // limpar estados temporários
@@ -43237,7 +43391,7 @@ var Dashboard = function Dashboard(_ref) {
     };
   };
   var onDragEndSub = function onDragEndSub() {
-    if (draggingSubFolderParentPath && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx)) {
+    if (draggingSubFolderParentPath && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx) && dragSubOriginIdx !== dragSubHoverIdx) {
       onReorderSubfolders(draggingSubFolderParentPath, dragSubOriginIdx, dragSubHoverIdx);
     }
     setDraggingSubFolderParentPath(null);
@@ -43363,8 +43517,28 @@ var Dashboard = function Dashboard(_ref) {
         marginBottom: 24,
         flexWrap: "wrap"
       },
+      onDragEnter: function onDragEnter(e) {
+        e.preventDefault();
+        if (draggingSubFolderParentPath === folder.path && Number.isInteger(dragSubOriginIdx)) {
+          var subs = tempSubfolders.length ? tempSubfolders : folder.subfolders;
+          var lastIdx = Math.max(0, subs.length - 1);
+          if (dragSubHoverIdx === null) {
+            setDragSubHoverIdx(lastIdx);
+            setGhostSubIdx(lastIdx);
+          }
+        }
+      },
       onDragOver: function onDragOver(e) {
         e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (draggingSubFolderParentPath === folder.path && Number.isInteger(dragSubOriginIdx)) {
+          var subs = tempSubfolders.length ? tempSubfolders : folder.subfolders;
+          var lastIdx = Math.max(0, subs.length - 1);
+          if (dragSubHoverIdx === null) {
+            setDragSubHoverIdx(lastIdx);
+            setGhostSubIdx(lastIdx);
+          }
+        }
       },
       onDrop: onDropSub(folder)
     }, (draggingSubFolderParentPath === folder.path && tempSubfolders.length ? tempSubfolders : folder.subfolders).map(function (sub, subIdx) {
@@ -43383,16 +43557,19 @@ var Dashboard = function Dashboard(_ref) {
         style: {
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          background: ghostSubIdx === subIdx ? "#1a1a1a" : "#111",
-          padding: "18px 16px",
-          borderRadius: 14,
-          minWidth: 180,
-          maxWidth: 220,
-          cursor: "grab",
-          boxShadow: ghostSubIdx === subIdx ? '0 0 16px #ff000088' : '0 0 12px #ff000055',
-          transform: ghostSubIdx === subIdx ? 'scale(0.98)' : 'none',
-          transition: "transform .12s, box-shadow .12s, background .12s"
+          background: ghostSubIdx === subIdx ? "#1a1a1a" : "linear-gradient(145deg, #1a1a1a, #0d0d0d)",
+          padding: "20px 18px",
+          borderRadius: 16,
+          minWidth: 200,
+          maxWidth: 210,
+          cursor: draggingSubFolderParentPath === folder.path ? "grabbing" : "grab",
+          boxShadow: ghostSubIdx === subIdx ? '0 0 20px #ff000088, inset 0 1px 0 rgba(255,255,255,0.1)' : '0 8px 32px rgba(0,0,0,0.3), 0 0 12px #ff000055, inset 0 1px 0 rgba(255,255,255,0.05)',
+          transform: ghostSubIdx === subIdx ? 'scale(0.98)' : 'scale(1)',
+          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+          border: "1px solid rgba(255, 0, 0, 0.2)",
+          backdropFilter: "blur(10px)",
+          position: "relative",
+          overflow: "hidden"
         },
         draggable: true,
         onDragStart: onDragStartSub(folder, subIdx),
@@ -43400,36 +43577,110 @@ var Dashboard = function Dashboard(_ref) {
         onDragOver: onDragOverSub(folder, subIdx),
         onDrop: onDropSub(folder),
         onDragEnd: onDragEndSub,
-        onClick: function onClick() {
-          if (draggingSubFolderParentPath === folder.path) return;
+        onClick: function onClick(e) {
+          if (draggingSubFolderParentPath) {
+            e.preventDefault();
+            return;
+          }
           setSubfolderOpen({
             parentIdx: idx,
             subIdx: subIdx
           });
         }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "1px",
+          background: "linear-gradient(90deg, transparent, rgba(255,0,0,0.5), transparent)"
+        }
+      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 58px)",
+          gap: 6,
+          justifyContent: "center",
+          marginBottom: 12
+        }
+      }, sub.videos.slice(0, 6).map(function (video, vIdx) {
+        return video.thumb ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          key: vIdx,
+          style: {
+            width: 58,
+            height: 36,
+            borderRadius: 8,
+            backgroundImage: "url(".concat(video.thumb, ")"),
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            border: "2px solid #ff0000",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
+          }
+        }) : null;
+      }), sub.videos.length === 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gridColumn: "1 / -1",
+          padding: 8
+        }
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaFolder, {
-        size: 36,
+        size: 56,
         color: "#ff0000",
         style: {
-          marginBottom: 6,
-          filter: "drop-shadow(0 0 4px #ff0000aa)"
+          filter: "drop-shadow(0 0 8px #ff0000aa)",
+          opacity: 0.9
         }
-      }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+      }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          textAlign: "center",
+          marginBottom: 8
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
         style: {
           color: "#fff",
-          fontWeight: "bold",
+          fontWeight: "600",
           fontSize: "1.1em",
-          marginBottom: 4,
-          textShadow: "0 0 4px #ff0000cc"
+          textShadow: "0 0 6px #ff0000cc",
+          display: "block",
+          lineHeight: "1.2",
+          wordBreak: "break-word"
         }
-      }, sub.nome), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+      }, sub.nome)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          background: "rgba(0,0,0,0.3)",
+          padding: "8px 12px",
+          borderRadius: 8,
+          border: "1px solid rgba(255,0,0,0.1)"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
         style: {
           color: "#ffaaaa",
-          fontSize: "0.9em",
-          textShadow: "0 0 2px #ff0000aa"
+          fontSize: "0.85em",
+          fontWeight: "500"
         }
-      }, sub.videos.length, " v\xEDdeo(s)")));
-    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.VideosContainer, {
+      }, sub.videos.length, " v\xEDdeo", sub.videos.length !== 1 ? 's' : ''), sub.subfolders && sub.subfolders.length > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+        style: {
+          color: "#ff6666",
+          fontSize: "0.8em",
+          opacity: 0.8
+        }
+      }, "+", sub.subfolders.length, " pasta", sub.subfolders.length !== 1 ? 's' : ''))));
+    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        width: "100%",
+        height: 2,
+        background: "linear-gradient(90deg, transparent, #ff0000, transparent)",
+        boxShadow: "0 0 10px #ff0000, 0 0 18px #ff000088",
+        borderRadius: 999,
+        margin: "16px 0 12px 0"
+      }
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_2__.VideosContainer, {
       style: {
         flexWrap: "wrap",
         gap: "28px 24px",

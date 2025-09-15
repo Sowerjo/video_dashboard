@@ -343,11 +343,12 @@ const Dashboard = ({
   // Subpastas: drag handlers
   const onDragStartSub = (parentFolder, fromIdx) => (e) => {
     e.stopPropagation();
+
     setDraggingSubFolderParentPath(parentFolder.path);
     setTempSubfolders(parentFolder.subfolders.slice());
     setDragSubOriginIdx(fromIdx);
-    setDragSubHoverIdx(fromIdx);
-    setGhostSubIdx(fromIdx);
+    setDragSubHoverIdx(null); // inicia como null para detectar primeiro hover
+    setGhostSubIdx(null);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', JSON.stringify({ parentPath: parentFolder.path, fromIdx }));
   };
@@ -355,16 +356,19 @@ const Dashboard = ({
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    if (draggingSubFolderParentPath === parentFolder.path && dragSubHoverIdx !== hoverIdx) {
-      setTempSubfolders(prev => reorder(prev, dragSubHoverIdx ?? hoverIdx, hoverIdx));
-      setDragSubHoverIdx(hoverIdx);
-      setGhostSubIdx(hoverIdx);
+    if (draggingSubFolderParentPath === parentFolder.path) {
+      const currentHover = dragSubHoverIdx ?? dragSubOriginIdx;
+      if (currentHover !== hoverIdx) {
+        setTempSubfolders(prev => reorder(prev, currentHover, hoverIdx));
+        setDragSubHoverIdx(hoverIdx);
+        setGhostSubIdx(hoverIdx);
+      }
     }
   };
   const onDropSub = (parentFolder) => (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (draggingSubFolderParentPath === parentFolder.path && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx)) {
+    if (draggingSubFolderParentPath === parentFolder.path && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx) && dragSubOriginIdx !== dragSubHoverIdx) {
       onReorderSubfolders(parentFolder.path, dragSubOriginIdx, dragSubHoverIdx);
     }
     // limpar estados temporários
@@ -375,7 +379,7 @@ const Dashboard = ({
     setGhostSubIdx(null);
   };
   const onDragEndSub = () => {
-    if (draggingSubFolderParentPath && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx)) {
+    if (draggingSubFolderParentPath && Number.isInteger(dragSubOriginIdx) && Number.isInteger(dragSubHoverIdx) && dragSubOriginIdx !== dragSubHoverIdx) {
       onReorderSubfolders(draggingSubFolderParentPath, dragSubOriginIdx, dragSubHoverIdx);
     }
     setDraggingSubFolderParentPath(null);
@@ -384,6 +388,7 @@ const Dashboard = ({
     setDragSubHoverIdx(null);
     setGhostSubIdx(null);
   };
+
 
   const renderPanel = (folder, closePanel, idx) => {
     // Removido cache para permitir re-renderizações durante drag e atualizações em tempo real
@@ -480,7 +485,29 @@ const Dashboard = ({
                     marginBottom: 24,
                     flexWrap: "wrap"
                   }}
-                    onDragOver={(e)=>{ e.preventDefault(); }}
+                    onDragEnter={(e)=>{ 
+                      e.preventDefault(); 
+                      if (draggingSubFolderParentPath===folder.path && Number.isInteger(dragSubOriginIdx)) { 
+                        const subs = tempSubfolders.length ? tempSubfolders : folder.subfolders;
+                        const lastIdx = Math.max(0, subs.length - 1); 
+                        if (dragSubHoverIdx === null) { 
+                          setDragSubHoverIdx(lastIdx); 
+                          setGhostSubIdx(lastIdx); 
+                        } 
+                      } 
+                    }}
+                    onDragOver={(e)=>{ 
+                      e.preventDefault(); 
+                      e.dataTransfer.dropEffect='move'; 
+                      if (draggingSubFolderParentPath===folder.path && Number.isInteger(dragSubOriginIdx)) { 
+                        const subs = tempSubfolders.length ? tempSubfolders : folder.subfolders;
+                        const lastIdx = Math.max(0, subs.length - 1);
+                        if (dragSubHoverIdx === null) {
+                          setDragSubHoverIdx(lastIdx);
+                          setGhostSubIdx(lastIdx);
+                        }
+                      } 
+                    }}
                     onDrop={onDropSub(folder)}
                   >
                     {(draggingSubFolderParentPath===folder.path && tempSubfolders.length ? tempSubfolders : folder.subfolders).map((sub, subIdx) => (
@@ -491,16 +518,21 @@ const Dashboard = ({
                          <div style={{
                           display: "flex",
                           flexDirection: "column",
-                          alignItems: "center",
-                          background: ghostSubIdx===subIdx ? "#1a1a1a" : "#111",
-                          padding: "18px 16px",
-                          borderRadius: 14,
-                          minWidth: 180,
-                          maxWidth: 220,
-                          cursor: "grab",
-                          boxShadow: ghostSubIdx===subIdx ? '0 0 16px #ff000088' : '0 0 12px #ff000055',
-                          transform: ghostSubIdx===subIdx ? 'scale(0.98)' : 'none',
-                          transition: "transform .12s, box-shadow .12s, background .12s"
+                          background: ghostSubIdx===subIdx ? "#1a1a1a" : "linear-gradient(145deg, #1a1a1a, #0d0d0d)",
+                          padding: "20px 18px",
+                          borderRadius: 16,
+                          minWidth: 200,
+                          maxWidth: 210,
+                          cursor: draggingSubFolderParentPath === folder.path ? "grabbing" : "grab",
+                          boxShadow: ghostSubIdx===subIdx ? 
+                            '0 0 20px #ff000088, inset 0 1px 0 rgba(255,255,255,0.1)' : 
+                            '0 8px 32px rgba(0,0,0,0.3), 0 0 12px #ff000055, inset 0 1px 0 rgba(255,255,255,0.05)',
+                          transform: ghostSubIdx===subIdx ? 'scale(0.98)' : 'scale(1)',
+                          transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                          border: "1px solid rgba(255, 0, 0, 0.2)",
+                          backdropFilter: "blur(10px)",
+                          position: "relative",
+                          overflow: "hidden"
                         }}
                           draggable
                           onDragStart={onDragStartSub(folder, subIdx)}
@@ -508,28 +540,115 @@ const Dashboard = ({
                           onDragOver={onDragOverSub(folder, subIdx)}
                           onDrop={onDropSub(folder)}
                           onDragEnd={onDragEndSub}
-                          onClick={() => { if (draggingSubFolderParentPath===folder.path) return; setSubfolderOpen({ parentIdx: idx, subIdx }); }}
+                          onClick={(e) => { 
+
+                            if (draggingSubFolderParentPath) {
+                              e.preventDefault();
+                              return;
+                            }
+                            setSubfolderOpen({ parentIdx: idx, subIdx }); 
+                          }}
                         >
-                          <FaFolder size={36} color="#ff0000"
-                            style={{ marginBottom: 6, filter: "drop-shadow(0 0 4px #ff0000aa)" }}/>
+                          {/* Efeito de brilho no topo */}
+                          <div style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: "1px",
+                            background: "linear-gradient(90deg, transparent, rgba(255,0,0,0.5), transparent)"
+                          }} />
+                          
+                          {/* Preview de thumbnails (ampliada) */}
+                          <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3, 58px)",
+                            gap: 6,
+                            justifyContent: "center",
+                            marginBottom: 12
+                          }}>
+                            {sub.videos.slice(0, 6).map((video, vIdx) => (
+                              video.thumb ? (
+                                <div key={vIdx} style={{
+                                  width: 58,
+                                  height: 36,
+                                  borderRadius: 8,
+                                  backgroundImage: `url(${video.thumb})`,
+                                  backgroundSize: "cover",
+                                  backgroundPosition: "center",
+                                  border: "2px solid #ff0000",
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
+                                }} />
+                              ) : null
+                            ))}
+                            {sub.videos.length === 0 && (
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gridColumn: "1 / -1", padding: 8 }}>
+                                <FaFolder size={56} color="#ff0000"
+                                  style={{ 
+                                    filter: "drop-shadow(0 0 8px #ff0000aa)",
+                                    opacity: 0.9
+                                  }}/>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Nome da subpasta */}
+                          <div style={{
+                            textAlign: "center",
+                            marginBottom: 8
+                          }}>
                             <span style={{
                               color: "#fff",
-                              fontWeight: "bold",
+                              fontWeight: "600",
                               fontSize: "1.1em",
-                              marginBottom: 4,
-                              textShadow: "0 0 4px #ff0000cc"
+                              textShadow: "0 0 6px #ff0000cc",
+                              display: "block",
+                              lineHeight: "1.2",
+                              wordBreak: "break-word"
                             }}>{sub.nome}</span>
+                          </div>
+                          
+                          {/* Estatísticas */}
+                          <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            background: "rgba(0,0,0,0.3)",
+                            padding: "8px 12px",
+                            borderRadius: 8,
+                            border: "1px solid rgba(255,0,0,0.1)"
+                          }}>
                             <span style={{
                               color: "#ffaaaa",
-                              fontSize: "0.9em",
-                              textShadow: "0 0 2px #ff0000aa"
-                            }}>{sub.videos.length} vídeo(s)</span>
-                            {/* botão “Limpar” removido das subpastas */}
+                              fontSize: "0.85em",
+                              fontWeight: "500"
+                            }}>
+                              {sub.videos.length} vídeo{sub.videos.length !== 1 ? 's' : ''}
+                            </span>
+                            {sub.subfolders && sub.subfolders.length > 0 && (
+                              <span style={{
+                                color: "#ff6666",
+                                fontSize: "0.8em",
+                                opacity: 0.8
+                              }}>
+                                +{sub.subfolders.length} pasta{sub.subfolders.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
                           </div>
+                        </div>
                         </React.Fragment>
                       ))}
                     </div>
                   )}
+
+                  <div style={{
+                    width: "100%",
+                    height: 2,
+                    background: "linear-gradient(90deg, transparent, #ff0000, transparent)",
+                    boxShadow: "0 0 10px #ff0000, 0 0 18px #ff000088",
+                    borderRadius: 999,
+                    margin: "16px 0 12px 0"
+                  }} />
 
                   <VideosContainer style={{
                     flexWrap: "wrap",

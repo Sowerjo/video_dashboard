@@ -1,4 +1,4 @@
-# Video Dashboard Futurista
+# Mind Flix
 
 Aplicativo desktop (Electron + React) para organizar e assistir vídeos em pastas, com visual futurista (efeito glass), geração automática de thumbnails via FFmpeg e retomada de reprodução.
 
@@ -49,9 +49,20 @@ Dica (dev): use dois terminais — um com `npm start` (webpack --watch) e outro 
 
 ## Empacotamento (instalador)
 ```
+npm run build-ico
 npm run dist
 ```
-- Saída em dist/ (alvo Windows NSIS).
+- Saída em dist/ (alvo Windows NSIS). 
+- O instalador gera “Mind Flix Setup <versão>.exe”.
+- A pasta bin é instalada ao lado do executável (via extraFiles); em produção o app procura ffmpeg/ffprobe/ffplay nesse mesmo diretório.
+- Ícones:
+  - App: build.win.icon aponta para icon.ico (raiz), gerado por npm run build-ico a partir de assets/ico.png.
+  - Instalador/Desinstalador: nsis.installerIcon e nsis.uninstallerIcon (assets/installer.ico e assets/uninstaller.ico), também gerados pelo script.
+- ASAR desativado (asar: false) para facilitar o acesso a binários externos (FFmpeg).
+
+Erros comuns no build
+- image *.ico must be at least 256x256: garanta que assets/ico.png tenha pelo menos 256×256 (ideal 512/1024) e rode npm run build-ico antes do npm run dist.
+- invalid icon file size (NSIS): use os ícones installer/uninstaller gerados pelo script (somente 16/32/48).
 - O build inclui `bin/` e `thumbs/` via `extraResources` do electron-builder.
 - Atenção: o `build.win.icon` no package.json aponta para `assets/icon.ico`. Certifique-se de colocar esse arquivo (há um `assets/icon.png`; troque para `.ico` ou ajuste o caminho no package.json).
 
@@ -119,6 +130,7 @@ Para trocar imagens:
 - `npm run start` — Webpack em watch (renderer).
 - `npm run build` — Gera `public/bundle.js`.
 - `npm run electron` — Inicia o app.
+- `npm run build-ico` — Gera os ícones (icon.ico, assets/installer.ico e assets/uninstaller.ico) a partir de `assets/ico.png`.
 - `npm run dist` — Gera instalador com electron-builder.
 
 ## Licença
