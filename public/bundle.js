@@ -36934,6 +36934,506 @@ __webpack_require__.r(__webpack_exports__);
 
 /***/ }),
 
+/***/ "./node_modules/react-player/dist/HtmlPlayer.js":
+/*!******************************************************!*\
+  !*** ./node_modules/react-player/dist/HtmlPlayer.js ***!
+  \******************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ HtmlPlayer_default)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _patterns_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./patterns.js */ "./node_modules/react-player/dist/patterns.js");
+
+
+const HtmlPlayer = react__WEBPACK_IMPORTED_MODULE_0__.forwardRef((props, ref) => {
+  const Media = _patterns_js__WEBPACK_IMPORTED_MODULE_1__.AUDIO_EXTENSIONS.test(`${props.src}`) ? "audio" : "video";
+  return /* @__PURE__ */ react__WEBPACK_IMPORTED_MODULE_0__.createElement(Media, { ...props, ref }, props.children);
+});
+var HtmlPlayer_default = HtmlPlayer;
+
+
+
+/***/ }),
+
+/***/ "./node_modules/react-player/dist/Player.js":
+/*!**************************************************!*\
+  !*** ./node_modules/react-player/dist/Player.js ***!
+  \**************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Player_default)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+
+const Player = react__WEBPACK_IMPORTED_MODULE_0__.forwardRef((props, ref) => {
+  const { playing, pip } = props;
+  const Player2 = props.activePlayer;
+  const playerRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  const startOnPlayRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(true);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    var _a, _b;
+    if (!playerRef.current) return;
+    if (playerRef.current.paused && playing === true) {
+      playerRef.current.play();
+    }
+    if (!playerRef.current.paused && playing === false) {
+      playerRef.current.pause();
+    }
+    playerRef.current.playbackRate = (_a = props.playbackRate) != null ? _a : 1;
+    playerRef.current.volume = (_b = props.volume) != null ? _b : 1;
+  });
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+    var _a, _b, _c, _d, _e;
+    if (!playerRef.current || !globalThis.document) return;
+    if (pip && !document.pictureInPictureElement) {
+      try {
+        (_b = (_a = playerRef.current).requestPictureInPicture) == null ? void 0 : _b.call(_a);
+      } catch (err) {
+      }
+    }
+    if (!pip && document.pictureInPictureElement) {
+      try {
+        (_d = (_c = playerRef.current).exitPictureInPicture) == null ? void 0 : _d.call(_c);
+        (_e = document.exitPictureInPicture) == null ? void 0 : _e.call(document);
+      } catch (err) {
+      }
+    }
+  }, [pip]);
+  const handleLoadStart = (event) => {
+    var _a, _b;
+    startOnPlayRef.current = true;
+    (_a = props.onReady) == null ? void 0 : _a.call(props);
+    (_b = props.onLoadStart) == null ? void 0 : _b.call(props, event);
+  };
+  const handlePlay = (event) => {
+    var _a, _b;
+    if (startOnPlayRef.current) {
+      startOnPlayRef.current = false;
+      (_a = props.onStart) == null ? void 0 : _a.call(props, event);
+    }
+    (_b = props.onPlay) == null ? void 0 : _b.call(props, event);
+  };
+  if (!Player2) {
+    return null;
+  }
+  const eventProps = {};
+  const reactPlayerEventHandlers = ["onReady", "onStart"];
+  for (const key in props) {
+    if (key.startsWith("on") && !reactPlayerEventHandlers.includes(key)) {
+      eventProps[key] = props[key];
+    }
+  }
+  return /* @__PURE__ */ react__WEBPACK_IMPORTED_MODULE_0__.createElement(
+    Player2,
+    {
+      ...eventProps,
+      style: props.style,
+      className: props.className,
+      slot: props.slot,
+      ref: (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(
+        (node) => {
+          playerRef.current = node;
+          if (typeof ref === "function") {
+            ref(node);
+          } else if (ref !== null) {
+            ref.current = node;
+          }
+        },
+        [ref]
+      ),
+      src: props.src,
+      crossOrigin: props.crossOrigin,
+      preload: props.preload,
+      controls: props.controls,
+      muted: props.muted,
+      autoPlay: props.autoPlay,
+      loop: props.loop,
+      playsInline: props.playsInline,
+      disableRemotePlayback: props.disableRemotePlayback,
+      config: props.config,
+      onLoadStart: handleLoadStart,
+      onPlay: handlePlay
+    },
+    props.children
+  );
+});
+Player.displayName = "Player";
+var Player_default = Player;
+
+
+
+/***/ }),
+
+/***/ "./node_modules/react-player/dist/ReactPlayer.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/react-player/dist/ReactPlayer.js ***!
+  \*******************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createReactPlayer: () => (/* binding */ createReactPlayer)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _props_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./props.js */ "./node_modules/react-player/dist/props.js");
+/* harmony import */ var _Player_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Player.js */ "./node_modules/react-player/dist/Player.js");
+
+
+
+const Preview = (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(() => __webpack_require__.e(/*! import() | reactPlayerPreview */ "reactPlayerPreview").then(__webpack_require__.bind(__webpack_require__, /*! ./Preview.js */ "./node_modules/react-player/dist/Preview.js")));
+const customPlayers = [];
+const createReactPlayer = (players, playerFallback) => {
+  const getActivePlayer = (src) => {
+    for (const player of [...customPlayers, ...players]) {
+      if (src && player.canPlay(src)) {
+        return player;
+      }
+    }
+    if (playerFallback) {
+      return playerFallback;
+    }
+    return null;
+  };
+  const ReactPlayer = react__WEBPACK_IMPORTED_MODULE_0__.forwardRef((_props, ref) => {
+    const props = { ..._props_js__WEBPACK_IMPORTED_MODULE_1__.defaultProps, ..._props };
+    const { src, slot, className, style, width, height, fallback, wrapper } = props;
+    const [showPreview, setShowPreview] = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(!!props.light);
+    (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(() => {
+      if (props.light) {
+        setShowPreview(true);
+      } else {
+        setShowPreview(false);
+      }
+    }, [props.light]);
+    const handleClickPreview = (e) => {
+      var _a;
+      setShowPreview(false);
+      (_a = props.onClickPreview) == null ? void 0 : _a.call(props, e);
+    };
+    const renderPreview = (src2) => {
+      if (!src2) return null;
+      const { light, playIcon, previewTabIndex, oEmbedUrl, previewAriaLabel } = props;
+      return /* @__PURE__ */ react__WEBPACK_IMPORTED_MODULE_0__.createElement(
+        Preview,
+        {
+          src: src2,
+          light,
+          playIcon,
+          previewTabIndex,
+          previewAriaLabel,
+          oEmbedUrl,
+          onClickPreview: handleClickPreview
+        }
+      );
+    };
+    const renderActivePlayer = (src2) => {
+      var _a, _b;
+      const player = getActivePlayer(src2);
+      if (!player) return null;
+      const { style: style2, width: width2, height: height2, wrapper: wrapper2 } = props;
+      const config = (_a = props.config) == null ? void 0 : _a[player.key];
+      return /* @__PURE__ */ react__WEBPACK_IMPORTED_MODULE_0__.createElement(
+        _Player_js__WEBPACK_IMPORTED_MODULE_2__["default"],
+        {
+          ...props,
+          ref,
+          activePlayer: (_b = player.player) != null ? _b : player,
+          slot: wrapper2 ? void 0 : slot,
+          className: wrapper2 ? void 0 : className,
+          style: wrapper2 ? { display: "block", width: "100%", height: "100%" } : { display: "block", width: width2, height: height2, ...style2 },
+          config
+        }
+      );
+    };
+    const Wrapper = wrapper == null ? ForwardChildren : wrapper;
+    const UniversalSuspense = fallback === false ? ForwardChildren : react__WEBPACK_IMPORTED_MODULE_0__.Suspense;
+    return /* @__PURE__ */ react__WEBPACK_IMPORTED_MODULE_0__.createElement(Wrapper, { slot, className, style: { width, height, ...style } }, /* @__PURE__ */ react__WEBPACK_IMPORTED_MODULE_0__.createElement(UniversalSuspense, { fallback }, showPreview ? renderPreview(src) : renderActivePlayer(src)));
+  });
+  ReactPlayer.displayName = "ReactPlayer";
+  ReactPlayer.addCustomPlayer = (player) => {
+    customPlayers.push(player);
+  };
+  ReactPlayer.removeCustomPlayers = () => {
+    customPlayers.length = 0;
+  };
+  ReactPlayer.canPlay = (src) => {
+    if (src) {
+      for (const Player2 of [...customPlayers, ...players]) {
+        if (Player2.canPlay(src)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  ReactPlayer.canEnablePIP = (src) => {
+    var _a;
+    if (src) {
+      for (const Player2 of [...customPlayers, ...players]) {
+        if (Player2.canPlay(src) && ((_a = Player2.canEnablePIP) == null ? void 0 : _a.call(Player2))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  return ReactPlayer;
+};
+const ForwardChildren = ({ children }) => children;
+
+
+
+/***/ }),
+
+/***/ "./node_modules/react-player/dist/index.js":
+/*!*************************************************!*\
+  !*** ./node_modules/react-player/dist/index.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ src_default)
+/* harmony export */ });
+/* harmony import */ var _players_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./players.js */ "./node_modules/react-player/dist/players.js");
+/* harmony import */ var _ReactPlayer_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./ReactPlayer.js */ "./node_modules/react-player/dist/ReactPlayer.js");
+"use client";
+
+
+const fallback = _players_js__WEBPACK_IMPORTED_MODULE_0__["default"][_players_js__WEBPACK_IMPORTED_MODULE_0__["default"].length - 1];
+var src_default = (0,_ReactPlayer_js__WEBPACK_IMPORTED_MODULE_1__.createReactPlayer)(_players_js__WEBPACK_IMPORTED_MODULE_0__["default"], fallback);
+
+
+
+/***/ }),
+
+/***/ "./node_modules/react-player/dist/patterns.js":
+/*!****************************************************!*\
+  !*** ./node_modules/react-player/dist/patterns.js ***!
+  \****************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   AUDIO_EXTENSIONS: () => (/* binding */ AUDIO_EXTENSIONS),
+/* harmony export */   DASH_EXTENSIONS: () => (/* binding */ DASH_EXTENSIONS),
+/* harmony export */   HLS_EXTENSIONS: () => (/* binding */ HLS_EXTENSIONS),
+/* harmony export */   MATCH_URL_MUX: () => (/* binding */ MATCH_URL_MUX),
+/* harmony export */   MATCH_URL_SPOTIFY: () => (/* binding */ MATCH_URL_SPOTIFY),
+/* harmony export */   MATCH_URL_TIKTOK: () => (/* binding */ MATCH_URL_TIKTOK),
+/* harmony export */   MATCH_URL_TWITCH: () => (/* binding */ MATCH_URL_TWITCH),
+/* harmony export */   MATCH_URL_VIMEO: () => (/* binding */ MATCH_URL_VIMEO),
+/* harmony export */   MATCH_URL_WISTIA: () => (/* binding */ MATCH_URL_WISTIA),
+/* harmony export */   MATCH_URL_YOUTUBE: () => (/* binding */ MATCH_URL_YOUTUBE),
+/* harmony export */   VIDEO_EXTENSIONS: () => (/* binding */ VIDEO_EXTENSIONS),
+/* harmony export */   canPlay: () => (/* binding */ canPlay)
+/* harmony export */ });
+const AUDIO_EXTENSIONS = /\.(m4a|m4b|mp4a|mpga|mp2|mp2a|mp3|m2a|m3a|wav|weba|aac|oga|spx)($|\?)/i;
+const VIDEO_EXTENSIONS = /\.(mp4|og[gv]|webm|mov|m4v)(#t=[,\d+]+)?($|\?)/i;
+const HLS_EXTENSIONS = /\.(m3u8)($|\?)/i;
+const DASH_EXTENSIONS = /\.(mpd)($|\?)/i;
+const MATCH_URL_MUX = /stream\.mux\.com\/(?!\w+\.m3u8)(\w+)/;
+const MATCH_URL_YOUTUBE = /(?:youtu\.be\/|youtube(?:-nocookie|education)?\.com\/(?:embed\/|v\/|watch\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))((\w|-){11})|youtube\.com\/playlist\?list=|youtube\.com\/user\//;
+const MATCH_URL_VIMEO = /vimeo\.com\/(?!progressive_redirect).+/;
+const MATCH_URL_WISTIA = /(?:wistia\.(?:com|net)|wi\.st)\/(?:medias|embed)\/(?:iframe\/)?([^?]+)/;
+const MATCH_URL_SPOTIFY = /open\.spotify\.com\/(\w+)\/(\w+)/i;
+const MATCH_URL_TWITCH = /(?:www\.|go\.)?twitch\.tv\/([a-zA-Z0-9_]+|(videos?\/|\?video=)\d+)($|\?)/;
+const MATCH_URL_TIKTOK = /tiktok\.com\/(?:player\/v1\/|share\/video\/|@[^/]+\/video\/)([0-9]+)/;
+const canPlayFile = (url, test) => {
+  if (Array.isArray(url)) {
+    for (const item of url) {
+      if (typeof item === "string" && canPlayFile(item, test)) {
+        return true;
+      }
+      if (canPlayFile(item.src, test)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return test(url);
+};
+const canPlay = {
+  html: (url) => canPlayFile(url, (u) => AUDIO_EXTENSIONS.test(u) || VIDEO_EXTENSIONS.test(u)),
+  hls: (url) => canPlayFile(url, (u) => HLS_EXTENSIONS.test(u)),
+  dash: (url) => canPlayFile(url, (u) => DASH_EXTENSIONS.test(u)),
+  mux: (url) => MATCH_URL_MUX.test(url),
+  youtube: (url) => MATCH_URL_YOUTUBE.test(url),
+  vimeo: (url) => MATCH_URL_VIMEO.test(url) && !VIDEO_EXTENSIONS.test(url) && !HLS_EXTENSIONS.test(url),
+  wistia: (url) => MATCH_URL_WISTIA.test(url),
+  spotify: (url) => MATCH_URL_SPOTIFY.test(url),
+  twitch: (url) => MATCH_URL_TWITCH.test(url),
+  tiktok: (url) => MATCH_URL_TIKTOK.test(url)
+};
+
+
+
+/***/ }),
+
+/***/ "./node_modules/react-player/dist/players.js":
+/*!***************************************************!*\
+  !*** ./node_modules/react-player/dist/players.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ players_default)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var _patterns_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./patterns.js */ "./node_modules/react-player/dist/patterns.js");
+/* harmony import */ var _HtmlPlayer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./HtmlPlayer.js */ "./node_modules/react-player/dist/HtmlPlayer.js");
+
+
+
+const Players = [
+  {
+    key: "hls",
+    name: "hls.js",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.hls,
+    canEnablePIP: () => true,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => Promise.all(/*! import() | reactPlayerHls */[__webpack_require__.e("vendors-node_modules_custom-media-element_dist_custom-media-element_js-node_modules_media-tra-5c40ae"), __webpack_require__.e("vendors-node_modules_hls_js_dist_hls_mjs"), __webpack_require__.e("reactPlayerHls")]).then(__webpack_require__.bind(__webpack_require__, /*! hls-video-element/react */ "./node_modules/hls-video-element/dist/react.js"))
+    )
+  },
+  {
+    key: "dash",
+    name: "dash.js",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.dash,
+    canEnablePIP: () => true,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => Promise.all(/*! import() | reactPlayerDash */[__webpack_require__.e("vendors-node_modules_custom-media-element_dist_custom-media-element_js-node_modules_media-tra-5c40ae"), __webpack_require__.e("reactPlayerDash")]).then(__webpack_require__.bind(__webpack_require__, /*! dash-video-element/react */ "./node_modules/dash-video-element/dist/react.js"))
+    )
+  },
+  {
+    key: "mux",
+    name: "Mux",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.mux,
+    canEnablePIP: () => true,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => Promise.all(/*! import() | reactPlayerMux */[__webpack_require__.e("vendors-node_modules_custom-media-element_dist_custom-media-element_js-node_modules_media-tra-5c40ae"), __webpack_require__.e("vendors-node_modules_hls_js_dist_hls_mjs"), __webpack_require__.e("reactPlayerMux")]).then(__webpack_require__.bind(__webpack_require__, /*! @mux/mux-player-react */ "./node_modules/@mux/mux-player-react/dist/index.mjs"))
+    )
+  },
+  {
+    key: "youtube",
+    name: "YouTube",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.youtube,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => __webpack_require__.e(/*! import() | reactPlayerYouTube */ "reactPlayerYouTube").then(__webpack_require__.bind(__webpack_require__, /*! youtube-video-element/react */ "./node_modules/youtube-video-element/dist/react.js"))
+    )
+  },
+  {
+    key: "vimeo",
+    name: "Vimeo",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.vimeo,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => __webpack_require__.e(/*! import() | reactPlayerVimeo */ "reactPlayerVimeo").then(__webpack_require__.bind(__webpack_require__, /*! vimeo-video-element/react */ "./node_modules/vimeo-video-element/dist/react.js"))
+    )
+  },
+  {
+    key: "wistia",
+    name: "Wistia",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.wistia,
+    canEnablePIP: () => true,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => __webpack_require__.e(/*! import() | reactPlayerWistia */ "reactPlayerWistia").then(__webpack_require__.bind(__webpack_require__, /*! wistia-video-element/react */ "./node_modules/wistia-video-element/dist/react.js"))
+    )
+  },
+  {
+    key: "spotify",
+    name: "Spotify",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.spotify,
+    canEnablePIP: () => false,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => __webpack_require__.e(/*! import() | reactPlayerSpotify */ "reactPlayerSpotify").then(__webpack_require__.bind(__webpack_require__, /*! spotify-audio-element/react */ "./node_modules/spotify-audio-element/dist/react.js"))
+    )
+  },
+  {
+    key: "twitch",
+    name: "Twitch",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.twitch,
+    canEnablePIP: () => false,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => __webpack_require__.e(/*! import() | reactPlayerTwitch */ "reactPlayerTwitch").then(__webpack_require__.bind(__webpack_require__, /*! twitch-video-element/react */ "./node_modules/twitch-video-element/dist/react.js"))
+    )
+  },
+  {
+    key: "tiktok",
+    name: "TikTok",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.tiktok,
+    canEnablePIP: () => false,
+    player: (0,react__WEBPACK_IMPORTED_MODULE_0__.lazy)(
+      () => __webpack_require__.e(/*! import() | reactPlayerTiktok */ "reactPlayerTiktok").then(__webpack_require__.bind(__webpack_require__, /*! tiktok-video-element/react */ "./node_modules/tiktok-video-element/dist/react.js"))
+    )
+  },
+  {
+    key: "html",
+    name: "html",
+    canPlay: _patterns_js__WEBPACK_IMPORTED_MODULE_1__.canPlay.html,
+    canEnablePIP: () => true,
+    player: _HtmlPlayer_js__WEBPACK_IMPORTED_MODULE_2__["default"]
+  }
+];
+var players_default = Players;
+
+
+
+/***/ }),
+
+/***/ "./node_modules/react-player/dist/props.js":
+/*!*************************************************!*\
+  !*** ./node_modules/react-player/dist/props.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   defaultProps: () => (/* binding */ defaultProps)
+/* harmony export */ });
+const defaultProps = {
+  // Falsy values don't need to be defined
+  //
+  // native video attrs
+  // src: undefined,
+  // preload: undefined,
+  // crossOrigin: undefined,
+  // autoPlay: false,
+  // muted: false,
+  // loop: false,
+  // controls: false,
+  // playsInline: false,
+  // disableRemotePlayback: false,
+  width: "320px",
+  height: "180px",
+  // native video props
+  volume: 1,
+  playbackRate: 1,
+  // custom props
+  // playing: undefined,
+  // pip: false,
+  // light: false,
+  // fallback: null,
+  previewTabIndex: 0,
+  previewAriaLabel: "",
+  oEmbedUrl: "https://noembed.com/embed?url={url}"
+};
+
+
+
+/***/ }),
+
 /***/ "./node_modules/react/cjs/react.development.js":
 /*!*****************************************************!*\
   !*** ./node_modules/react/cjs/react.development.js ***!
@@ -41970,882 +42470,104 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
-/* harmony import */ var _Dashboard__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Dashboard */ "./src/Dashboard.jsx");
-/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
+/* harmony import */ var _OfflineModule__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./OfflineModule */ "./src/OfflineModule.jsx");
+/* harmony import */ var _IptvModule__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./IptvModule */ "./src/IptvModule.jsx");
 /* harmony import */ var _styles__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./styles */ "./src/styles.js");
-/* harmony import */ var react_icons_fa__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-icons/fa */ "./node_modules/react-icons/fa/index.mjs");
-function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
-function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
-function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
-function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
-function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
-function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
-function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
-function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
-function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
-function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
-function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
-// src/App.jsx
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 
 
 
 
-
-
-var _window$require = window.require("electron"),
-  ipcRenderer = _window$require.ipcRenderer;
-var fs = window.require("fs");
-var path = window.require("path");
-var _window$require2 = window.require("url"),
-  pathToFileURL = _window$require2.pathToFileURL;
-var VIDEO_EXTS = ['.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv'];
-function scanFolder(folderPath, thumbsDir) {
-  var result = {
-    videos: [],
-    subfolders: []
-  };
-  var _iterator = _createForOfIteratorHelper(fs.readdirSync(folderPath)),
-    _step;
-  try {
-    for (_iterator.s(); !(_step = _iterator.n()).done;) {
-      var file = _step.value;
-      var full = path.join(folderPath, file);
-      var stat = fs.statSync(full);
-      if (stat.isDirectory()) {
-        var sub = scanFolder(full, thumbsDir);
-        if (sub.videos.length || sub.subfolders.length) {
-          result.subfolders.push({
-            path: full,
-            nome: file,
-            videos: sub.videos,
-            subfolders: sub.subfolders
-          });
-        }
-      } else if (VIDEO_EXTS.includes(path.extname(file).toLowerCase())) {
-        var safeName = file.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
-        var thumbPath = path.join(thumbsDir, safeName);
-        var thumbURL = fs.existsSync(thumbPath) ? pathToFileURL(thumbPath).href : null;
-        result.videos.push({
-          path: full,
-          nome: file,
-          thumb: thumbURL
-        });
-      }
-    }
-  } catch (err) {
-    _iterator.e(err);
-  } finally {
-    _iterator.f();
-  }
-  return result;
-}
-var themes = {
-  dark: {
-    bg: "#000",
-    card: "#111",
-    text: "#fff",
-    neon: "#ff0000",
-    shadow: "#550000"
-  },
-  light: {
-    bg: "#fff",
-    card: "#eee",
-    text: "#000",
-    neon: "#ff0000",
-    shadow: "#aaa"
-  }
+var modeCardStyle = {
+  width: 360,
+  minHeight: 220,
+  justifyContent: "center",
+  padding: "28px 22px"
 };
-
-// util: reordena lista
-var reorder = function reorder(list, startIndex, endIndex) {
-  var result = _toConsumableArray(list);
-  var _result$splice = result.splice(startIndex, 1),
-    _result$splice2 = _slicedToArray(_result$splice, 1),
-    removed = _result$splice2[0];
-  result.splice(endIndex, 0, removed);
-  return result;
-};
-
-// util: aplica ordem customizada de vídeos a um array de vídeos
-var sortVideosByOrder = function sortVideosByOrder(videos) {
-  var orderArr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-  if (!Array.isArray(videos) || videos.length === 0) return videos;
-  if (!Array.isArray(orderArr) || orderArr.length === 0) return videos;
-  var idx = new Map(orderArr.map(function (p, i) {
-    return [p, i];
-  }));
-  var present = videos.filter(function (v) {
-    return idx.has(v.path);
-  }).sort(function (a, b) {
-    return idx.get(a.path) - idx.get(b.path);
-  });
-  var missing = videos.filter(function (v) {
-    return !idx.has(v.path);
-  });
-  return [].concat(_toConsumableArray(present), _toConsumableArray(missing));
-};
-
-// util: aplica ordem customizada de subpastas a um array de subpastas
-var sortSubfoldersByOrder = function sortSubfoldersByOrder(subfolders) {
-  var orderArr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-  if (!orderArr.length) return subfolders;
-  var ordered = [];
-  var remaining = _toConsumableArray(subfolders);
-  orderArr.forEach(function (path) {
-    var idx = remaining.findIndex(function (sf) {
-      return sf.path === path;
-    });
-    if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
-  });
-  return [].concat(ordered, _toConsumableArray(remaining));
-};
-
-// util: aplica ordem de vídeos recursivamente por path
-var _applyVideoOrdersRec = function applyVideoOrdersRec(folder, ordersMap) {
-  var subOrdersMap = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-  var curOrder = ordersMap[folder.path];
-  var newVideos = sortVideosByOrder(folder.videos || [], curOrder);
-  var sortedSubs = sortSubfoldersByOrder(folder.subfolders || [], subOrdersMap[folder.path]);
-  var newSubs = sortedSubs.map(function (sf) {
-    return _applyVideoOrdersRec(sf, ordersMap, subOrdersMap);
-  });
-  return _objectSpread(_objectSpread({}, folder), {}, {
-    videos: newVideos,
-    subfolders: newSubs
-  });
-};
-
-// util: atualiza uma pasta específica (por path) na árvore
-var _updateFolderByPath = function updateFolderByPath(folder, targetPath, updater) {
-  if (folder.path === targetPath) return updater(folder);
-  var subs = folder.subfolders || [];
-  if (subs.length === 0) return folder;
-  return _objectSpread(_objectSpread({}, folder), {}, {
-    subfolders: subs.map(function (sf) {
-      return _updateFolderByPath(sf, targetPath, updater);
-    })
-  });
+var backBtnStyle = {
+  position: "fixed",
+  top: 20,
+  right: 20,
+  zIndex: 2147483647,
+  background: "rgba(17,17,17,0.9)",
+  color: "#ff0000",
+  border: "2px solid #ff0000",
+  borderRadius: 10,
+  padding: "10px 14px",
+  cursor: "pointer",
+  fontWeight: 700,
+  boxShadow: "0 0 12px #ff000066"
 };
 function App() {
-  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState2 = _slicedToArray(_useState, 2),
-    thumbsDir = _useState2[0],
-    setThumbsDir = _useState2[1];
-  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
-    _useState4 = _slicedToArray(_useState3, 2),
-    folders = _useState4[0],
-    setFolders = _useState4[1];
-  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
-    _useState6 = _slicedToArray(_useState5, 2),
-    watched = _useState6[0],
-    setWatched = _useState6[1];
-  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
-    _useState8 = _slicedToArray(_useState7, 2),
-    videoOrders = _useState8[0],
-    setVideoOrders = _useState8[1]; // { [folderPath]: [videoPath, ...] }
-  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
-    _useState0 = _slicedToArray(_useState9, 2),
-    subfolderOrders = _useState0[0],
-    setSubfolderOrders = _useState0[1]; // { [folderPath]: [subfolderPath, ...] }
-  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState10 = _slicedToArray(_useState1, 2),
-    modalOpen = _useState10[0],
-    setModalOpen = _useState10[1];
-  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
-      tipo: '',
-      nome: '',
-      ano: '',
-      path: ''
-    }),
-    _useState12 = _slicedToArray(_useState11, 2),
-    form = _useState12[0],
-    setForm = _useState12[1];
-  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(localStorage.getItem('theme') || 'dark'),
-    _useState14 = _slicedToArray(_useState13, 2),
-    theme = _useState14[0],
-    setTheme = _useState14[1];
-  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState16 = _slicedToArray(_useState15, 2),
-    isReordering = _useState16[0],
-    setIsReordering = _useState16[1];
-  // Estado para controlar o menu hambúrguer
-  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState18 = _slicedToArray(_useState17, 2),
-    showMenu = _useState18[0],
-    setShowMenu = _useState18[1];
-  // Estados para feedback visual de geração de thumbnails
-  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState20 = _slicedToArray(_useState19, 2),
-    isGeneratingThumbs = _useState20[0],
-    setIsGeneratingThumbs = _useState20[1];
-  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
-      processed: 0,
-      total: 0
-    }),
-    _useState22 = _slicedToArray(_useState21, 2),
-    thumbProgress = _useState22[0],
-    setThumbProgress = _useState22[1];
-
-  // Fechar menu ao clicar fora
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    var handleClickOutside = function handleClickOutside(event) {
-      if (showMenu && !event.target.closest('.hamburger-menu')) {
-        setShowMenu(false);
+    mode = _useState2[0],
+    setMode = _useState2[1];
+  if (mode === "offline") {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      type: "button",
+      style: backBtnStyle,
+      onClick: function onClick() {
+        return setMode(null);
       }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return function () {
-      return document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showMenu]);
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  // Listener para progresso de thumbnails
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    var handleThumbProgress = function handleThumbProgress(event, data) {
-      setThumbProgress(data);
-      if (data.processed >= data.total) {
-        setTimeout(function () {
-          setIsGeneratingThumbs(false);
-          setThumbProgress({
-            processed: 0,
-            total: 0
-          });
-        }, 1000); // Mostra 100% por 1 segundo antes de esconder
+    }, "Menu Inicial"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_OfflineModule__WEBPACK_IMPORTED_MODULE_1__["default"], null));
+  }
+  if (mode === "iptv") {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_IptvModule__WEBPACK_IMPORTED_MODULE_2__["default"], {
+      onBack: function onBack() {
+        return setMode(null);
       }
-    };
-    ipcRenderer.on('thumbnail-progress', handleThumbProgress);
-    return function () {
-      return ipcRenderer.removeListener('thumbnail-progress', handleThumbProgress);
-    };
-  }, []);
-
-  // 1) Leitura direta do config.json
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    function loadConfig() {
-      return _loadConfig.apply(this, arguments);
-    }
-    function _loadConfig() {
-      _loadConfig = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-        var cfg;
-        return _regeneratorRuntime().wrap(function _callee$(_context) {
-          while (1) switch (_context.prev = _context.next) {
-            case 0:
-              _context.next = 2;
-              return ipcRenderer.invoke('load-config');
-            case 2:
-              cfg = _context.sent;
-              if (cfg.folders) setFolders(cfg.folders);
-              if (cfg.watchedVideos) setWatched(cfg.watchedVideos);
-              if (cfg.videoOrders) setVideoOrders(cfg.videoOrders);
-              if (cfg.subfolderOrders) setSubfolderOrders(cfg.subfolderOrders);
-            case 7:
-            case "end":
-              return _context.stop();
-          }
-        }, _callee);
-      }));
-      return _loadConfig.apply(this, arguments);
-    }
-    loadConfig();
-  }, []);
-
-  // 2) Pega thumbsDir
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    ipcRenderer.invoke('get-thumbs-path').then(function (dir) {
-      return setThumbsDir(dir);
-    })["catch"](console.error);
-  }, []);
-
-  // 3) Gera thumbs e faz scan (mantendo o que já veio do config) e aplica ordem customizada de vídeos
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    if (!thumbsDir || folders.length === 0) return;
-    if (isReordering) return; // evitar sobrescrever enquanto houver reordenação
-    function doThumbs() {
-      return _doThumbs.apply(this, arguments);
-    }
-    function _doThumbs() {
-      _doThumbs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-        var result;
-        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-          while (1) switch (_context2.prev = _context2.next) {
-            case 0:
-              setIsGeneratingThumbs(true);
-              setThumbProgress({
-                processed: 0,
-                total: 0
-              });
-              _context2.prev = 2;
-              _context2.next = 5;
-              return ipcRenderer.invoke('generate-thumbnails', folders);
-            case 5:
-              result = _context2.sent;
-              console.log('Thumbnail generation completed:', result);
-
-              // Atualiza a UI após a geração
-              setFolders(function (prev) {
-                var scanned = prev.map(function (f) {
-                  return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
-                });
-                // aplica ordem customizada de vídeos e subpastas recursivamente
-                return scanned.map(function (f) {
-                  return _applyVideoOrdersRec(f, videoOrders, subfolderOrders);
-                });
-              });
-              _context2.next = 15;
-              break;
-            case 10:
-              _context2.prev = 10;
-              _context2.t0 = _context2["catch"](2);
-              console.error('Error generating thumbnails:', _context2.t0);
-              setIsGeneratingThumbs(false);
-              setThumbProgress({
-                processed: 0,
-                total: 0
-              });
-            case 15:
-            case "end":
-              return _context2.stop();
-          }
-        }, _callee2, null, [[2, 10]]);
-      }));
-      return _doThumbs.apply(this, arguments);
-    }
-    doThumbs();
-  }, [thumbsDir, /* aplica novamente quando ordem mudar */videoOrders, subfolderOrders, isReordering]);
-
-  // 4) Persistência
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    ipcRenderer.invoke('save-folders', folders);
-  }, [folders]);
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    ipcRenderer.invoke('save-watched', watched);
-  }, [watched]);
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    ipcRenderer.invoke('save-config', {
-      videoOrders: videoOrders,
-      subfolderOrders: subfolderOrders
     });
-  }, [videoOrders, subfolderOrders]);
-  // Salva config.json preferencialmente (ordem customizada e demais dados)
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    ipcRenderer.invoke('save-config', {
-      folders: folders,
-      watchedVideos: watched,
-      videoOrders: videoOrders,
-      subfolderOrders: subfolderOrders
-    });
-  }, [folders, watched, videoOrders, subfolderOrders]);
-
-  // Handlers... (mantidos)
-  var handleRefresh = function handleRefresh() {
-    ipcRenderer.invoke('generate-thumbnails', folders).then(function () {
-      setFolders(function (prev) {
-        var scanned = prev.map(function (f) {
-          return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
-        });
-        return scanned.map(function (f) {
-          return _applyVideoOrdersRec(f, videoOrders, subfolderOrders);
-        });
-      });
-    });
-  };
-  var openModal = /*#__PURE__*/function () {
-    var _ref = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
-      var p;
-      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
-        while (1) switch (_context3.prev = _context3.next) {
-          case 0:
-            _context3.next = 2;
-            return ipcRenderer.invoke('select-folder');
-          case 2:
-            p = _context3.sent;
-            if (p) {
-              _context3.next = 5;
-              break;
-            }
-            return _context3.abrupt("return");
-          case 5:
-            setForm({
-              tipo: '',
-              nome: path.basename(p),
-              ano: '',
-              path: p
-            });
-            setModalOpen(true);
-          case 7:
-          case "end":
-            return _context3.stop();
-        }
-      }, _callee3);
-    }));
-    return function openModal() {
-      return _ref.apply(this, arguments);
-    };
-  }();
-  var handleSubmit = function handleSubmit(e) {
-    e.preventDefault();
-    var data = scanFolder(form.path, thumbsDir);
-    setFolders(function (prev) {
-      return [].concat(_toConsumableArray(prev), [_objectSpread(_objectSpread({}, form), data)]);
-    });
-    setModalOpen(false);
-  };
-  var handleImport = /*#__PURE__*/function () {
-    var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4(e) {
-      var txt;
-      return _regeneratorRuntime().wrap(function _callee4$(_context4) {
-        while (1) switch (_context4.prev = _context4.next) {
-          case 0:
-            _context4.next = 2;
-            return e.target.files[0].text();
-          case 2:
-            txt = _context4.sent;
-            try {
-              setFolders(JSON.parse(txt));
-            } catch (_unused) {
-              alert("JSON inválido");
-            }
-          case 4:
-          case "end":
-            return _context4.stop();
-        }
-      }, _callee4);
-    }));
-    return function handleImport(_x) {
-      return _ref2.apply(this, arguments);
-    };
-  }();
-  var handleExport = function handleExport() {
-    var blob = new Blob([JSON.stringify(folders, null, 2)], {
-      type: "application/json"
-    });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = "meus_cursos.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-  var handleDeleteFolder = function handleDeleteFolder(idx) {
-    return setFolders(function (prev) {
-      return prev.filter(function (_, i) {
-        return i !== idx;
-      });
-    });
-  };
-  var handleWatchedToggle = function handleWatchedToggle(videoPath) {
-    return setWatched(function (prev) {
-      return prev.includes(videoPath) ? prev : [].concat(_toConsumableArray(prev), [videoPath]);
-    });
-  };
-  var handleClearWatched = /*#__PURE__*/function () {
-    var _ref3 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(folderObj) {
-      var vids;
-      return _regeneratorRuntime().wrap(function _callee5$(_context5) {
-        while (1) switch (_context5.prev = _context5.next) {
-          case 0:
-            vids = folderObj.videos.map(function (v) {
-              return v.path;
-            });
-            setWatched(function (prev) {
-              return prev.filter(function (p) {
-                return !vids.includes(p);
-              });
-            });
-            _context5.next = 4;
-            return ipcRenderer.invoke('clear-positions', vids);
-          case 4:
-          case "end":
-            return _context5.stop();
-        }
-      }, _callee5);
-    }));
-    return function handleClearWatched(_x2) {
-      return _ref3.apply(this, arguments);
-    };
-  }();
-
-  // NOVO: Reordenar pastas (playlists)
-  var handleReorderFolders = function handleReorderFolders(from, to) {
-    if (from === to) return;
-    setFolders(function (prev) {
-      return reorder(prev, from, to);
-    });
-  };
-
-  // NOVO: Reordenar subpastas dentro de uma pasta específica
-  var handleReorderSubfolders = function handleReorderSubfolders(folderPath, from, to) {
-    if (from === to) return;
-    setFolders(function (prev) {
-      return prev.map(function (f) {
-        return _updateFolderByPath(f, folderPath, function (folder) {
-          var newSubs = reorder(folder.subfolders || [], from, to);
-
-          // atualiza orders map das subpastas
-          setSubfolderOrders(function (so) {
-            return _objectSpread(_objectSpread({}, so), {}, _defineProperty({}, folderPath, newSubs.map(function (sf) {
-              return sf.path;
-            })));
-          });
-          return _objectSpread(_objectSpread({}, folder), {}, {
-            subfolders: newSubs
-          });
-        });
-      });
-    });
-  };
-
-  // NOVO: Reordenar vídeos dentro de uma pasta (ou subpasta) por path da pasta
-  var handleReorderVideos = function handleReorderVideos(folderPath, from, to) {
-    setIsReordering(true);
-    setFolders(function (prev) {
-      return prev.map(function (f) {
-        return _updateFolderByPath(f, folderPath, function (folder) {
-          var newVideos = reorder(folder.videos || [], from, to);
-          // atualiza orders map
-          setVideoOrders(function (vo) {
-            return _objectSpread(_objectSpread({}, vo), {}, _defineProperty({}, folderPath, newVideos.map(function (v) {
-              return v.path;
-            })));
-          });
-          return _objectSpread(_objectSpread({}, folder), {}, {
-            videos: newVideos
-          });
-        });
-      });
-    });
-    // libera flag na próxima volta do event loop
-    setTimeout(function () {
-      return setIsReordering(false);
-    }, 0);
-  };
-
-  // NOVO: Resetar ordem por playlist (voltar ao sistema de arquivos)
-  var handleResetOrder = function handleResetOrder(folderPath) {
-    setIsReordering(true);
-    // remove ordem customizada de vídeos desta pasta
-    setVideoOrders(function (vo) {
-      var copy = _objectSpread({}, vo);
-      delete copy[folderPath];
-      return copy;
-    });
-    // re-scaneia esta pasta para restaurar ordem padrão de vídeos e subpastas
-    setFolders(function (prev) {
-      return prev.map(function (f) {
-        return _updateFolderByPath(f, folderPath, function (folder) {
-          var scanned = scanFolder(folder.path, thumbsDir);
-          return _objectSpread(_objectSpread({}, folder), {}, {
-            videos: scanned.videos,
-            subfolders: scanned.subfolders
-          });
-        });
-      });
-    });
-    setTimeout(function () {
-      return setIsReordering(false);
-    }, 0);
-  };
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(styled_components__WEBPACK_IMPORTED_MODULE_4__.ThemeProvider, {
-    theme: themes[theme]
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.BackgroundLayer, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.VignetteOverlay, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.LogoOverlay, {
+  }
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.BackgroundLayer, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.VignetteOverlay, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.LogoOverlay, {
     src: "topo.png",
     alt: "Logo"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.AppContainer, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.TopBar, {
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.AppContainer, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
-      background: "transparent",
-      border: "none",
-      boxShadow: "none",
-      padding: 0,
-      margin: 0,
-      position: "relative"
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "hamburger-menu",
-    style: {
-      position: "absolute",
-      top: "20px",
-      left: "20px",
-      zIndex: 999999
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    onClick: function onClick() {
-      return setShowMenu(!showMenu);
-    },
-    style: {
-      background: "rgba(26, 26, 26, 0.9)",
-      border: "2px solid #ff0000",
-      color: "#ff0000",
-      padding: "12px",
-      borderRadius: "8px",
-      cursor: "pointer",
+      minHeight: "100vh",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      transition: "all 0.3s ease",
-      boxShadow: showMenu ? "0 0 15px #ff000066" : "0 0 8px #ff000033",
-      backdropFilter: "blur(10px)"
-    },
-    title: "Menu de A\xE7\xF5es"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaBars, {
-    size: 18
-  })), showMenu && /*#__PURE__*/(0,react_dom__WEBPACK_IMPORTED_MODULE_1__.createPortal)(/*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    className: "hamburger-menu",
-    style: {
-      position: "fixed",
-      top: "72px",
-      left: "20px",
-      background: "rgba(26, 26, 26, 0.95)",
-      border: "2px solid #ff0000",
-      borderRadius: "12px",
-      boxShadow: "0 8px 25px rgba(255, 0, 0, 0.4)",
-      zIndex: 2147483647,
-      minWidth: "200px",
-      overflow: "hidden",
-      backdropFilter: "blur(15px)"
+      gap: 32,
+      flexWrap: "wrap",
+      paddingTop: 80
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    style: {
-      padding: "8px 0"
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.Tile, {
+    style: modeCardStyle,
     onClick: function onClick() {
-      openModal();
-      setShowMenu(false);
-    },
-    style: {
-      width: "100%",
-      background: "transparent",
-      border: "none",
-      color: "#fff",
-      padding: "12px 16px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-      fontSize: "14px",
-      transition: "background 0.2s ease"
-    },
-    onMouseEnter: function onMouseEnter(e) {
-      return e.target.style.background = "#ff000020";
-    },
-    onMouseLeave: function onMouseLeave(e) {
-      return e.target.style.background = "transparent";
+      return setMode("offline");
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaPlus, {
-    size: 14,
-    color: "#ff0000"
-  }), "Adicionar Pasta"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.FolderTitle, {
+    style: {
+      fontSize: "1.35em",
+      marginBottom: 10
+    }
+  }, "Modo Offline"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ContentInfo, {
+    style: {
+      fontSize: "1.02em",
+      lineHeight: 1.5
+    }
+  }, "Continua com o funcionamento nativo do app, lendo suas pastas e v\xEDdeos locais.")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.Tile, {
+    style: modeCardStyle,
     onClick: function onClick() {
-      handleRefresh();
-      setShowMenu(false);
-    },
+      return setMode("iptv");
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.FolderTitle, {
     style: {
-      width: "100%",
-      background: "transparent",
-      border: "none",
-      color: "#fff",
-      padding: "12px 16px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-      fontSize: "14px",
-      transition: "background 0.2s ease"
-    },
-    onMouseEnter: function onMouseEnter(e) {
-      return e.target.style.background = "#ff000020";
-    },
-    onMouseLeave: function onMouseLeave(e) {
-      return e.target.style.background = "transparent";
+      fontSize: "1.35em",
+      marginBottom: 10
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaSync, {
-    size: 14,
-    color: "#ff0000"
-  }), "Atualizar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", {
+  }, "Modo IPTV"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ContentInfo, {
     style: {
-      width: "100%",
-      background: "transparent",
-      border: "none",
-      color: "#fff",
-      padding: "12px 16px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-      fontSize: "14px",
-      transition: "background 0.2s ease"
-    },
-    onMouseEnter: function onMouseEnter(e) {
-      return e.target.style.background = "#ff000020";
-    },
-    onMouseLeave: function onMouseLeave(e) {
-      return e.target.style.background = "transparent";
+      fontSize: "1.02em",
+      lineHeight: 1.5
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaFileImport, {
-    size: 14,
-    color: "#ff0000"
-  }), "Importar", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
-    type: "file",
-    accept: "application/json",
-    onChange: function onChange(e) {
-      handleImport(e);
-      setShowMenu(false);
-    },
-    style: {
-      display: 'none'
-    }
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    onClick: function onClick() {
-      handleExport();
-      setShowMenu(false);
-    },
-    style: {
-      width: "100%",
-      background: "transparent",
-      border: "none",
-      color: "#fff",
-      padding: "12px 16px",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-      fontSize: "14px",
-      transition: "background 0.2s ease"
-    },
-    onMouseEnter: function onMouseEnter(e) {
-      return e.target.style.background = "#ff000020";
-    },
-    onMouseLeave: function onMouseLeave(e) {
-      return e.target.style.background = "transparent";
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaFileExport, {
-    size: 14,
-    color: "#ff0000"
-  }), "Exportar"))), document.body))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_Dashboard__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    folders: folders,
-    watched: watched,
-    onWatchedToggle: handleWatchedToggle,
-    onClearWatched: handleClearWatched,
-    onDeleteFolder: handleDeleteFolder,
-    onReorderFolders: handleReorderFolders,
-    onReorderVideos: handleReorderVideos,
-    onReorderSubfolders: handleReorderSubfolders,
-    onResetOrder: handleResetOrder
-  }), modalOpen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalOverlay, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.Modal, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.CloseButton, {
-    onClick: function onClick() {
-      return setModalOpen(false);
-    }
-  }, "\xD7"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
-    onSubmit: handleSubmit
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Tipo:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
-    required: true,
-    value: form.tipo,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        tipo: e.target.value
-      }));
-    }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Nome:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
-    required: true,
-    value: form.nome,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        nome: e.target.value
-      }));
-    }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Ano:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
-    required: true,
-    type: "number",
-    value: form.ano,
-    onChange: function onChange(e) {
-      return setForm(_objectSpread(_objectSpread({}, form), {}, {
-        ano: e.target.value
-      }));
-    }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    type: "submit",
-    style: {
-      marginTop: 16,
-      padding: "10px 28px",
-      background: "#ff0000",
-      borderRadius: 10,
-      fontWeight: "bold",
-      border: "none",
-      color: "#000"
-    }
-  }, "Adicionar")))), isGeneratingThumbs && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    style: {
-      position: "fixed",
-      top: "20px",
-      right: "20px",
-      background: "linear-gradient(145deg, #1a1a1a, #0d0d0d)",
-      border: "2px solid #ff0000",
-      borderRadius: "12px",
-      padding: "16px 20px",
-      boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px #ff000055",
-      backdropFilter: "blur(10px)",
-      zIndex: 10000,
-      minWidth: "280px",
-      color: "#fff"
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    style: {
-      display: "flex",
-      alignItems: "center",
-      marginBottom: "12px",
-      gap: "10px"
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    style: {
-      width: "20px",
-      height: "20px",
-      border: "2px solid #ff0000",
-      borderTop: "2px solid transparent",
-      borderRadius: "50%",
-      animation: "spin 1s linear infinite"
-    }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
-    style: {
-      fontWeight: "600",
-      fontSize: "14px",
-      color: "#ff0000"
-    }
-  }, "Gerando Thumbnails...")), thumbProgress.total > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    style: {
-      background: "#333",
-      borderRadius: "8px",
-      height: "8px",
-      overflow: "hidden",
-      marginBottom: "8px"
-    }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    style: {
-      background: "linear-gradient(90deg, #ff0000, #ff4444)",
-      height: "100%",
-      width: "".concat(thumbProgress.processed / thumbProgress.total * 100, "%"),
-      transition: "width 0.3s ease",
-      borderRadius: "8px"
-    }
-  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-    style: {
-      fontSize: "12px",
-      color: "#ccc",
-      textAlign: "center"
-    }
-  }, thumbProgress.processed, " de ", thumbProgress.total, " v\xEDdeos processados"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("style", null, "\n          @keyframes spin {\n            0% { transform: rotate(0deg); }\n            100% { transform: rotate(360deg); }\n          }\n        ")));
+  }, "Login no servidor IPTV, carregamento de playlist M3U e reprodu\xE7\xE3o de canais.")))));
 }
 
 /***/ }),
@@ -44309,6 +44031,3845 @@ var FolderTile = function FolderTile(_ref) {
 
 /***/ }),
 
+/***/ "./src/IptvModule.jsx":
+/*!****************************!*\
+  !*** ./src/IptvModule.jsx ***!
+  \****************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ IptvModule)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_player__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react-player */ "./node_modules/react-player/dist/index.js");
+/* harmony import */ var _styles__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./styles */ "./src/styles.js");
+/* harmony import */ var react_icons_fa__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react-icons/fa */ "./node_modules/react-icons/fa/index.mjs");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+
+
+
+
+var _window$require = window.require("electron"),
+  ipcRenderer = _window$require.ipcRenderer;
+var NAV_ITEMS = [{
+  key: "home",
+  label: "Início"
+}, {
+  key: "live",
+  label: "TV ao Vivo"
+}, {
+  key: "movies",
+  label: "Filmes"
+}, {
+  key: "series",
+  label: "Séries"
+}];
+function getLimitForKind(kind) {
+  if (kind === "movie") return 5000;
+  if (kind === "series") return 5000;
+  if (kind === "live") return 5000;
+  if (kind === "all") return 10000;
+  return 3000;
+}
+function toPlayableUrl(rawUrl) {
+  if (!rawUrl) return "";
+  if (/\.ts(\?|$)/i.test(rawUrl)) {
+    return rawUrl.replace(/\.ts(\?|$)/i, ".m3u8$1");
+  }
+  return rawUrl;
+}
+function mediaTypeFromUrl(url) {
+  if (/\.m3u8(\?|$)/i.test(url)) return "application/x-mpegURL";
+  if (/\.mp4(\?|$)/i.test(url)) return "video/mp4";
+  if (/\.mkv(\?|$)/i.test(url)) return "video/mp4"; // Treat as mp4 for browser playback if supported
+  if (/\.webm(\?|$)/i.test(url)) return "video/webm";
+  if (/\.ts(\?|$)/i.test(url)) return "video/mp2t";
+  return ""; // Let Video.js/browser infer
+}
+function normalizeCategoryLabel(groupRaw) {
+  var cleaned = String(groupRaw || "Sem grupo").replace(/^(?:[\0-\/:-@\[-`\{-\xBF\u0100-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF])+/, "").replace(/\s+/g, " ").trim();
+  var parts = cleaned.split("|").map(function (part) {
+    return part.trim();
+  }).filter(Boolean);
+  if (parts.length >= 2) {
+    return "".concat(parts[0].toUpperCase(), " | ").concat(parts[1].toUpperCase());
+  }
+  if (parts.length === 1) {
+    return parts[0].toUpperCase();
+  }
+  return "SEM GRUPO";
+}
+function isAdultCategoryLabel(labelRaw) {
+  var normalized = String(labelRaw || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return /\badulto?s?\b|\badult\b|18\+|\bxxx\b|\bporn\b|\bsexo\b|\bsex\b/.test(normalized);
+}
+function matchNav(item, activeNav) {
+  if (activeNav === "home") return true;
+
+  // Now we rely on 'kind' which is already filtered by the backend/loadChannels
+  // But for client-side filtering if needed:
+  if (activeNav === "series") return item.kind === 'series';
+  if (activeNav === "movies") return item.kind === 'movie';
+  if (activeNav === "live") return item.kind === 'live';
+  return true;
+}
+function parseEpisodeInfo(name) {
+  // Try common patterns
+  // "Series Name S01 E01"
+  // "Series Name S01E01"
+  // "Series Name 1x01"
+  var patterns = [/^(.*?) S(\d+) ?E(\d+)/i, /^(.*?) S(\d+)E(\d+)/i, /^(.*?) (\d+)x(\d+)/i];
+  for (var _i = 0, _patterns = patterns; _i < _patterns.length; _i++) {
+    var p = _patterns[_i];
+    var match = name.match(p);
+    if (match) {
+      return {
+        seriesName: match[1].trim().replace(/[-_]/g, ' ').replace(/\s+/g, ' '),
+        season: parseInt(match[2], 10),
+        episode: parseInt(match[3], 10),
+        title: name
+      };
+    }
+  }
+  return {
+    seriesName: name.trim(),
+    season: 1,
+    episode: 1,
+    title: name
+  };
+}
+function makeChannelFavoriteId(channelId) {
+  return "channel::".concat(String(channelId));
+}
+function makeSeriesFavoriteId(categoryLabel, seriesName) {
+  return "series::".concat(normalizeCategoryLabel(categoryLabel), "::").concat(String(seriesName || "").trim().toLowerCase());
+}
+function normalizeStorageIds(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map(function (id) {
+    return String(id || "").trim();
+  }).filter(Boolean);
+}
+var baseButtonStyle = {
+  background: "#1a0000",
+  color: "#fff",
+  border: "1px solid #ff0000",
+  borderRadius: 8,
+  padding: "8px 12px",
+  cursor: "pointer",
+  fontWeight: 700,
+  boxShadow: "0 0 8px #ff000044"
+};
+var cachedLogoByUrl = new Map();
+var inFlightLogoRequests = new Map();
+var TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
+  var src = _ref.src,
+    type = _ref.type,
+    onBufferingChange = _ref.onBufferingChange,
+    _onError = _ref.onError,
+    _onEnded = _ref.onEnded;
+  var isHlsSource = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    return /\.m3u8(\?|$)/i.test(src || "");
+  }, [src]);
+  var playerSource = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    return src || "";
+  }, [src]);
+  var playerRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var _playerRef$current, _playerRef$current$pl;
+    if (!playerSource) return;
+    (_playerRef$current = playerRef.current) === null || _playerRef$current === void 0 || (_playerRef$current$pl = _playerRef$current.play) === null || _playerRef$current$pl === void 0 || _playerRef$current$pl.call(_playerRef$current);
+  }, [playerSource]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "100%",
+      height: "100%",
+      position: "relative",
+      border: "2px solid #ff0000",
+      boxShadow: "0 0 20px #ff0000, inset 0 0 20px rgba(255, 0, 0, 0.3)",
+      borderRadius: "8px",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_player__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    ref: playerRef,
+    key: "".concat(src || "empty", "-").concat(type || "auto"),
+    src: playerSource,
+    controls: true,
+    playsInline: true,
+    width: "100%",
+    height: "100%",
+    style: {
+      background: "#000"
+    },
+    config: {
+      file: {
+        forceHLS: isHlsSource,
+        attributes: {
+          crossOrigin: "anonymous"
+        }
+      }
+    },
+    onCanPlay: function onCanPlay() {
+      return onBufferingChange && onBufferingChange(false);
+    },
+    onPlaying: function onPlaying() {
+      return onBufferingChange && onBufferingChange(false);
+    },
+    onWaiting: function onWaiting() {
+      return onBufferingChange && onBufferingChange(true);
+    },
+    onPause: function onPause() {
+      return onBufferingChange && onBufferingChange(false);
+    },
+    onEnded: function onEnded() {
+      return _onEnded && _onEnded();
+    },
+    onError: function onError(error) {
+      onBufferingChange && onBufferingChange(false);
+      _onError && _onError(error);
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "absolute",
+      top: "-2px",
+      left: "-2px",
+      right: "-2px",
+      bottom: "-2px",
+      borderRadius: "8px",
+      animation: "neonGlow 2s ease-in-out infinite alternate",
+      zIndex: -1
+    }
+  }));
+};
+var CachedLogoImage = function CachedLogoImage(_ref2) {
+  var src = _ref2.src,
+    alt = _ref2.alt,
+    style = _ref2.style;
+  var imageRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState2 = _slicedToArray(_useState, 2),
+    shouldLoad = _useState2[0],
+    setShouldLoad = _useState2[1];
+  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
+      var source = String(src || "").trim();
+      if (!source) return "";
+      if (!/^https?:\/\//i.test(source)) return source;
+      var existing = cachedLogoByUrl.get(source);
+      return existing || TRANSPARENT_PIXEL;
+    }),
+    _useState4 = _slicedToArray(_useState3, 2),
+    resolvedSrc = _useState4[0],
+    setResolvedSrc = _useState4[1];
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var source = String(src || "").trim();
+    if (!source) {
+      setShouldLoad(false);
+      return;
+    }
+    if (!/^https?:\/\//i.test(source)) {
+      setShouldLoad(true);
+      return;
+    }
+    var element = imageRef.current;
+    if (!element) return;
+    var observer = new IntersectionObserver(function (entries) {
+      var _entries = _slicedToArray(entries, 1),
+        entry = _entries[0];
+      if (entry !== null && entry !== void 0 && entry.isIntersecting) {
+        setShouldLoad(true);
+        observer.disconnect();
+      }
+    }, {
+      root: null,
+      rootMargin: "260px",
+      threshold: 0.01
+    });
+    observer.observe(element);
+    return function () {
+      return observer.disconnect();
+    };
+  }, [src]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var cancelled = false;
+    var source = String(src || "").trim();
+    if (!source) {
+      setResolvedSrc("");
+      return function () {
+        cancelled = true;
+      };
+    }
+    var applyResolved = function applyResolved(value) {
+      if (!cancelled && value) {
+        setResolvedSrc(value);
+      }
+    };
+    if (!/^https?:\/\//i.test(source)) {
+      applyResolved(source);
+      return function () {
+        cancelled = true;
+      };
+    }
+    if (!shouldLoad) {
+      setResolvedSrc(TRANSPARENT_PIXEL);
+      return function () {
+        cancelled = true;
+      };
+    }
+    var existing = cachedLogoByUrl.get(source);
+    if (existing) {
+      applyResolved(existing);
+      return function () {
+        cancelled = true;
+      };
+    }
+    setResolvedSrc(TRANSPARENT_PIXEL);
+    var running = inFlightLogoRequests.get(source) || ipcRenderer.invoke("iptv-cache-logo", source);
+    inFlightLogoRequests.set(source, running);
+    running.then(function (response) {
+      var logoPath = (response === null || response === void 0 ? void 0 : response.logoPath) || source;
+      cachedLogoByUrl.set(source, logoPath);
+      applyResolved(logoPath);
+    })["catch"](function () {
+      return applyResolved(source);
+    })["finally"](function () {
+      if (inFlightLogoRequests.get(source) === running) {
+        inFlightLogoRequests["delete"](source);
+      }
+    });
+    return function () {
+      cancelled = true;
+    };
+  }, [src, shouldLoad]);
+  if (!resolvedSrc) return null;
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
+    ref: imageRef,
+    src: resolvedSrc,
+    alt: alt,
+    style: style,
+    loading: "lazy"
+  });
+};
+function IptvModule(_ref3) {
+  var onBack = _ref3.onBack;
+  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+      url: ""
+    }),
+    _useState6 = _slicedToArray(_useState5, 2),
+    form = _useState6[0],
+    setForm = _useState6[1];
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState8 = _slicedToArray(_useState7, 2),
+    session = _useState8[0],
+    setSession = _useState8[1];
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("Informe a URL da lista M3U."),
+    _useState0 = _slicedToArray(_useState9, 2),
+    status = _useState0[0],
+    setStatus = _useState0[1];
+  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState10 = _slicedToArray(_useState1, 2),
+    loadingLogin = _useState10[0],
+    setLoadingLogin = _useState10[1];
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState12 = _slicedToArray(_useState11, 2),
+    loadingChannels = _useState12[0],
+    setLoadingChannels = _useState12[1];
+
+  // 'home', 'live', 'movies', 'series'
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("home"),
+    _useState14 = _slicedToArray(_useState13, 2),
+    activeNav = _useState14[0],
+    setActiveNav = _useState14[1];
+
+  // Used for data fetching
+  var kind = "all";
+  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState16 = _slicedToArray(_useState15, 2),
+    search = _useState16[0],
+    setSearch = _useState16[1];
+  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState18 = _slicedToArray(_useState17, 2),
+    group = _useState18[0],
+    setGroup = _useState18[1];
+  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState20 = _slicedToArray(_useState19, 2),
+    channels = _useState20[0],
+    setChannels = _useState20[1];
+  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState22 = _slicedToArray(_useState21, 2),
+    groups = _useState22[0],
+    setGroups = _useState22[1];
+  var _useState23 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState24 = _slicedToArray(_useState23, 2),
+    selected = _useState24[0],
+    setSelected = _useState24[1];
+  var _useState25 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState26 = _slicedToArray(_useState25, 2),
+    showPlayer = _useState26[0],
+    setShowPlayer = _useState26[1];
+  var _useState27 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState28 = _slicedToArray(_useState27, 2),
+    buffering = _useState28[0],
+    setBuffering = _useState28[1];
+
+  // For Series Navigation
+  var _useState29 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("categories"),
+    _useState30 = _slicedToArray(_useState29, 2),
+    viewState = _useState30[0],
+    setViewState = _useState30[1]; // categories, series_list, seasons, episodes
+  var _useState31 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState32 = _slicedToArray(_useState31, 2),
+    selectedCategory = _useState32[0],
+    setSelectedCategory = _useState32[1];
+  var _useState33 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState34 = _slicedToArray(_useState33, 2),
+    selectedSeries = _useState34[0],
+    setSelectedSeries = _useState34[1];
+  var _useState35 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState36 = _slicedToArray(_useState35, 2),
+    selectedSeason = _useState36[0],
+    setSelectedSeason = _useState36[1];
+  var _useState37 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState38 = _slicedToArray(_useState37, 2),
+    hoveredCardId = _useState38[0],
+    setHoveredCardId = _useState38[1];
+  var _useState39 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState40 = _slicedToArray(_useState39, 2),
+    headerSolid = _useState40[0],
+    setHeaderSolid = _useState40[1];
+  var _useState41 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState42 = _slicedToArray(_useState41, 2),
+    menuOpen = _useState42[0],
+    setMenuOpen = _useState42[1];
+  var _useState43 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState44 = _slicedToArray(_useState43, 2),
+    infoChannel = _useState44[0],
+    setInfoChannel = _useState44[1];
+  var _useState45 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState46 = _slicedToArray(_useState45, 2),
+    newM3uModalOpen = _useState46[0],
+    setNewM3uModalOpen = _useState46[1];
+  var _useState47 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState48 = _slicedToArray(_useState47, 2),
+    newM3uUrlInput = _useState48[0],
+    setNewM3uUrlInput = _useState48[1];
+  var _useState49 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState50 = _slicedToArray(_useState49, 2),
+    favoriteIds = _useState50[0],
+    setFavoriteIds = _useState50[1];
+  var _useState51 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState52 = _slicedToArray(_useState51, 2),
+    likedIds = _useState52[0],
+    setLikedIds = _useState52[1];
+  var _useState53 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState54 = _slicedToArray(_useState53, 2),
+    recentlyPlayedIds = _useState54[0],
+    setRecentlyPlayedIds = _useState54[1];
+  var _useState55 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState56 = _slicedToArray(_useState55, 2),
+    adultMoviesUnlocked = _useState56[0],
+    setAdultMoviesUnlocked = _useState56[1];
+  var rowRefs = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)({});
+  var contentRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var menuRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var menuBtnRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var saved = {
+      url: localStorage.getItem("iptv_url") || ""
+    };
+    setForm(function (prev) {
+      return _objectSpread(_objectSpread({}, prev), saved);
+    });
+    var cancelled = false;
+    var bootstrapFromLocalCache = /*#__PURE__*/function () {
+      var _ref4 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var savedUrl, result;
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              savedUrl = String(saved.url || "").trim();
+              if (savedUrl) {
+                _context.next = 3;
+                break;
+              }
+              return _context.abrupt("return");
+            case 3:
+              _context.prev = 3;
+              _context.next = 6;
+              return ipcRenderer.invoke("iptv-has-local-playlist");
+            case 6:
+              result = _context.sent;
+              if (!(cancelled || !(result !== null && result !== void 0 && result.ok) || !(result !== null && result !== void 0 && result.hasPlaylist))) {
+                _context.next = 9;
+                break;
+              }
+              return _context.abrupt("return");
+            case 9:
+              setSession({
+                sourceUrl: savedUrl,
+                sourceMasked: savedUrl,
+                userInfo: {
+                  status: "cache-local"
+                }
+              });
+              setStatus("Playlist local encontrada. Carregando conteúdo...");
+              _context.next = 16;
+              break;
+            case 13:
+              _context.prev = 13;
+              _context.t0 = _context["catch"](3);
+              if (!cancelled) {
+                setStatus("Informe a URL da lista M3U.");
+              }
+            case 16:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, null, [[3, 13]]);
+      }));
+      return function bootstrapFromLocalCache() {
+        return _ref4.apply(this, arguments);
+      };
+    }();
+    bootstrapFromLocalCache();
+    try {
+      var parsedFavorites = JSON.parse(localStorage.getItem("iptv_favorites") || "[]");
+      var normalizedFavorites = Array.isArray(parsedFavorites) ? parsedFavorites.map(function (id) {
+        var value = String(id);
+        if (value.startsWith("channel::") || value.startsWith("series::")) return value;
+        return makeChannelFavoriteId(value);
+      }) : [];
+      setFavoriteIds(normalizedFavorites);
+      setLikedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_likes") || "[]")));
+      setRecentlyPlayedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_recent") || "[]")));
+    } catch (_unused2) {
+      setFavoriteIds([]);
+      setLikedIds([]);
+      setRecentlyPlayedIds([]);
+    }
+    return function () {
+      cancelled = true;
+    };
+  }, []);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    localStorage.setItem("iptv_favorites", JSON.stringify(favoriteIds));
+  }, [favoriteIds]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    localStorage.setItem("iptv_likes", JSON.stringify(likedIds));
+  }, [likedIds]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    localStorage.setItem("iptv_recent", JSON.stringify(recentlyPlayedIds));
+  }, [recentlyPlayedIds]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var resolvedUrl = String((session === null || session === void 0 ? void 0 : session.sourceUrl) || form.url || "").trim();
+    if (!resolvedUrl) return;
+    localStorage.setItem("iptv_url", resolvedUrl);
+  }, [session === null || session === void 0 ? void 0 : session.sourceUrl, form.url]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var closeMenuByOutsideClick = function closeMenuByOutsideClick(event) {
+      if (!menuOpen) return;
+      if (menuRef.current && !menuRef.current.contains(event.target) && menuBtnRef.current && !menuBtnRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeMenuByOutsideClick);
+    return function () {
+      return document.removeEventListener("mousedown", closeMenuByOutsideClick);
+    };
+  }, [menuOpen]);
+  var channelById = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    var map = new Map();
+    channels.forEach(function (item) {
+      map.set(item.id, item);
+      map.set(String(item.id), item);
+    });
+    return map;
+  }, [channels]);
+  var seriesCatalog = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    var catalog = new Map();
+    channels.forEach(function (channel) {
+      if (channel.kind !== "series") return;
+      var info = parseEpisodeInfo(channel.name);
+      var groupName = normalizeCategoryLabel(channel.group);
+      var favoriteId = makeSeriesFavoriteId(groupName, info.seriesName);
+      if (!catalog.has(favoriteId)) {
+        catalog.set(favoriteId, {
+          id: favoriteId,
+          name: info.seriesName,
+          group: groupName,
+          logo: channel.logo,
+          kind: "series",
+          favoriteType: "series"
+        });
+      }
+    });
+    return catalog;
+  }, [channels]);
+  var favorites = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    return favoriteIds.map(function (favoriteId) {
+      var id = String(favoriteId);
+      if (id.startsWith("series::")) {
+        return seriesCatalog.get(id) || null;
+      }
+      var rawId = id.replace(/^channel::/, "");
+      return channelById.get(rawId) || channelById.get(Number(rawId)) || null;
+    }).filter(Boolean);
+  }, [favoriteIds, channelById, seriesCatalog]);
+  var recentItems = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    return recentlyPlayedIds.map(function (id) {
+      return channelById.get(id) || channelById.get(Number(id));
+    }).filter(Boolean);
+  }, [recentlyPlayedIds, channelById]);
+  var filteredChannels = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    var searchNorm = search.trim().toLowerCase();
+    var source = activeNav === "minha-lista" ? favorites : channels;
+    return source.filter(function (item) {
+      if (!matchNav(item, activeNav)) return false;
+      var groupMatch = !group || item.group === group;
+      if (!groupMatch) return false;
+      if (!searchNorm) return true;
+      return item.name.toLowerCase().includes(searchNorm) || item.group.toLowerCase().includes(searchNorm);
+    });
+  }, [channels, favorites, activeNav, group, search]);
+  var rows = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    var base = filteredChannels;
+    var list = [];
+    if (activeNav !== "minha-lista") {
+      if (favorites.length > 0) {
+        list.push({
+          key: "favoritos",
+          title: "Favoritos",
+          items: favorites.slice(0, 30)
+        });
+      }
+      if (recentItems.length > 0) {
+        list.push({
+          key: "continuar",
+          title: "Continuar assistindo",
+          items: recentItems.slice(0, 30)
+        });
+      }
+      if (base.length > 0) {
+        list.push({
+          key: "em-alta",
+          title: "Em alta",
+          items: base.slice(0, 30)
+        });
+      }
+      if (base.length > 0) {
+        list.push({
+          key: "top10",
+          title: "Top 10",
+          items: base.slice(0, 10)
+        });
+      }
+    } else {
+      list.push({
+        key: "minha-lista-only",
+        title: "Minha Lista",
+        items: base.slice(0, 50)
+      });
+    }
+    var byCategory = new Map();
+    base.forEach(function (item) {
+      var category = normalizeCategoryLabel(item.group);
+      if (!byCategory.has(category)) byCategory.set(category, []);
+      var arr = byCategory.get(category);
+      if (arr.length < 30) arr.push(item);
+    });
+    var orderedCategories = _toConsumableArray(byCategory.entries()).sort(function (a, b) {
+      return b[1].length - a[1].length;
+    }).slice(0, 10);
+    orderedCategories.forEach(function (_ref5, idx) {
+      var _ref6 = _slicedToArray(_ref5, 2),
+        category = _ref6[0],
+        items = _ref6[1];
+      list.push({
+        key: "cat-".concat(idx, "-").concat(category),
+        title: category,
+        items: items
+      });
+    });
+    return list.filter(function (row) {
+      return row.items.length > 0;
+    });
+  }, [filteredChannels, favorites, recentItems, activeNav]);
+  var seriesData = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    if (activeNav !== "series") return {};
+    var data = {};
+    var source = filteredChannels;
+    source.forEach(function (channel) {
+      var groupName = normalizeCategoryLabel(channel.group);
+      var info = parseEpisodeInfo(channel.name);
+      if (!data[groupName]) {
+        data[groupName] = {};
+      }
+      if (!data[groupName][info.seriesName]) {
+        data[groupName][info.seriesName] = {
+          name: info.seriesName,
+          logo: channel.logo,
+          seasons: {}
+        };
+      }
+      var series = data[groupName][info.seriesName];
+      var seasonKey = String(info.season);
+      if (!series.seasons[seasonKey]) {
+        series.seasons[seasonKey] = [];
+      }
+      series.seasons[seasonKey].push(_objectSpread(_objectSpread({}, channel), {}, {
+        episodeNum: info.episode
+      }));
+    });
+    return data;
+  }, [filteredChannels, activeNav]);
+  var movieCategories = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    if (activeNav !== "movies") return [];
+    var searchNorm = search.trim().toLowerCase();
+    var byCategory = new Map();
+    channels.forEach(function (item) {
+      if (item.kind !== "movie") return;
+      if (searchNorm && !item.name.toLowerCase().includes(searchNorm) && !item.group.toLowerCase().includes(searchNorm)) {
+        return;
+      }
+      var key = normalizeCategoryLabel(item.group);
+      if (!byCategory.has(key)) {
+        byCategory.set(key, {
+          raw: item.group,
+          label: key,
+          count: 0
+        });
+      }
+      byCategory.get(key).count += 1;
+    });
+    return _toConsumableArray(byCategory.values()).sort(function (a, b) {
+      var aAdult = isAdultCategoryLabel(a.label);
+      var bAdult = isAdultCategoryLabel(b.label);
+      if (aAdult !== bAdult) {
+        return aAdult ? 1 : -1;
+      }
+      return b.count - a.count;
+    });
+  }, [channels, activeNav, search]);
+  var liveCategories = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
+    if (activeNav !== "live") return [];
+    var searchNorm = search.trim().toLowerCase();
+    var byCategory = new Map();
+    channels.forEach(function (item) {
+      if (item.kind !== "live") return;
+      if (searchNorm && !item.name.toLowerCase().includes(searchNorm) && !item.group.toLowerCase().includes(searchNorm)) {
+        return;
+      }
+      var key = normalizeCategoryLabel(item.group);
+      if (!byCategory.has(key)) {
+        byCategory.set(key, {
+          raw: item.group,
+          label: key,
+          count: 0
+        });
+      }
+      byCategory.get(key).count += 1;
+    });
+    return _toConsumableArray(byCategory.values()).sort(function (a, b) {
+      var aAdult = isAdultCategoryLabel(a.label);
+      var bAdult = isAdultCategoryLabel(b.label);
+      if (aAdult !== bAdult) {
+        return aAdult ? 1 : -1;
+      }
+      return b.count - a.count;
+    });
+  }, [channels, activeNav, search]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (activeNav === "series") {
+      return;
+    }
+    if (!selected && filteredChannels.length > 0) {
+      setSelected(filteredChannels[0]);
+    }
+  }, [filteredChannels, selected, activeNav]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (activeNav !== "movies") return;
+    if (movieCategories.length === 0) {
+      if (group) setGroup("");
+      return;
+    }
+    var fallbackCategory = movieCategories.find(function (category) {
+      return !isAdultCategoryLabel(category.label);
+    });
+    var selectedCategory = movieCategories.find(function (category) {
+      return category.raw === group;
+    });
+    if (selectedCategory && isAdultCategoryLabel(selectedCategory.label) && !adultMoviesUnlocked) {
+      setGroup((fallbackCategory === null || fallbackCategory === void 0 ? void 0 : fallbackCategory.raw) || "");
+      setShowPlayer(false);
+      return;
+    }
+    if (!group || !movieCategories.some(function (category) {
+      return category.raw === group;
+    })) {
+      if (fallbackCategory) {
+        setGroup(fallbackCategory.raw);
+      } else if (adultMoviesUnlocked) {
+        setGroup(movieCategories[0].raw);
+      } else {
+        setGroup("");
+      }
+    }
+  }, [activeNav, movieCategories, group, adultMoviesUnlocked]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (activeNav !== "live") return;
+    if (liveCategories.length === 0) {
+      if (group) setGroup("");
+      return;
+    }
+    if (!group || !liveCategories.some(function (category) {
+      return category.raw === group;
+    })) {
+      setGroup(liveCategories[0].raw);
+    }
+  }, [activeNav, liveCategories, group]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (activeNav !== "series" || viewState !== "categories") return;
+    var categories = Object.keys(seriesData).sort();
+    if (!categories.length) {
+      if (selectedCategory) setSelectedCategory(null);
+      return;
+    }
+    if (!selectedCategory || !categories.includes(selectedCategory)) {
+      setSelectedCategory(categories[0]);
+    }
+  }, [activeNav, viewState, seriesData, selectedCategory]);
+  var loadChannels = /*#__PURE__*/function () {
+    var _ref7 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+      var force,
+        sourceOverride,
+        sourceUrl,
+        pageSize,
+        nextOffset,
+        hasMore,
+        totalFiltered,
+        totalAll,
+        mergedChannels,
+        resolvedGroups,
+        response,
+        incoming,
+        _args2 = arguments;
+      return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+        while (1) switch (_context2.prev = _context2.next) {
+          case 0:
+            force = _args2.length > 0 && _args2[0] !== undefined ? _args2[0] : false;
+            sourceOverride = _args2.length > 1 && _args2[1] !== undefined ? _args2[1] : null;
+            sourceUrl = sourceOverride || (session === null || session === void 0 ? void 0 : session.sourceUrl);
+            if (sourceUrl) {
+              _context2.next = 5;
+              break;
+            }
+            return _context2.abrupt("return");
+          case 5:
+            setLoadingChannels(true);
+            setStatus("Carregando canais...");
+            setChannels([]);
+            setSelected(null);
+            setGroups([]);
+            setGroup("");
+            pageSize = getLimitForKind(kind);
+            nextOffset = 0;
+            hasMore = true;
+            totalFiltered = 0;
+            totalAll = 0;
+            mergedChannels = [];
+            resolvedGroups = [];
+          case 18:
+            if (!hasMore) {
+              _context2.next = 35;
+              break;
+            }
+            _context2.next = 21;
+            return ipcRenderer.invoke("iptv-load-channels", {
+              sourceUrl: sourceUrl,
+              kind: kind,
+              limit: pageSize,
+              offset: nextOffset,
+              force: force && nextOffset === 0
+            });
+          case 21:
+            response = _context2.sent;
+            if (response !== null && response !== void 0 && response.ok) {
+              _context2.next = 24;
+              break;
+            }
+            throw new Error((response === null || response === void 0 ? void 0 : response.error) || "Falha ao carregar playlist IPTV.");
+          case 24:
+            incoming = response.channels || [];
+            mergedChannels = mergedChannels.concat(incoming);
+            totalFiltered = response.totalFiltered || 0;
+            totalAll = response.totalAll || 0;
+            nextOffset = Number(response.nextOffset || mergedChannels.length);
+            hasMore = Boolean(response.hasMore);
+            resolvedGroups = response.groups || resolvedGroups;
+            setChannels(mergedChannels);
+            setStatus("Carregando ".concat(mergedChannels.length, " de ").concat(totalFiltered, " itens..."));
+            _context2.next = 18;
+            break;
+          case 35:
+            setGroups(resolvedGroups);
+            setStatus("Mostrando ".concat(mergedChannels.length, " de ").concat(totalFiltered, " itens (").concat(totalAll, " no total)."));
+            if (mergedChannels.length > 0) {
+              setSelected(mergedChannels[0]);
+            }
+          case 38:
+          case "end":
+            return _context2.stop();
+        }
+      }, _callee2);
+    }));
+    return function loadChannels() {
+      return _ref7.apply(this, arguments);
+    };
+  }();
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (!session) return;
+    loadChannels(false)["catch"](function (error) {
+      return setStatus(error.message);
+    })["finally"](function () {
+      return setLoadingChannels(false);
+    });
+  }, [session]);
+  var handleLogin = /*#__PURE__*/function () {
+    var _ref8 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3(event) {
+      var response, nextSession;
+      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+        while (1) switch (_context3.prev = _context3.next) {
+          case 0:
+            event.preventDefault();
+            if (form.url) {
+              _context3.next = 4;
+              break;
+            }
+            setStatus("Preencha a URL da lista.");
+            return _context3.abrupt("return");
+          case 4:
+            setLoadingLogin(true);
+            setStatus("Validando URL...");
+            _context3.prev = 6;
+            _context3.next = 9;
+            return ipcRenderer.invoke("iptv-validate-login", form);
+          case 9:
+            response = _context3.sent;
+            if (response !== null && response !== void 0 && response.ok) {
+              _context3.next = 12;
+              break;
+            }
+            throw new Error((response === null || response === void 0 ? void 0 : response.error) || "Falha ao carregar a lista.");
+          case 12:
+            nextSession = {
+              sourceUrl: response.sourceUrl,
+              sourceMasked: response.sourceMasked,
+              userInfo: response.userInfo
+            };
+            setSession(nextSession);
+            localStorage.setItem("iptv_url", form.url);
+            setStatus("Lista validada. Carregando canais...");
+            _context3.next = 21;
+            break;
+          case 18:
+            _context3.prev = 18;
+            _context3.t0 = _context3["catch"](6);
+            setStatus(_context3.t0.message || "Erro inesperado.");
+          case 21:
+            _context3.prev = 21;
+            setLoadingLogin(false);
+            setLoadingChannels(false);
+            return _context3.finish(21);
+          case 25:
+          case "end":
+            return _context3.stop();
+        }
+      }, _callee3, null, [[6, 18, 21, 25]]);
+    }));
+    return function handleLogin(_x) {
+      return _ref8.apply(this, arguments);
+    };
+  }();
+  var handleLogout = function handleLogout() {
+    setSession(null);
+    setChannels([]);
+    setGroups([]);
+    setSelected(null);
+    setSearch("");
+    setGroup("");
+    setStatus("Sessão encerrada.");
+    setShowPlayer(false);
+  };
+  var handleClearCache = /*#__PURE__*/function () {
+    var _ref9 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+      var response;
+      return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+        while (1) switch (_context4.prev = _context4.next) {
+          case 0:
+            setMenuOpen(false);
+            setStatus("Limpando cache...");
+            _context4.next = 4;
+            return ipcRenderer.invoke("iptv-clear-cache");
+          case 4:
+            response = _context4.sent;
+            if (response !== null && response !== void 0 && response.ok) {
+              _context4.next = 8;
+              break;
+            }
+            setStatus((response === null || response === void 0 ? void 0 : response.error) || "Falha ao limpar cache.");
+            return _context4.abrupt("return");
+          case 8:
+            setStatus("Cache limpo com sucesso.");
+          case 9:
+          case "end":
+            return _context4.stop();
+        }
+      }, _callee4);
+    }));
+    return function handleClearCache() {
+      return _ref9.apply(this, arguments);
+    };
+  }();
+  var handleSetNewM3uUrl = /*#__PURE__*/function () {
+    var _ref0 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
+      var currentUrl;
+      return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+        while (1) switch (_context5.prev = _context5.next) {
+          case 0:
+            currentUrl = String(form.url || (session === null || session === void 0 ? void 0 : session.sourceUrl) || "").trim();
+            setMenuOpen(false);
+            setNewM3uUrlInput(currentUrl);
+            setNewM3uModalOpen(true);
+          case 4:
+          case "end":
+            return _context5.stop();
+        }
+      }, _callee5);
+    }));
+    return function handleSetNewM3uUrl() {
+      return _ref0.apply(this, arguments);
+    };
+  }();
+  var handleConfirmNewM3uUrl = /*#__PURE__*/function () {
+    var _ref1 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
+      var normalizedUrl, response, nextSession;
+      return _regeneratorRuntime().wrap(function _callee6$(_context6) {
+        while (1) switch (_context6.prev = _context6.next) {
+          case 0:
+            normalizedUrl = String(newM3uUrlInput || "").trim();
+            if (normalizedUrl) {
+              _context6.next = 4;
+              break;
+            }
+            setStatus("Informe uma URL M3U válida.");
+            return _context6.abrupt("return");
+          case 4:
+            setNewM3uModalOpen(false);
+            setLoadingLogin(true);
+            setStatus("Atualizando URL M3U...");
+            _context6.prev = 7;
+            _context6.next = 10;
+            return ipcRenderer.invoke("iptv-delete-local-playlist");
+          case 10:
+            _context6.next = 12;
+            return ipcRenderer.invoke("iptv-validate-login", {
+              url: normalizedUrl
+            });
+          case 12:
+            response = _context6.sent;
+            if (response !== null && response !== void 0 && response.ok) {
+              _context6.next = 15;
+              break;
+            }
+            throw new Error((response === null || response === void 0 ? void 0 : response.error) || "Falha ao validar nova URL.");
+          case 15:
+            nextSession = {
+              sourceUrl: response.sourceUrl,
+              sourceMasked: response.sourceMasked,
+              userInfo: response.userInfo
+            };
+            setForm(function (prev) {
+              return _objectSpread(_objectSpread({}, prev), {}, {
+                url: normalizedUrl
+              });
+            });
+            localStorage.setItem("iptv_url", normalizedUrl);
+            setSession(nextSession);
+            setStatus("Nova URL salva. Carregando conteúdo...");
+            _context6.next = 25;
+            break;
+          case 22:
+            _context6.prev = 22;
+            _context6.t0 = _context6["catch"](7);
+            setStatus((_context6.t0 === null || _context6.t0 === void 0 ? void 0 : _context6.t0.message) || "Falha ao trocar URL M3U.");
+          case 25:
+            _context6.prev = 25;
+            setLoadingLogin(false);
+            return _context6.finish(25);
+          case 28:
+          case "end":
+            return _context6.stop();
+        }
+      }, _callee6, null, [[7, 22, 25, 28]]);
+    }));
+    return function handleConfirmNewM3uUrl() {
+      return _ref1.apply(this, arguments);
+    };
+  }();
+  var handleRefresh = /*#__PURE__*/function () {
+    var _ref10 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
+      return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+        while (1) switch (_context7.prev = _context7.next) {
+          case 0:
+            if (session !== null && session !== void 0 && session.sourceUrl) {
+              _context7.next = 2;
+              break;
+            }
+            return _context7.abrupt("return");
+          case 2:
+            setLoadingChannels(true);
+            _context7.prev = 3;
+            _context7.next = 6;
+            return loadChannels(true);
+          case 6:
+            _context7.next = 11;
+            break;
+          case 8:
+            _context7.prev = 8;
+            _context7.t0 = _context7["catch"](3);
+            setStatus(_context7.t0.message || "Falha ao atualizar.");
+          case 11:
+            _context7.prev = 11;
+            setLoadingChannels(false);
+            return _context7.finish(11);
+          case 14:
+          case "end":
+            return _context7.stop();
+        }
+      }, _callee7, null, [[3, 8, 11, 14]]);
+    }));
+    return function handleRefresh() {
+      return _ref10.apply(this, arguments);
+    };
+  }();
+  var handleClearAllApp = /*#__PURE__*/function () {
+    var _ref11 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+      var response;
+      return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+        while (1) switch (_context8.prev = _context8.next) {
+          case 0:
+            setMenuOpen(false);
+            setStatus("Limpando dados do aplicativo...");
+            _context8.next = 4;
+            return ipcRenderer.invoke("iptv-clear-all");
+          case 4:
+            response = _context8.sent;
+            if (response !== null && response !== void 0 && response.ok) {
+              _context8.next = 8;
+              break;
+            }
+            setStatus((response === null || response === void 0 ? void 0 : response.error) || "Falha ao limpar dados do aplicativo.");
+            return _context8.abrupt("return");
+          case 8:
+            localStorage.removeItem("iptv_url");
+            localStorage.removeItem("iptv_favorites");
+            localStorage.removeItem("iptv_likes");
+            localStorage.removeItem("iptv_recent");
+            setForm({
+              url: ""
+            });
+            setFavoriteIds([]);
+            setLikedIds([]);
+            setRecentlyPlayedIds([]);
+            setAdultMoviesUnlocked(false);
+            handleLogout();
+            setStatus("Dados do aplicativo removidos com sucesso.");
+          case 19:
+          case "end":
+            return _context8.stop();
+        }
+      }, _callee8);
+    }));
+    return function handleClearAllApp() {
+      return _ref11.apply(this, arguments);
+    };
+  }();
+  var handleExitApp = /*#__PURE__*/function () {
+    var _ref12 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
+      return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+        while (1) switch (_context9.prev = _context9.next) {
+          case 0:
+            setMenuOpen(false);
+            _context9.next = 3;
+            return ipcRenderer.invoke("iptv-exit-app");
+          case 3:
+          case "end":
+            return _context9.stop();
+        }
+      }, _callee9);
+    }));
+    return function handleExitApp() {
+      return _ref12.apply(this, arguments);
+    };
+  }();
+  var handleNavClick = function handleNavClick(navKey) {
+    setActiveNav(navKey);
+    setShowPlayer(false);
+    setSearch("");
+    setGroup("");
+    setViewState("categories"); // Reset series view
+    setSelectedCategory(null);
+    setSelectedSeries(null);
+    setSelectedSeason(null);
+    if (navKey === "series") {
+      setSelected(null);
+      setBuffering(false);
+    }
+  };
+  var playChannel = function playChannel(channel) {
+    var forceOpenPlayer = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+    setSelected(channel);
+    if (forceOpenPlayer) {
+      setShowPlayer(true);
+    }
+    setRecentlyPlayedIds(function (prev) {
+      var currentId = String(channel.id);
+      var next = [currentId].concat(_toConsumableArray(prev.filter(function (id) {
+        return id !== currentId;
+      })));
+      return next.slice(0, 10);
+    });
+    setStatus("Reprodu\xE7\xE3o selecionada: ".concat(channel.name));
+  };
+  var toggleFavorite = function toggleFavorite(channelId) {
+    var favoriteKey = makeChannelFavoriteId(channelId);
+    setFavoriteIds(function (prev) {
+      if (prev.includes(favoriteKey)) return prev.filter(function (id) {
+        return id !== favoriteKey;
+      });
+      return [favoriteKey].concat(_toConsumableArray(prev));
+    });
+  };
+  var toggleSeriesFavorite = function toggleSeriesFavorite(categoryLabel, seriesName) {
+    var favoriteKey = makeSeriesFavoriteId(categoryLabel, seriesName);
+    setFavoriteIds(function (prev) {
+      if (prev.includes(favoriteKey)) return prev.filter(function (id) {
+        return id !== favoriteKey;
+      });
+      return [favoriteKey].concat(_toConsumableArray(prev));
+    });
+  };
+  var isSeriesFavorited = function isSeriesFavorited(categoryLabel, seriesName) {
+    return favoriteIds.includes(makeSeriesFavoriteId(categoryLabel, seriesName));
+  };
+  var isChannelFavorited = function isChannelFavorited(channelId) {
+    return favoriteIds.includes(makeChannelFavoriteId(channelId));
+  };
+  var toggleLike = function toggleLike(channelId) {
+    var normalizedChannelId = String(channelId);
+    setLikedIds(function (prev) {
+      if (prev.includes(normalizedChannelId)) return prev.filter(function (id) {
+        return id !== normalizedChannelId;
+      });
+      return [normalizedChannelId].concat(_toConsumableArray(prev));
+    });
+  };
+  var scrollRow = function scrollRow(rowKey, direction) {
+    var row = rowRefs.current[rowKey];
+    if (!row) return;
+    row.scrollBy({
+      left: direction * 720,
+      behavior: "smooth"
+    });
+  };
+  var openFavoriteSeries = function openFavoriteSeries(seriesItem) {
+    handleNavClick("series");
+    setSelected(null);
+    setBuffering(false);
+    setSelectedCategory(seriesItem.group);
+    setSelectedSeries(seriesItem.name);
+    setSelectedSeason(null);
+    setViewState("seasons");
+  };
+  var playHomeItem = function playHomeItem(item) {
+    if (item.favoriteType === "series") {
+      openFavoriteSeries(item);
+      return;
+    }
+    if (item.kind === "series") {
+      var info = parseEpisodeInfo(item.name);
+      handleNavClick("series");
+      setSelectedCategory(normalizeCategoryLabel(item.group));
+      setSelectedSeries(info.seriesName);
+      setSelectedSeason(info.season);
+      setViewState("seasons");
+      playChannel(item, false);
+      return;
+    }
+    if (item.kind === "movie") {
+      handleNavClick("movies");
+      setGroup(item.group || "");
+      playChannel(item, true);
+      return;
+    }
+    if (item.kind === "live") {
+      handleNavClick("live");
+      setGroup(item.group || "");
+      playChannel(item, true);
+      return;
+    }
+    playChannel(item, true);
+  };
+  var renderHome = function renderHome() {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        padding: "0 20px"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "flex",
+        gap: 20,
+        marginBottom: 40,
+        flexWrap: "wrap",
+        justifyContent: "center"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.Tile, {
+      style: {
+        width: 300,
+        height: 180,
+        cursor: "pointer",
+        background: "linear-gradient(135deg, #2c0000 0%, #000 100%)",
+        border: "1px solid #ff0000",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center"
+      },
+      onClick: function onClick() {
+        return handleNavClick('live');
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        fontSize: "1.8em"
+      }
+    }, "TV ao Vivo"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: 14,
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        color: "#ff0000",
+        filter: "drop-shadow(0 0 6px #ff0000aa)"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTv, {
+      size: 75
+    }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.Tile, {
+      style: {
+        width: 300,
+        height: 180,
+        cursor: "pointer",
+        background: "linear-gradient(135deg, #2c0000 0%, #000 100%)",
+        border: "1px solid #ff0000",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center"
+      },
+      onClick: function onClick() {
+        return handleNavClick('movies');
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        fontSize: "1.8em"
+      }
+    }, "Filmes"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: 14,
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        color: "#ff0000",
+        filter: "drop-shadow(0 0 6px #ff0000aa)"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaFilm, {
+      size: 75
+    }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.Tile, {
+      style: {
+        width: 300,
+        height: 180,
+        cursor: "pointer",
+        background: "linear-gradient(135deg, #2c0000 0%, #000 100%)",
+        border: "1px solid #ff0000",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center"
+      },
+      onClick: function onClick() {
+        return handleNavClick('series');
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        fontSize: "1.8em"
+      }
+    }, "S\xE9ries"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: 14,
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        color: "#ff0000",
+        filter: "drop-shadow(0 0 6px #ff0000aa)"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaVideo, {
+      size: 75
+    })))), [rows.find(function (row) {
+      return row.key === "continuar";
+    }), rows.find(function (row) {
+      return row.key === "favoritos";
+    })].filter(Boolean).map(function (row) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        key: row.key,
+        style: {
+          marginBottom: 20
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          textAlign: "left",
+          fontSize: "1.2em",
+          marginBottom: 12
+        }
+      }, row.title), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "flex",
+          gap: 12,
+          overflowX: "auto",
+          paddingBottom: 8
+        }
+      }, row.items.map(function (channel) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          key: channel.id,
+          onClick: function onClick() {
+            return playHomeItem(channel);
+          },
+          style: {
+            minWidth: 220,
+            width: 220,
+            height: 126,
+            borderRadius: 12,
+            border: "1px solid #ff000044",
+            background: "#110000",
+            position: "relative",
+            overflow: "hidden",
+            cursor: "pointer"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+          type: "button",
+          onClick: function onClick(event) {
+            event.stopPropagation();
+            if (channel.favoriteType === "series") {
+              toggleSeriesFavorite(channel.group, channel.name);
+            } else {
+              toggleFavorite(channel.id);
+            }
+          },
+          style: {
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 5,
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            border: "1px solid #ff0000",
+            background: "rgba(0,0,0,0.72)",
+            color: channel.favoriteType === "series" ? isSeriesFavorited(channel.group, channel.name) ? "#ffd700" : "#fff" : isChannelFavorited(channel.id) ? "#ffd700" : "#fff",
+            display: "grid",
+            placeItems: "center",
+            cursor: "pointer"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaStar, {
+          size: 14
+        })), channel.logo ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(CachedLogoImage, {
+          src: channel.logo,
+          alt: channel.name,
+          style: {
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.85
+          }
+        }) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            padding: 10,
+            color: "#ddd"
+          }
+        }, channel.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(0,0,0,0.7)",
+            padding: 4,
+            fontSize: 11
+          }
+        }, channel.name));
+      })));
+    }));
+  };
+  var renderSeriesView = function renderSeriesView() {
+    if (viewState === 'categories') {
+      var cats = Object.keys(seriesData).sort();
+      var activeCategory = selectedCategory && cats.includes(selectedCategory) ? selectedCategory : cats[0] || null;
+      var seriesList = activeCategory && seriesData[activeCategory] ? Object.values(seriesData[activeCategory]) : [];
+      if (cats.length === 0) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            padding: "40px 20px",
+            textAlign: "center",
+            color: "#ddd"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+          style: {
+            marginBottom: 10
+          }
+        }, "Nenhuma s\xE9rie encontrada"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, "Verifique se sua lista possui grupos identificados como \"Series\", \"S\xE9ries\", \"Novelas\", etc."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            marginTop: 20,
+            fontSize: "0.9em",
+            color: "#aaa"
+          }
+        }, "Debug: Total de itens carregados: ", channels.length, " ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("br", null), "Filtro atual: ", kind));
+      }
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          padding: "0 20px",
+          display: "grid",
+          gridTemplateColumns: "280px 1fr",
+          gap: 20,
+          height: "calc(100vh - 160px)",
+          overflow: "hidden",
+          alignItems: "stretch"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("aside", {
+        style: {
+          background: "rgba(0,0,0,0.5)",
+          border: "1px solid #ff000033",
+          borderRadius: 12,
+          padding: 12,
+          height: "100%",
+          overflowY: "auto"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          textAlign: "left",
+          fontSize: "1.08em",
+          marginBottom: 10
+        }
+      }, "Categorias"), cats.map(function (cat) {
+        var active = activeCategory === cat;
+        var count = seriesData[cat] ? Object.keys(seriesData[cat]).length : 0;
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+          key: cat,
+          type: "button",
+          onClick: function onClick() {
+            setSelected(null);
+            setBuffering(false);
+            setSelectedCategory(cat);
+          },
+          style: {
+            width: "100%",
+            textAlign: "left",
+            marginBottom: 8,
+            padding: "10px 12px",
+            borderRadius: 8,
+            border: active ? "1px solid #ff0000" : "1px solid #ff000033",
+            background: active ? "#2c0000" : "#110000",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: active ? 700 : 500
+          }
+        }, cat, " (", count, ")");
+      })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          height: "100%",
+          minHeight: 0,
+          overflowY: "auto",
+          paddingRight: 4
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          textAlign: "left",
+          fontSize: "1.08em",
+          marginBottom: 12
+        }
+      }, activeCategory || "Selecione uma categoria"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+          gap: 16
+        }
+      }, seriesList.map(function (s) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          key: s.name,
+          onClick: function onClick() {
+            setSelected(null);
+            setBuffering(false);
+            setSelectedCategory(activeCategory);
+            setSelectedSeries(s.name);
+            setViewState('seasons');
+          },
+          style: {
+            aspectRatio: "2/3",
+            background: "#000",
+            border: "1px solid #ff000044",
+            borderRadius: 12,
+            cursor: "pointer",
+            overflow: "hidden",
+            position: "relative"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+          type: "button",
+          onClick: function onClick(event) {
+            event.stopPropagation();
+            toggleSeriesFavorite(activeCategory, s.name);
+          },
+          style: {
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 6,
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            border: "1px solid #ff0000",
+            background: "rgba(0,0,0,0.72)",
+            color: isSeriesFavorited(activeCategory, s.name) ? "#ffd700" : "#fff",
+            display: "grid",
+            placeItems: "center",
+            cursor: "pointer"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaStar, {
+          size: 14
+        })), s.logo ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(CachedLogoImage, {
+          src: s.logo,
+          alt: s.name,
+          style: {
+            width: "100%",
+            height: "100%",
+            objectFit: "cover"
+          }
+        }) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            padding: 10
+          }
+        }, s.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(0,0,0,0.8)",
+            padding: 6,
+            fontSize: 12,
+            textAlign: "center"
+          }
+        }, s.name));
+      }))));
+    }
+    if (viewState === 'series_list') {
+      var _seriesList = seriesData[selectedCategory] ? Object.values(seriesData[selectedCategory]) : [];
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          padding: "0 20px"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+          marginBottom: 20
+        }),
+        onClick: function onClick() {
+          return setViewState('categories');
+        }
+      }, "Voltar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          marginBottom: 20
+        }
+      }, selectedCategory), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+          gap: 16
+        }
+      }, _seriesList.map(function (s) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          key: s.name,
+          onClick: function onClick() {
+            setSelected(null);
+            setBuffering(false);
+            setSelectedSeries(s.name);
+            setViewState('seasons');
+          },
+          style: {
+            aspectRatio: "2/3",
+            background: "#000",
+            border: "1px solid #ff000044",
+            borderRadius: 12,
+            cursor: "pointer",
+            overflow: "hidden",
+            position: "relative"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+          type: "button",
+          onClick: function onClick(event) {
+            event.stopPropagation();
+            toggleSeriesFavorite(selectedCategory, s.name);
+          },
+          style: {
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 6,
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            border: "1px solid #ff0000",
+            background: "rgba(0,0,0,0.72)",
+            color: isSeriesFavorited(selectedCategory, s.name) ? "#ffd700" : "#fff",
+            display: "grid",
+            placeItems: "center",
+            cursor: "pointer"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaStar, {
+          size: 14
+        })), s.logo ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(CachedLogoImage, {
+          src: s.logo,
+          alt: s.name,
+          style: {
+            width: "100%",
+            height: "100%",
+            objectFit: "cover"
+          }
+        }) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            padding: 10
+          }
+        }, s.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(0,0,0,0.8)",
+            padding: 6,
+            fontSize: 12,
+            textAlign: "center"
+          }
+        }, s.name));
+      })));
+    }
+    if (viewState === 'seasons') {
+      var categoryData = seriesData[selectedCategory];
+      var series = categoryData ? categoryData[selectedSeries] : null;
+      if (!series) {
+        // Fallback if data is missing
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          onClick: function onClick() {
+            return setViewState('categories');
+          }
+        }, "Dados n\xE3o encontrados. Voltar.");
+      }
+      var seasons = Object.keys(series.seasons).sort(function (a, b) {
+        return parseInt(a) - parseInt(b);
+      });
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          padding: "0 20px"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+          marginBottom: 20
+        }),
+        onClick: function onClick() {
+          return setViewState('categories');
+        }
+      }, "Voltar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          marginBottom: 20
+        }
+      }, series.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "flex",
+          gap: 16,
+          flexWrap: "wrap"
+        }
+      }, seasons.map(function (sea) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          key: sea,
+          onClick: function onClick() {
+            setSelected(null);
+            setBuffering(false);
+            setSelectedSeason(sea);
+            setViewState('episodes');
+          },
+          style: {
+            padding: "20px 40px",
+            background: "#1a0000",
+            border: "1px solid #ff0000",
+            borderRadius: 12,
+            cursor: "pointer",
+            fontSize: "1.2em",
+            fontWeight: "bold"
+          }
+        }, "Temporada ", sea);
+      })));
+    }
+    if (viewState === 'episodes') {
+      var _categoryData = seriesData[selectedCategory];
+      var _series = _categoryData ? _categoryData[selectedSeries] : null;
+      if (!_series || !_series.seasons[selectedSeason]) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          onClick: function onClick() {
+            return setViewState('categories');
+          }
+        }, "Dados n\xE3o encontrados. Voltar.");
+      }
+      var episodes = _series.seasons[selectedSeason].sort(function (a, b) {
+        return a.episodeNum - b.episodeNum;
+      });
+      var currentEpisode = episodes.find(function (ep) {
+        return ep.id === (selected === null || selected === void 0 ? void 0 : selected.id);
+      }) || null;
+      var currentEpisodeIndex = currentEpisode ? episodes.findIndex(function (ep) {
+        return ep.id === currentEpisode.id;
+      }) : -1;
+      var handleEpisodeEnded = function handleEpisodeEnded() {
+        var nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] : null;
+        if (!nextEpisode) {
+          setBuffering(false);
+          return;
+        }
+        setBuffering(true);
+        playChannel(nextEpisode, false);
+      };
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          padding: "0 20px",
+          display: "grid",
+          gridTemplateColumns: "1fr 350px",
+          gap: 20,
+          height: "calc(100vh - 140px)"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "flex",
+          flexDirection: "column"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+          width: "fit-content",
+          marginBottom: 10
+        }),
+        onClick: function onClick() {
+          return setViewState('seasons');
+        }
+      }, "Voltar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          flex: 1,
+          background: "#000",
+          borderRadius: 12,
+          overflow: "hidden",
+          border: "1px solid #ff000044",
+          position: "relative"
+        }
+      }, buffering && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          position: "absolute",
+          inset: 0,
+          zIndex: 20,
+          background: "rgba(0,0,0,0.6)",
+          display: "grid",
+          placeItems: "center",
+          color: "#ff0000"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          textAlign: "center"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          fontSize: "3em",
+          animation: "spin 1s linear infinite"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          marginTop: 10,
+          fontWeight: "bold"
+        }
+      }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+        src: toPlayableUrl(currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.url),
+        type: mediaTypeFromUrl(toPlayableUrl(currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.url)),
+        onBufferingChange: setBuffering,
+        onError: function onError() {
+          return setBuffering(false);
+        },
+        onEnded: handleEpisodeEnded
+      })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          marginTop: 10,
+          fontSize: "1.2em",
+          fontWeight: "bold"
+        }
+      }, (currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.name) || "Selecione um episódio")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          background: "rgba(0,0,0,0.5)",
+          borderRadius: 12,
+          border: "1px solid #ff000022",
+          overflowY: "auto",
+          padding: 10
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          fontSize: "1.1em",
+          marginBottom: 10
+        }
+      }, "Temporada ", selectedSeason), episodes.map(function (ep) {
+        return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          key: ep.id,
+          onClick: function onClick() {
+            return playChannel(ep, false);
+          } // false means don't open modal, just set selected
+          ,
+          style: {
+            padding: 10,
+            marginBottom: 8,
+            background: (selected === null || selected === void 0 ? void 0 : selected.id) === ep.id ? "#ff000044" : "#1a1a1a",
+            borderRadius: 6,
+            cursor: "pointer",
+            border: (selected === null || selected === void 0 ? void 0 : selected.id) === ep.id ? "1px solid #ff0000" : "1px solid transparent"
+          }
+        }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+          style: {
+            fontWeight: "bold",
+            fontSize: 13
+          }
+        }, ep.episodeNum, ". ", ep.name));
+      })));
+    }
+  };
+  var handleMovieCategoryClick = function handleMovieCategoryClick(category) {
+    if (!isAdultCategoryLabel(category.label)) {
+      setShowPlayer(false);
+      setGroup(category.raw);
+      return;
+    }
+    if (!adultMoviesUnlocked) {
+      var confirmed = window.confirm("Conteúdo adulto: confirme para acessar esta categoria.");
+      if (!confirmed) return;
+      setAdultMoviesUnlocked(true);
+    }
+    setShowPlayer(false);
+    setGroup(category.raw);
+  };
+  var renderMoviesView = function renderMoviesView() {
+    var selectedMovieCategory = movieCategories.find(function (category) {
+      return category.raw === group;
+    }) || null;
+    var selectedIsAdult = selectedMovieCategory ? isAdultCategoryLabel(selectedMovieCategory.label) : false;
+    var canShowCategoryContent = Boolean(selectedMovieCategory) && (!selectedIsAdult || adultMoviesUnlocked);
+    var movieItems = canShowCategoryContent ? filteredChannels : [];
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        padding: "0 20px",
+        display: "grid",
+        gridTemplateColumns: "280px 1fr",
+        gap: 20,
+        height: "calc(100vh - 160px)",
+        overflow: "hidden",
+        alignItems: "stretch"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("aside", {
+      style: {
+        background: "rgba(0,0,0,0.5)",
+        border: "1px solid #ff000033",
+        borderRadius: 12,
+        padding: 12,
+        height: "100%",
+        overflowY: "auto"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        textAlign: "left",
+        fontSize: "1.08em",
+        marginBottom: 10
+      }
+    }, "Categorias"), movieCategories.map(function (category) {
+      var active = group === category.raw;
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        key: category.raw,
+        type: "button",
+        onClick: function onClick() {
+          return handleMovieCategoryClick(category);
+        },
+        style: {
+          width: "100%",
+          textAlign: "left",
+          marginBottom: 8,
+          padding: "10px 12px",
+          borderRadius: 8,
+          border: active ? "1px solid #ff0000" : "1px solid #ff000033",
+          background: active ? "#2c0000" : "#110000",
+          color: "#fff",
+          cursor: "pointer",
+          fontWeight: active ? 700 : 500
+        }
+      }, category.label, " (", category.count, ")");
+    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        height: "100%",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden"
+      }
+    }, showPlayer && selected && canShowCategoryContent && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("section", {
+      style: {
+        marginBottom: 20,
+        border: "1px solid #ff000055",
+        borderRadius: 14,
+        background: "rgba(0,0,0,0.8)",
+        padding: 12
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        textAlign: "left",
+        fontSize: "1.08em"
+      }
+    }, (selected === null || selected === void 0 ? void 0 : selected.name) || "Selecione um filme")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        background: "#000",
+        borderRadius: 12,
+        overflow: "hidden",
+        height: 400,
+        position: "relative"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      type: "button",
+      onClick: function onClick() {
+        setShowPlayer(false);
+        setBuffering(false);
+      },
+      style: {
+        position: "absolute",
+        top: 10,
+        right: 10,
+        zIndex: 30,
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        border: "1px solid #ff0000",
+        background: "rgba(0,0,0,0.78)",
+        color: "#fff",
+        display: "grid",
+        placeItems: "center",
+        cursor: "pointer"
+      },
+      "aria-label": "Fechar reprodu\xE7\xE3o"
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, {
+      size: 14
+    })), buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        position: "absolute",
+        inset: 0,
+        zIndex: 20,
+        background: "rgba(0,0,0,0.6)",
+        display: "grid",
+        placeItems: "center",
+        color: "#ff0000"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        fontSize: "3em",
+        animation: "spin 1s linear infinite"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: 10,
+        fontWeight: "bold"
+      }
+    }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+      src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
+      type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
+      onBufferingChange: setBuffering,
+      onError: function onError() {
+        return setBuffering(false);
+      }
+    }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        flex: 1,
+        minHeight: 0,
+        overflowY: "auto",
+        paddingRight: 4
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        textAlign: "left",
+        fontSize: "1.08em",
+        marginBottom: 12
+      }
+    }, (selectedMovieCategory === null || selectedMovieCategory === void 0 ? void 0 : selectedMovieCategory.label) || "Selecione uma categoria"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+        gap: 12
+      }
+    }, movieItems.map(function (channel) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        key: channel.id,
+        onMouseEnter: function onMouseEnter() {
+          return setHoveredCardId("movie-".concat(channel.id));
+        },
+        onMouseLeave: function onMouseLeave() {
+          return setHoveredCardId(null);
+        },
+        onClick: function onClick() {
+          return playChannel(channel, true);
+        },
+        style: {
+          width: "100%",
+          height: 126,
+          borderRadius: 12,
+          border: hoveredCardId === "movie-".concat(channel.id) ? "1px solid #ff0000" : "1px solid #ff000044",
+          background: "#110000",
+          position: "relative",
+          overflow: "hidden",
+          transform: hoveredCardId === "movie-".concat(channel.id) ? "scale(1.03)" : "scale(1)",
+          transition: "all 0.2s ease",
+          cursor: "pointer",
+          boxShadow: hoveredCardId === "movie-".concat(channel.id) ? "0 10px 20px rgba(0,0,0,0.45)" : "none"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        type: "button",
+        onClick: function onClick(event) {
+          event.stopPropagation();
+          toggleFavorite(channel.id);
+        },
+        style: {
+          position: "absolute",
+          top: 8,
+          right: 8,
+          zIndex: 6,
+          width: 30,
+          height: 30,
+          borderRadius: "50%",
+          border: "1px solid #ff0000",
+          background: "rgba(0,0,0,0.72)",
+          color: isChannelFavorited(channel.id) ? "#ffd700" : "#fff",
+          display: "grid",
+          placeItems: "center",
+          cursor: "pointer"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaStar, {
+        size: 14
+      })), channel.logo ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(CachedLogoImage, {
+        src: channel.logo,
+        alt: channel.name,
+        style: {
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: 0.85
+        }
+      }) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          width: "100%",
+          height: "100%",
+          display: "grid",
+          placeItems: "center",
+          color: "#ddd",
+          fontWeight: 700,
+          padding: 8,
+          textAlign: "center"
+        }
+      }, channel.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          position: "absolute",
+          inset: 0,
+          background: hoveredCardId === "movie-".concat(channel.id) ? "linear-gradient(to top, rgba(0,0,0,0.94), rgba(0,0,0,0.18))" : "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0))",
+          display: "grid",
+          alignContent: "end",
+          padding: 8
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#fff",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis"
+        }
+      }, channel.name)));
+    })), !canShowCategoryContent && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: 16,
+        color: "#ddd"
+      }
+    }, selectedIsAdult ? "Confirme o acesso para exibir conteúdos da categoria Adultos." : "Selecione uma categoria para ver os filmes."))));
+  };
+  var renderLiveView = function renderLiveView() {
+    var selectedLiveCategory = liveCategories.find(function (category) {
+      return category.raw === group;
+    }) || null;
+    var liveItems = selectedLiveCategory ? filteredChannels : [];
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        padding: "0 20px",
+        display: "grid",
+        gridTemplateColumns: "280px 1fr",
+        gap: 20,
+        height: "calc(100vh - 160px)",
+        overflow: "hidden",
+        alignItems: "stretch"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("aside", {
+      style: {
+        background: "rgba(0,0,0,0.5)",
+        border: "1px solid #ff000033",
+        borderRadius: 12,
+        padding: 12,
+        height: "100%",
+        overflowY: "auto"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        textAlign: "left",
+        fontSize: "1.08em",
+        marginBottom: 10
+      }
+    }, "Categorias"), liveCategories.map(function (category) {
+      var active = group === category.raw;
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        key: category.raw,
+        type: "button",
+        onClick: function onClick() {
+          setShowPlayer(false);
+          setGroup(category.raw);
+        },
+        style: {
+          width: "100%",
+          textAlign: "left",
+          marginBottom: 8,
+          padding: "10px 12px",
+          borderRadius: 8,
+          border: active ? "1px solid #ff0000" : "1px solid #ff000033",
+          background: active ? "#2c0000" : "#110000",
+          color: "#fff",
+          cursor: "pointer",
+          fontWeight: active ? 700 : 500
+        }
+      }, category.label, " (", category.count, ")");
+    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        height: "100%",
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden"
+      }
+    }, showPlayer && selected && selectedLiveCategory && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("section", {
+      style: {
+        marginBottom: 20,
+        border: "1px solid #ff000055",
+        borderRadius: 14,
+        background: "rgba(0,0,0,0.8)",
+        padding: 12
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        textAlign: "left",
+        fontSize: "1.08em"
+      }
+    }, (selected === null || selected === void 0 ? void 0 : selected.name) || "Selecione um canal")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        background: "#000",
+        borderRadius: 12,
+        overflow: "hidden",
+        height: 400,
+        position: "relative"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      type: "button",
+      onClick: function onClick() {
+        setShowPlayer(false);
+        setBuffering(false);
+      },
+      style: {
+        position: "absolute",
+        top: 10,
+        right: 10,
+        zIndex: 30,
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        border: "1px solid #ff0000",
+        background: "rgba(0,0,0,0.78)",
+        color: "#fff",
+        display: "grid",
+        placeItems: "center",
+        cursor: "pointer"
+      },
+      "aria-label": "Fechar reprodu\xE7\xE3o"
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, {
+      size: 14
+    })), buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        position: "absolute",
+        inset: 0,
+        zIndex: 20,
+        background: "rgba(0,0,0,0.6)",
+        display: "grid",
+        placeItems: "center",
+        color: "#ff0000"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        textAlign: "center"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        fontSize: "3em",
+        animation: "spin 1s linear infinite"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: 10,
+        fontWeight: "bold"
+      }
+    }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+      src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
+      type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
+      onBufferingChange: setBuffering,
+      onError: function onError() {
+        return setBuffering(false);
+      }
+    }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        flex: 1,
+        minHeight: 0,
+        overflowY: "auto",
+        paddingRight: 4
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        textAlign: "left",
+        fontSize: "1.08em",
+        marginBottom: 12
+      }
+    }, (selectedLiveCategory === null || selectedLiveCategory === void 0 ? void 0 : selectedLiveCategory.label) || "Selecione uma categoria"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+        gap: 12
+      }
+    }, liveItems.map(function (channel) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        key: channel.id,
+        onMouseEnter: function onMouseEnter() {
+          return setHoveredCardId("live-".concat(channel.id));
+        },
+        onMouseLeave: function onMouseLeave() {
+          return setHoveredCardId(null);
+        },
+        onClick: function onClick() {
+          return playChannel(channel, true);
+        },
+        style: {
+          width: "100%",
+          height: 126,
+          borderRadius: 12,
+          border: hoveredCardId === "live-".concat(channel.id) ? "1px solid #ff0000" : "1px solid #ff000044",
+          background: "#110000",
+          position: "relative",
+          overflow: "hidden",
+          transform: hoveredCardId === "live-".concat(channel.id) ? "scale(1.03)" : "scale(1)",
+          transition: "all 0.2s ease",
+          cursor: "pointer",
+          boxShadow: hoveredCardId === "live-".concat(channel.id) ? "0 10px 20px rgba(0,0,0,0.45)" : "none"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        type: "button",
+        onClick: function onClick(event) {
+          event.stopPropagation();
+          toggleFavorite(channel.id);
+        },
+        style: {
+          position: "absolute",
+          top: 8,
+          right: 8,
+          zIndex: 6,
+          width: 30,
+          height: 30,
+          borderRadius: "50%",
+          border: "1px solid #ff0000",
+          background: "rgba(0,0,0,0.72)",
+          color: isChannelFavorited(channel.id) ? "#ffd700" : "#fff",
+          display: "grid",
+          placeItems: "center",
+          cursor: "pointer"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaStar, {
+        size: 14
+      })), channel.logo ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(CachedLogoImage, {
+        src: channel.logo,
+        alt: channel.name,
+        style: {
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: 0.85
+        }
+      }) : /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          width: "100%",
+          height: "100%",
+          display: "grid",
+          placeItems: "center",
+          color: "#ddd",
+          fontWeight: 700,
+          padding: 8,
+          textAlign: "center"
+        }
+      }, channel.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          position: "absolute",
+          inset: 0,
+          background: hoveredCardId === "live-".concat(channel.id) ? "linear-gradient(to top, rgba(0,0,0,0.94), rgba(0,0,0,0.18))" : "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0))",
+          display: "grid",
+          alignContent: "end",
+          padding: 8
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#fff",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis"
+        }
+      }, channel.name)));
+    })), !selectedLiveCategory && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        marginTop: 16,
+        color: "#ddd"
+      }
+    }, "Selecione uma categoria para ver os canais ao vivo."))));
+  };
+  var renderContent = function renderContent() {
+    if (loadingChannels) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          display: "grid",
+          placeItems: "center",
+          height: "60vh",
+          color: "#ff0000"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          textAlign: "center"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          fontSize: "3em",
+          marginBottom: 20,
+          animation: "spin 1s linear infinite",
+          display: "inline-block"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          fontSize: "1.5em",
+          marginBottom: 10
+        }
+      }, "Carregando conte\xFAdo..."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          color: "#aaa"
+        }
+      }, "Isso pode levar alguns segundos."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("style", null, "\n                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }\n               ")));
+    }
+    var content = null;
+    if (activeNav === 'home') content = renderHome();else if (activeNav === 'series') content = renderSeriesView();else if (activeNav === 'movies') content = renderMoviesView();else if (activeNav === 'live') content = renderLiveView();else content = renderHome();
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, content, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("footer", {
+      style: {
+        margin: "22px 20px 0",
+        borderTop: "1px solid #ff000033",
+        padding: "14px 0 24px",
+        color: "#d1d1d1",
+        fontSize: 12,
+        display: "grid",
+        gap: 8
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 12
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+      href: "#",
+      style: {
+        color: "#ff0000"
+      }
+    }, "Termos"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+      href: "#",
+      style: {
+        color: "#ff0000"
+      }
+    }, "Privacidade"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+      href: "#",
+      style: {
+        color: "#ff0000"
+      }
+    }, "Suporte"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+      href: "#",
+      style: {
+        color: "#ff0000"
+      }
+    }, "Redes")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, status)));
+  };
+  var handleContentScroll = function handleContentScroll(event) {
+    setHeaderSolid(event.currentTarget.scrollTop > 16);
+  };
+  if (!session) {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.BackgroundLayer, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.VignetteOverlay, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.LogoOverlay, {
+      src: "topo.png",
+      alt: "Logo"
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.AppContainer, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      type: "button",
+      style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+        position: "fixed",
+        top: 20,
+        right: 20,
+        zIndex: 99
+      }),
+      onClick: onBack
+    }, "Menu Inicial"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingTop: 80
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.Tile, {
+      style: {
+        width: 520,
+        minHeight: 280,
+        cursor: "default"
+      },
+      onClick: function onClick(e) {
+        return e.stopPropagation();
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        fontSize: "1.5em",
+        marginBottom: 8
+      }
+    }, "Entrar com M3U"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.ContentInfo, {
+      style: {
+        marginBottom: 20,
+        textAlign: "center"
+      }
+    }, "Cole a URL da sua lista M3U para carregar o conte\xFAdo."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
+      onSubmit: handleLogin,
+      style: {
+        width: "100%",
+        display: "grid",
+        gap: 8
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "URL da Lista (.m3u)"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.ModalInput, {
+      value: form.url,
+      onChange: function onChange(e) {
+        return setForm(function (prev) {
+          return _objectSpread(_objectSpread({}, prev), {}, {
+            url: e.target.value
+          });
+        });
+      },
+      placeholder: "http://exemplo.com/lista.m3u",
+      required: true
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      type: "submit",
+      style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+        marginTop: 14
+      }),
+      disabled: loadingLogin
+    }, loadingLogin ? "Carregando..." : "Carregar Lista")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.ContentInfo, {
+      style: {
+        marginTop: 14,
+        textAlign: "center",
+        width: "100%"
+      }
+    }, status)))));
+  }
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.BackgroundLayer, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.VignetteOverlay, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.LogoOverlay, {
+    src: "topo.png",
+    alt: "Logo"
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.AppContainer, {
+    style: {
+      padding: 0
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      height: "100vh",
+      overflow: "hidden",
+      position: "relative"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("header", {
+    style: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 80,
+      display: "grid",
+      gridTemplateColumns: "auto 1fr auto auto",
+      alignItems: "center",
+      gap: 16,
+      padding: "14px 22px",
+      background: headerSolid ? "rgba(0,0,0,0.92)" : "linear-gradient(to bottom, rgba(0,0,0,0.86), rgba(0,0,0,0))",
+      borderBottom: headerSolid ? "1px solid #ff000044" : "1px solid transparent",
+      transition: "all 0.22s ease"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
+    src: "topo.png",
+    alt: "Logo",
+    style: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      objectFit: "cover"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      fontWeight: 800,
+      color: "#ff0000",
+      letterSpacing: 1
+    }
+  }, "MIND FLIX")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("nav", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 14,
+      flexWrap: "wrap"
+    }
+  }, NAV_ITEMS.map(function (item) {
+    var active = activeNav === item.key;
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+      key: item.key,
+      type: "button",
+      onClick: function onClick() {
+        return handleNavClick(item.key);
+      },
+      style: {
+        background: active ? "#2c0000" : "transparent",
+        color: "#fff",
+        border: active ? "1px solid #ff0000" : "1px solid transparent",
+        borderRadius: 8,
+        padding: "6px 10px",
+        cursor: "pointer",
+        fontWeight: active ? 700 : 500
+      }
+    }, item.label);
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "relative",
+      minWidth: 220
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, {
+    style: {
+      position: "absolute",
+      left: 10,
+      top: 10,
+      color: "#ff0000"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+    value: search,
+    onChange: function onChange(e) {
+      return setSearch(e.target.value);
+    },
+    placeholder: "Buscar",
+    style: {
+      width: "100%",
+      background: "rgba(10,10,10,0.85)",
+      border: "1px solid #ff000055",
+      color: "#fff",
+      borderRadius: 8,
+      padding: "8px 10px 8px 30px",
+      outline: "none"
+    }
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    ref: menuBtnRef,
+    type: "button",
+    onClick: function onClick() {
+      return setMenuOpen(function (prev) {
+        return !prev;
+      });
+    },
+    style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "8px 10px"
+    })
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaUserCircle, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaBars, null))), menuOpen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    ref: menuRef,
+    style: {
+      position: "absolute",
+      top: 70,
+      right: 20,
+      zIndex: 90,
+      width: 290,
+      background: "rgba(10,10,10,0.96)",
+      border: "1px solid #ff000055",
+      borderRadius: 12,
+      padding: 12,
+      boxShadow: "0 14px 30px rgba(0,0,0,0.5)",
+      display: "grid",
+      gap: 8,
+      maxHeight: "74vh",
+      overflowY: "auto"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: handleClearCache
+  }, "Limpar cache"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: handleSetNewM3uUrl
+  }, "Informar nova URL M3U"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: handleRefresh
+  }, loadingChannels ? "Recarregando conteúdo..." : "Recarregar Conteúdo"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: handleClearAllApp
+  }, "Limpar todo app"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: handleExitApp
+  }, "Sair")), newM3uModalOpen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 110,
+      background: "rgba(0,0,0,0.78)",
+      display: "grid",
+      placeItems: "center",
+      padding: 20
+    },
+    onClick: function onClick() {
+      return setNewM3uModalOpen(false);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "min(680px, 92vw)",
+      border: "1px solid #ff000066",
+      borderRadius: 14,
+      background: "#0f0f0f",
+      padding: 16,
+      boxShadow: "0 18px 34px rgba(0,0,0,0.5)",
+      display: "grid",
+      gap: 12
+    },
+    onClick: function onClick(e) {
+      return e.stopPropagation();
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+    style: {
+      textAlign: "left",
+      fontSize: "1.25em"
+    }
+  }, "Informar nova URL M3U"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+      padding: "6px 10px"
+    }),
+    onClick: function onClick() {
+      return setNewM3uModalOpen(false);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, null))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+    value: newM3uUrlInput,
+    onChange: function onChange(e) {
+      return setNewM3uUrlInput(e.target.value);
+    },
+    placeholder: "https://servidor.exemplo/lista.m3u",
+    autoFocus: true,
+    style: {
+      width: "100%",
+      background: "rgba(10,10,10,0.85)",
+      border: "1px solid #ff000055",
+      color: "#fff",
+      borderRadius: 8,
+      padding: "10px 12px",
+      outline: "none"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      justifyContent: "flex-end",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: function onClick() {
+      return setNewM3uModalOpen(false);
+    }
+  }, "Cancelar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+      background: "#ff0000",
+      color: "#000"
+    }),
+    onClick: handleConfirmNewM3uUrl,
+    disabled: loadingLogin
+  }, loadingLogin ? "Salvando..." : "Salvar e atualizar")))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    ref: contentRef,
+    onScroll: handleContentScroll,
+    style: {
+      height: "100%",
+      overflowY: "auto",
+      paddingTop: 76,
+      paddingBottom: 28
+    }
+  }, renderContent())), infoChannel && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 100,
+      background: "rgba(0,0,0,0.78)",
+      display: "grid",
+      placeItems: "center",
+      padding: 20
+    },
+    onClick: function onClick() {
+      return setInfoChannel(null);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "min(680px, 92vw)",
+      border: "1px solid #ff000066",
+      borderRadius: 14,
+      background: "#0f0f0f",
+      padding: 16,
+      boxShadow: "0 18px 34px rgba(0,0,0,0.5)"
+    },
+    onClick: function onClick(e) {
+      return e.stopPropagation();
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 10
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+    style: {
+      textAlign: "left",
+      fontSize: "1.25em"
+    }
+  }, infoChannel.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+      padding: "6px 10px"
+    }),
+    onClick: function onClick() {
+      return setInfoChannel(null);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, null))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.ContentInfo, {
+    style: {
+      textAlign: "left",
+      lineHeight: 1.6
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "Grupo:"), " ", infoChannel.group), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "Categoria:"), " ", normalizeCategoryLabel(infoChannel.group)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "Tvg ID:"), " ", infoChannel.tvgId || "N/A"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("b", null, "URL:"), " ", infoChannel.url)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      marginTop: 12,
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+      background: "#ff0000",
+      color: "#000"
+    }),
+    onClick: function onClick() {
+      playChannel(infoChannel, true);
+      setInfoChannel(null);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaPlay, {
+    style: {
+      marginRight: 6
+    }
+  }), " Assistir"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: function onClick() {
+      return toggleFavorite(infoChannel.id);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaPlus, {
+    style: {
+      marginRight: 6
+    }
+  }), favoriteIds.includes(infoChannel.id) ? "Na lista" : "Adicionar"))))));
+}
+
+/***/ }),
+
+/***/ "./src/OfflineModule.jsx":
+/*!*******************************!*\
+  !*** ./src/OfflineModule.jsx ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ OfflineModule)
+/* harmony export */ });
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react_dom__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom */ "./node_modules/react-dom/index.js");
+/* harmony import */ var _Dashboard__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./Dashboard */ "./src/Dashboard.jsx");
+/* harmony import */ var styled_components__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! styled-components */ "./node_modules/styled-components/dist/styled-components.browser.esm.js");
+/* harmony import */ var _styles__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./styles */ "./src/styles.js");
+/* harmony import */ var react_icons_fa__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-icons/fa */ "./node_modules/react-icons/fa/index.mjs");
+function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+// src/App.jsx
+
+
+
+
+
+
+var _window$require = window.require("electron"),
+  ipcRenderer = _window$require.ipcRenderer;
+var fs = window.require("fs");
+var path = window.require("path");
+var _window$require2 = window.require("url"),
+  pathToFileURL = _window$require2.pathToFileURL;
+var VIDEO_EXTS = ['.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv'];
+function scanFolder(folderPath, thumbsDir) {
+  var result = {
+    videos: [],
+    subfolders: []
+  };
+  var _iterator = _createForOfIteratorHelper(fs.readdirSync(folderPath)),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var file = _step.value;
+      var full = path.join(folderPath, file);
+      var stat = fs.statSync(full);
+      if (stat.isDirectory()) {
+        var sub = scanFolder(full, thumbsDir);
+        if (sub.videos.length || sub.subfolders.length) {
+          result.subfolders.push({
+            path: full,
+            nome: file,
+            videos: sub.videos,
+            subfolders: sub.subfolders
+          });
+        }
+      } else if (VIDEO_EXTS.includes(path.extname(file).toLowerCase())) {
+        var safeName = file.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
+        var thumbPath = path.join(thumbsDir, safeName);
+        var thumbURL = fs.existsSync(thumbPath) ? pathToFileURL(thumbPath).href : null;
+        result.videos.push({
+          path: full,
+          nome: file,
+          thumb: thumbURL
+        });
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return result;
+}
+var themes = {
+  dark: {
+    bg: "#000",
+    card: "#111",
+    text: "#fff",
+    neon: "#ff0000",
+    shadow: "#550000"
+  },
+  light: {
+    bg: "#fff",
+    card: "#eee",
+    text: "#000",
+    neon: "#ff0000",
+    shadow: "#aaa"
+  }
+};
+
+// util: reordena lista
+var reorder = function reorder(list, startIndex, endIndex) {
+  var result = _toConsumableArray(list);
+  var _result$splice = result.splice(startIndex, 1),
+    _result$splice2 = _slicedToArray(_result$splice, 1),
+    removed = _result$splice2[0];
+  result.splice(endIndex, 0, removed);
+  return result;
+};
+
+// util: aplica ordem customizada de vÃ­deos a um array de vÃ­deos
+var sortVideosByOrder = function sortVideosByOrder(videos) {
+  var orderArr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  if (!Array.isArray(videos) || videos.length === 0) return videos;
+  if (!Array.isArray(orderArr) || orderArr.length === 0) return videos;
+  var idx = new Map(orderArr.map(function (p, i) {
+    return [p, i];
+  }));
+  var present = videos.filter(function (v) {
+    return idx.has(v.path);
+  }).sort(function (a, b) {
+    return idx.get(a.path) - idx.get(b.path);
+  });
+  var missing = videos.filter(function (v) {
+    return !idx.has(v.path);
+  });
+  return [].concat(_toConsumableArray(present), _toConsumableArray(missing));
+};
+
+// util: aplica ordem customizada de subpastas a um array de subpastas
+var sortSubfoldersByOrder = function sortSubfoldersByOrder(subfolders) {
+  var orderArr = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  if (!orderArr.length) return subfolders;
+  var ordered = [];
+  var remaining = _toConsumableArray(subfolders);
+  orderArr.forEach(function (path) {
+    var idx = remaining.findIndex(function (sf) {
+      return sf.path === path;
+    });
+    if (idx >= 0) ordered.push(remaining.splice(idx, 1)[0]);
+  });
+  return [].concat(ordered, _toConsumableArray(remaining));
+};
+
+// util: aplica ordem de vÃ­deos recursivamente por path
+var _applyVideoOrdersRec = function applyVideoOrdersRec(folder, ordersMap) {
+  var subOrdersMap = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+  var curOrder = ordersMap[folder.path];
+  var newVideos = sortVideosByOrder(folder.videos || [], curOrder);
+  var sortedSubs = sortSubfoldersByOrder(folder.subfolders || [], subOrdersMap[folder.path]);
+  var newSubs = sortedSubs.map(function (sf) {
+    return _applyVideoOrdersRec(sf, ordersMap, subOrdersMap);
+  });
+  return _objectSpread(_objectSpread({}, folder), {}, {
+    videos: newVideos,
+    subfolders: newSubs
+  });
+};
+
+// util: atualiza uma pasta especÃ­fica (por path) na Ã¡rvore
+var _updateFolderByPath = function updateFolderByPath(folder, targetPath, updater) {
+  if (folder.path === targetPath) return updater(folder);
+  var subs = folder.subfolders || [];
+  if (subs.length === 0) return folder;
+  return _objectSpread(_objectSpread({}, folder), {}, {
+    subfolders: subs.map(function (sf) {
+      return _updateFolderByPath(sf, targetPath, updater);
+    })
+  });
+};
+function OfflineModule() {
+  var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState2 = _slicedToArray(_useState, 2),
+    thumbsDir = _useState2[0],
+    setThumbsDir = _useState2[1];
+  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState4 = _slicedToArray(_useState3, 2),
+    folders = _useState4[0],
+    setFolders = _useState4[1];
+  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState6 = _slicedToArray(_useState5, 2),
+    watched = _useState6[0],
+    setWatched = _useState6[1];
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
+    _useState8 = _slicedToArray(_useState7, 2),
+    videoOrders = _useState8[0],
+    setVideoOrders = _useState8[1]; // { [folderPath]: [videoPath, ...] }
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
+    _useState0 = _slicedToArray(_useState9, 2),
+    subfolderOrders = _useState0[0],
+    setSubfolderOrders = _useState0[1]; // { [folderPath]: [subfolderPath, ...] }
+  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState10 = _slicedToArray(_useState1, 2),
+    modalOpen = _useState10[0],
+    setModalOpen = _useState10[1];
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+      tipo: '',
+      nome: '',
+      ano: '',
+      path: ''
+    }),
+    _useState12 = _slicedToArray(_useState11, 2),
+    form = _useState12[0],
+    setForm = _useState12[1];
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(localStorage.getItem('theme') || 'dark'),
+    _useState14 = _slicedToArray(_useState13, 2),
+    theme = _useState14[0],
+    setTheme = _useState14[1];
+  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState16 = _slicedToArray(_useState15, 2),
+    isReordering = _useState16[0],
+    setIsReordering = _useState16[1];
+  // Estado para controlar o menu hambÃºrguer
+  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState18 = _slicedToArray(_useState17, 2),
+    showMenu = _useState18[0],
+    setShowMenu = _useState18[1];
+  // Estados para feedback visual de geraÃ§Ã£o de thumbnails
+  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState20 = _slicedToArray(_useState19, 2),
+    isGeneratingThumbs = _useState20[0],
+    setIsGeneratingThumbs = _useState20[1];
+  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+      processed: 0,
+      total: 0
+    }),
+    _useState22 = _slicedToArray(_useState21, 2),
+    thumbProgress = _useState22[0],
+    setThumbProgress = _useState22[1];
+
+  // Fechar menu ao clicar fora
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var handleClickOutside = function handleClickOutside(event) {
+      if (showMenu && !event.target.closest('.hamburger-menu')) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return function () {
+      return document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Listener para progresso de thumbnails
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var handleThumbProgress = function handleThumbProgress(event, data) {
+      setThumbProgress(data);
+      if (data.processed >= data.total) {
+        setTimeout(function () {
+          setIsGeneratingThumbs(false);
+          setThumbProgress({
+            processed: 0,
+            total: 0
+          });
+        }, 1000); // Mostra 100% por 1 segundo antes de esconder
+      }
+    };
+    ipcRenderer.on('thumbnail-progress', handleThumbProgress);
+    return function () {
+      return ipcRenderer.removeListener('thumbnail-progress', handleThumbProgress);
+    };
+  }, []);
+
+  // 1) Leitura direta do config.json
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    function loadConfig() {
+      return _loadConfig.apply(this, arguments);
+    }
+    function _loadConfig() {
+      _loadConfig = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        var cfg;
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
+            case 0:
+              _context.next = 2;
+              return ipcRenderer.invoke('load-config');
+            case 2:
+              cfg = _context.sent;
+              if (cfg.folders) setFolders(cfg.folders);
+              if (cfg.watchedVideos) setWatched(cfg.watchedVideos);
+              if (cfg.videoOrders) setVideoOrders(cfg.videoOrders);
+              if (cfg.subfolderOrders) setSubfolderOrders(cfg.subfolderOrders);
+            case 7:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee);
+      }));
+      return _loadConfig.apply(this, arguments);
+    }
+    loadConfig();
+  }, []);
+
+  // 2) Pega thumbsDir
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke('get-thumbs-path').then(function (dir) {
+      return setThumbsDir(dir);
+    })["catch"](console.error);
+  }, []);
+
+  // 3) Gera thumbs e faz scan (mantendo o que jÃ¡ veio do config) e aplica ordem customizada de vÃ­deos
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (!thumbsDir || folders.length === 0) return;
+    if (isReordering) return; // evitar sobrescrever enquanto houver reordenaÃ§Ã£o
+    function doThumbs() {
+      return _doThumbs.apply(this, arguments);
+    }
+    function _doThumbs() {
+      _doThumbs = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var result;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              setIsGeneratingThumbs(true);
+              setThumbProgress({
+                processed: 0,
+                total: 0
+              });
+              _context2.prev = 2;
+              _context2.next = 5;
+              return ipcRenderer.invoke('generate-thumbnails', folders);
+            case 5:
+              result = _context2.sent;
+              console.log('Thumbnail generation completed:', result);
+
+              // Atualiza a UI apÃ³s a geraÃ§Ã£o
+              setFolders(function (prev) {
+                var scanned = prev.map(function (f) {
+                  return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
+                });
+                // aplica ordem customizada de vÃ­deos e subpastas recursivamente
+                return scanned.map(function (f) {
+                  return _applyVideoOrdersRec(f, videoOrders, subfolderOrders);
+                });
+              });
+              _context2.next = 15;
+              break;
+            case 10:
+              _context2.prev = 10;
+              _context2.t0 = _context2["catch"](2);
+              console.error('Error generating thumbnails:', _context2.t0);
+              setIsGeneratingThumbs(false);
+              setThumbProgress({
+                processed: 0,
+                total: 0
+              });
+            case 15:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, null, [[2, 10]]);
+      }));
+      return _doThumbs.apply(this, arguments);
+    }
+    doThumbs();
+  }, [thumbsDir, /* aplica novamente quando ordem mudar */videoOrders, subfolderOrders, isReordering]);
+
+  // 4) PersistÃªncia
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke('save-folders', folders);
+  }, [folders]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke('save-watched', watched);
+  }, [watched]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke('save-config', {
+      videoOrders: videoOrders,
+      subfolderOrders: subfolderOrders
+    });
+  }, [videoOrders, subfolderOrders]);
+  // Salva config.json preferencialmente (ordem customizada e demais dados)
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    ipcRenderer.invoke('save-config', {
+      folders: folders,
+      watchedVideos: watched,
+      videoOrders: videoOrders,
+      subfolderOrders: subfolderOrders
+    });
+  }, [folders, watched, videoOrders, subfolderOrders]);
+
+  // Handlers... (mantidos)
+  var handleRefresh = function handleRefresh() {
+    ipcRenderer.invoke('generate-thumbnails', folders).then(function () {
+      setFolders(function (prev) {
+        var scanned = prev.map(function (f) {
+          return _objectSpread(_objectSpread({}, f), scanFolder(f.path, thumbsDir));
+        });
+        return scanned.map(function (f) {
+          return _applyVideoOrdersRec(f, videoOrders, subfolderOrders);
+        });
+      });
+    });
+  };
+  var openModal = /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+      var p;
+      return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+        while (1) switch (_context3.prev = _context3.next) {
+          case 0:
+            _context3.next = 2;
+            return ipcRenderer.invoke('select-folder');
+          case 2:
+            p = _context3.sent;
+            if (p) {
+              _context3.next = 5;
+              break;
+            }
+            return _context3.abrupt("return");
+          case 5:
+            setForm({
+              tipo: '',
+              nome: path.basename(p),
+              ano: '',
+              path: p
+            });
+            setModalOpen(true);
+          case 7:
+          case "end":
+            return _context3.stop();
+        }
+      }, _callee3);
+    }));
+    return function openModal() {
+      return _ref.apply(this, arguments);
+    };
+  }();
+  var handleSubmit = function handleSubmit(e) {
+    e.preventDefault();
+    var data = scanFolder(form.path, thumbsDir);
+    setFolders(function (prev) {
+      return [].concat(_toConsumableArray(prev), [_objectSpread(_objectSpread({}, form), data)]);
+    });
+    setModalOpen(false);
+  };
+  var handleImport = /*#__PURE__*/function () {
+    var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4(e) {
+      var txt;
+      return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+        while (1) switch (_context4.prev = _context4.next) {
+          case 0:
+            _context4.next = 2;
+            return e.target.files[0].text();
+          case 2:
+            txt = _context4.sent;
+            try {
+              setFolders(JSON.parse(txt));
+            } catch (_unused) {
+              alert("JSON invÃ¡lido");
+            }
+          case 4:
+          case "end":
+            return _context4.stop();
+        }
+      }, _callee4);
+    }));
+    return function handleImport(_x) {
+      return _ref2.apply(this, arguments);
+    };
+  }();
+  var handleExport = function handleExport() {
+    var blob = new Blob([JSON.stringify(folders, null, 2)], {
+      type: "application/json"
+    });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "meus_cursos.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  var handleDeleteFolder = function handleDeleteFolder(idx) {
+    return setFolders(function (prev) {
+      return prev.filter(function (_, i) {
+        return i !== idx;
+      });
+    });
+  };
+  var handleWatchedToggle = function handleWatchedToggle(videoPath) {
+    return setWatched(function (prev) {
+      return prev.includes(videoPath) ? prev : [].concat(_toConsumableArray(prev), [videoPath]);
+    });
+  };
+  var handleClearWatched = /*#__PURE__*/function () {
+    var _ref3 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(folderObj) {
+      var vids;
+      return _regeneratorRuntime().wrap(function _callee5$(_context5) {
+        while (1) switch (_context5.prev = _context5.next) {
+          case 0:
+            vids = folderObj.videos.map(function (v) {
+              return v.path;
+            });
+            setWatched(function (prev) {
+              return prev.filter(function (p) {
+                return !vids.includes(p);
+              });
+            });
+            _context5.next = 4;
+            return ipcRenderer.invoke('clear-positions', vids);
+          case 4:
+          case "end":
+            return _context5.stop();
+        }
+      }, _callee5);
+    }));
+    return function handleClearWatched(_x2) {
+      return _ref3.apply(this, arguments);
+    };
+  }();
+
+  // NOVO: Reordenar pastas (playlists)
+  var handleReorderFolders = function handleReorderFolders(from, to) {
+    if (from === to) return;
+    setFolders(function (prev) {
+      return reorder(prev, from, to);
+    });
+  };
+
+  // NOVO: Reordenar subpastas dentro de uma pasta especÃ­fica
+  var handleReorderSubfolders = function handleReorderSubfolders(folderPath, from, to) {
+    if (from === to) return;
+    setFolders(function (prev) {
+      return prev.map(function (f) {
+        return _updateFolderByPath(f, folderPath, function (folder) {
+          var newSubs = reorder(folder.subfolders || [], from, to);
+
+          // atualiza orders map das subpastas
+          setSubfolderOrders(function (so) {
+            return _objectSpread(_objectSpread({}, so), {}, _defineProperty({}, folderPath, newSubs.map(function (sf) {
+              return sf.path;
+            })));
+          });
+          return _objectSpread(_objectSpread({}, folder), {}, {
+            subfolders: newSubs
+          });
+        });
+      });
+    });
+  };
+
+  // NOVO: Reordenar vÃ­deos dentro de uma pasta (ou subpasta) por path da pasta
+  var handleReorderVideos = function handleReorderVideos(folderPath, from, to) {
+    setIsReordering(true);
+    setFolders(function (prev) {
+      return prev.map(function (f) {
+        return _updateFolderByPath(f, folderPath, function (folder) {
+          var newVideos = reorder(folder.videos || [], from, to);
+          // atualiza orders map
+          setVideoOrders(function (vo) {
+            return _objectSpread(_objectSpread({}, vo), {}, _defineProperty({}, folderPath, newVideos.map(function (v) {
+              return v.path;
+            })));
+          });
+          return _objectSpread(_objectSpread({}, folder), {}, {
+            videos: newVideos
+          });
+        });
+      });
+    });
+    // libera flag na prÃ³xima volta do event loop
+    setTimeout(function () {
+      return setIsReordering(false);
+    }, 0);
+  };
+
+  // NOVO: Resetar ordem por playlist (voltar ao sistema de arquivos)
+  var handleResetOrder = function handleResetOrder(folderPath) {
+    setIsReordering(true);
+    // remove ordem customizada de vÃ­deos desta pasta
+    setVideoOrders(function (vo) {
+      var copy = _objectSpread({}, vo);
+      delete copy[folderPath];
+      return copy;
+    });
+    // re-scaneia esta pasta para restaurar ordem padrÃ£o de vÃ­deos e subpastas
+    setFolders(function (prev) {
+      return prev.map(function (f) {
+        return _updateFolderByPath(f, folderPath, function (folder) {
+          var scanned = scanFolder(folder.path, thumbsDir);
+          return _objectSpread(_objectSpread({}, folder), {}, {
+            videos: scanned.videos,
+            subfolders: scanned.subfolders
+          });
+        });
+      });
+    });
+    setTimeout(function () {
+      return setIsReordering(false);
+    }, 0);
+  };
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(styled_components__WEBPACK_IMPORTED_MODULE_4__.ThemeProvider, {
+    theme: themes[theme]
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.BackgroundLayer, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.VignetteOverlay, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.LogoOverlay, {
+    src: "topo.png",
+    alt: "Logo"
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.AppContainer, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.TopBar, {
+    style: {
+      background: "transparent",
+      border: "none",
+      boxShadow: "none",
+      padding: 0,
+      margin: 0,
+      position: "relative"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    className: "hamburger-menu",
+    style: {
+      position: "absolute",
+      top: "20px",
+      left: "20px",
+      zIndex: 999999
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      return setShowMenu(!showMenu);
+    },
+    style: {
+      background: "rgba(26, 26, 26, 0.9)",
+      border: "2px solid #ff0000",
+      color: "#ff0000",
+      padding: "12px",
+      borderRadius: "8px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      transition: "all 0.3s ease",
+      boxShadow: showMenu ? "0 0 15px #ff000066" : "0 0 8px #ff000033",
+      backdropFilter: "blur(10px)"
+    },
+    title: "Menu de A\xC3\xA7\xC3\xB5es"
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaBars, {
+    size: 18
+  })), showMenu && /*#__PURE__*/(0,react_dom__WEBPACK_IMPORTED_MODULE_1__.createPortal)(/*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    className: "hamburger-menu",
+    style: {
+      position: "fixed",
+      top: "72px",
+      left: "20px",
+      background: "rgba(26, 26, 26, 0.95)",
+      border: "2px solid #ff0000",
+      borderRadius: "12px",
+      boxShadow: "0 8px 25px rgba(255, 0, 0, 0.4)",
+      zIndex: 2147483647,
+      minWidth: "200px",
+      overflow: "hidden",
+      backdropFilter: "blur(15px)"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      padding: "8px 0"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      openModal();
+      setShowMenu(false);
+    },
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaPlus, {
+    size: 14,
+    color: "#ff0000"
+  }), "Adicionar Pasta"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      handleRefresh();
+      setShowMenu(false);
+    },
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaSync, {
+    size: 14,
+    color: "#ff0000"
+  }), "Atualizar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", {
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaFileImport, {
+    size: 14,
+    color: "#ff0000"
+  }), "Importar", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+    type: "file",
+    accept: "application/json",
+    onChange: function onChange(e) {
+      handleImport(e);
+      setShowMenu(false);
+    },
+    style: {
+      display: 'none'
+    }
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    onClick: function onClick() {
+      handleExport();
+      setShowMenu(false);
+    },
+    style: {
+      width: "100%",
+      background: "transparent",
+      border: "none",
+      color: "#fff",
+      padding: "12px 16px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      fontSize: "14px",
+      transition: "background 0.2s ease"
+    },
+    onMouseEnter: function onMouseEnter(e) {
+      return e.target.style.background = "#ff000020";
+    },
+    onMouseLeave: function onMouseLeave(e) {
+      return e.target.style.background = "transparent";
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_5__.FaFileExport, {
+    size: 14,
+    color: "#ff0000"
+  }), "Exportar"))), document.body))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_Dashboard__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    folders: folders,
+    watched: watched,
+    onWatchedToggle: handleWatchedToggle,
+    onClearWatched: handleClearWatched,
+    onDeleteFolder: handleDeleteFolder,
+    onReorderFolders: handleReorderFolders,
+    onReorderVideos: handleReorderVideos,
+    onReorderSubfolders: handleReorderSubfolders,
+    onResetOrder: handleResetOrder
+  }), modalOpen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalOverlay, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.Modal, null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.CloseButton, {
+    onClick: function onClick() {
+      return setModalOpen(false);
+    }
+  }, "\xC3\u2014"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("form", {
+    onSubmit: handleSubmit
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Tipo:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
+    required: true,
+    value: form.tipo,
+    onChange: function onChange(e) {
+      return setForm(_objectSpread(_objectSpread({}, form), {}, {
+        tipo: e.target.value
+      }));
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Nome:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
+    required: true,
+    value: form.nome,
+    onChange: function onChange(e) {
+      return setForm(_objectSpread(_objectSpread({}, form), {}, {
+        nome: e.target.value
+      }));
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("label", null, "Ano:"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_3__.ModalInput, {
+    required: true,
+    type: "number",
+    value: form.ano,
+    onChange: function onChange(e) {
+      return setForm(_objectSpread(_objectSpread({}, form), {}, {
+        ano: e.target.value
+      }));
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "submit",
+    style: {
+      marginTop: 16,
+      padding: "10px 28px",
+      background: "#ff0000",
+      borderRadius: 10,
+      fontWeight: "bold",
+      border: "none",
+      color: "#000"
+    }
+  }, "Adicionar")))), isGeneratingThumbs && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "fixed",
+      top: "20px",
+      right: "20px",
+      background: "linear-gradient(145deg, #1a1a1a, #0d0d0d)",
+      border: "2px solid #ff0000",
+      borderRadius: "12px",
+      padding: "16px 20px",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 20px #ff000055",
+      backdropFilter: "blur(10px)",
+      zIndex: 10000,
+      minWidth: "280px",
+      color: "#fff"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      marginBottom: "12px",
+      gap: "10px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "20px",
+      height: "20px",
+      border: "2px solid #ff0000",
+      borderTop: "2px solid transparent",
+      borderRadius: "50%",
+      animation: "spin 1s linear infinite"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+    style: {
+      fontWeight: "600",
+      fontSize: "14px",
+      color: "#ff0000"
+    }
+  }, "Gerando Thumbnails...")), thumbProgress.total > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      background: "#333",
+      borderRadius: "8px",
+      height: "8px",
+      overflow: "hidden",
+      marginBottom: "8px"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      background: "linear-gradient(90deg, #ff0000, #ff4444)",
+      height: "100%",
+      width: "".concat(thumbProgress.processed / thumbProgress.total * 100, "%"),
+      transition: "width 0.3s ease",
+      borderRadius: "8px"
+    }
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      fontSize: "12px",
+      color: "#ccc",
+      textAlign: "center"
+    }
+  }, thumbProgress.processed, " de ", thumbProgress.total, " v\xC3\xADdeos processados"))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("style", null, "\n          @keyframes spin {\n            0% { transform: rotate(0deg); }\n            100% { transform: rotate(360deg); }\n          }\n        ")));
+}
+
+/***/ }),
+
 /***/ "./src/styles.js":
 /*!***********************!*\
   !*** ./src/styles.js ***!
@@ -44409,6 +47970,9 @@ var LogoOverlay = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].img(
 /******/ 		return module.exports;
 /******/ 	}
 /******/ 	
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = __webpack_modules__;
+/******/ 	
 /************************************************************************/
 /******/ 	/* webpack/runtime/compat get default export */
 /******/ 	(() => {
@@ -44434,9 +47998,89 @@ var LogoOverlay = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].img(
 /******/ 		};
 /******/ 	})();
 /******/ 	
+/******/ 	/* webpack/runtime/ensure chunk */
+/******/ 	(() => {
+/******/ 		__webpack_require__.f = {};
+/******/ 		// This file contains only the entry chunk.
+/******/ 		// The chunk loading function for additional chunks
+/******/ 		__webpack_require__.e = (chunkId) => {
+/******/ 			return Promise.all(Object.keys(__webpack_require__.f).reduce((promises, key) => {
+/******/ 				__webpack_require__.f[key](chunkId, promises);
+/******/ 				return promises;
+/******/ 			}, []));
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/get javascript chunk filename */
+/******/ 	(() => {
+/******/ 		// This function allow to reference async chunks
+/******/ 		__webpack_require__.u = (chunkId) => {
+/******/ 			// return url for filenames based on template
+/******/ 			return "" + chunkId + ".bundle.js";
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/global */
+/******/ 	(() => {
+/******/ 		__webpack_require__.g = (function() {
+/******/ 			if (typeof globalThis === 'object') return globalThis;
+/******/ 			try {
+/******/ 				return this || new Function('return this')();
+/******/ 			} catch (e) {
+/******/ 				if (typeof window === 'object') return window;
+/******/ 			}
+/******/ 		})();
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/hasOwnProperty shorthand */
 /******/ 	(() => {
 /******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/load script */
+/******/ 	(() => {
+/******/ 		var inProgress = {};
+/******/ 		var dataWebpackPrefix = "video-dashboard-app:";
+/******/ 		// loadScript function to load a script via script tag
+/******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
+/******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
+/******/ 			var script, needAttach;
+/******/ 			if(key !== undefined) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				for(var i = 0; i < scripts.length; i++) {
+/******/ 					var s = scripts[i];
+/******/ 					if(s.getAttribute("src") == url || s.getAttribute("data-webpack") == dataWebpackPrefix + key) { script = s; break; }
+/******/ 				}
+/******/ 			}
+/******/ 			if(!script) {
+/******/ 				needAttach = true;
+/******/ 				script = document.createElement('script');
+/******/ 		
+/******/ 				script.charset = 'utf-8';
+/******/ 				script.timeout = 120;
+/******/ 				if (__webpack_require__.nc) {
+/******/ 					script.setAttribute("nonce", __webpack_require__.nc);
+/******/ 				}
+/******/ 				script.setAttribute("data-webpack", dataWebpackPrefix + key);
+/******/ 		
+/******/ 				script.src = url;
+/******/ 			}
+/******/ 			inProgress[url] = [done];
+/******/ 			var onScriptComplete = (prev, event) => {
+/******/ 				// avoid mem leaks in IE.
+/******/ 				script.onerror = script.onload = null;
+/******/ 				clearTimeout(timeout);
+/******/ 				var doneFns = inProgress[url];
+/******/ 				delete inProgress[url];
+/******/ 				script.parentNode && script.parentNode.removeChild(script);
+/******/ 				doneFns && doneFns.forEach((fn) => (fn(event)));
+/******/ 				if(prev) return prev(event);
+/******/ 			}
+/******/ 			var timeout = setTimeout(onScriptComplete.bind(null, undefined, { type: 'timeout', target: script }), 120000);
+/******/ 			script.onerror = onScriptComplete.bind(null, script.onerror);
+/******/ 			script.onload = onScriptComplete.bind(null, script.onload);
+/******/ 			needAttach && document.head.appendChild(script);
+/******/ 		};
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
@@ -44457,6 +48101,119 @@ var LogoOverlay = styled_components__WEBPACK_IMPORTED_MODULE_0__["default"].img(
 /******/ 			if (!module.children) module.children = [];
 /******/ 			return module;
 /******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/publicPath */
+/******/ 	(() => {
+/******/ 		var scriptUrl;
+/******/ 		if (__webpack_require__.g.importScripts) scriptUrl = __webpack_require__.g.location + "";
+/******/ 		var document = __webpack_require__.g.document;
+/******/ 		if (!scriptUrl && document) {
+/******/ 			if (document.currentScript && document.currentScript.tagName.toUpperCase() === 'SCRIPT')
+/******/ 				scriptUrl = document.currentScript.src;
+/******/ 			if (!scriptUrl) {
+/******/ 				var scripts = document.getElementsByTagName("script");
+/******/ 				if(scripts.length) {
+/******/ 					var i = scripts.length - 1;
+/******/ 					while (i > -1 && (!scriptUrl || !/^http(s?):/.test(scriptUrl))) scriptUrl = scripts[i--].src;
+/******/ 				}
+/******/ 			}
+/******/ 		}
+/******/ 		// When supporting browsers where an automatic publicPath is not supported you must specify an output.publicPath manually via configuration
+/******/ 		// or pass an empty string ("") and set the __webpack_public_path__ variable from your code to use your own logic.
+/******/ 		if (!scriptUrl) throw new Error("Automatic publicPath is not supported in this browser");
+/******/ 		scriptUrl = scriptUrl.replace(/^blob:/, "").replace(/#.*$/, "").replace(/\?.*$/, "").replace(/\/[^\/]+$/, "/");
+/******/ 		__webpack_require__.p = scriptUrl;
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/jsonp chunk loading */
+/******/ 	(() => {
+/******/ 		// no baseURI
+/******/ 		
+/******/ 		// object to store loaded and loading chunks
+/******/ 		// undefined = chunk not loaded, null = chunk preloaded/prefetched
+/******/ 		// [resolve, reject, Promise] = chunk loading, 0 = chunk loaded
+/******/ 		var installedChunks = {
+/******/ 			"main": 0
+/******/ 		};
+/******/ 		
+/******/ 		__webpack_require__.f.j = (chunkId, promises) => {
+/******/ 				// JSONP chunk loading for javascript
+/******/ 				var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : undefined;
+/******/ 				if(installedChunkData !== 0) { // 0 means "already installed".
+/******/ 		
+/******/ 					// a Promise means "currently loading".
+/******/ 					if(installedChunkData) {
+/******/ 						promises.push(installedChunkData[2]);
+/******/ 					} else {
+/******/ 						if(true) { // all chunks have JS
+/******/ 							// setup Promise in chunk cache
+/******/ 							var promise = new Promise((resolve, reject) => (installedChunkData = installedChunks[chunkId] = [resolve, reject]));
+/******/ 							promises.push(installedChunkData[2] = promise);
+/******/ 		
+/******/ 							// start chunk loading
+/******/ 							var url = __webpack_require__.p + __webpack_require__.u(chunkId);
+/******/ 							// create error before stack unwound to get useful stacktrace later
+/******/ 							var error = new Error();
+/******/ 							var loadingEnded = (event) => {
+/******/ 								if(__webpack_require__.o(installedChunks, chunkId)) {
+/******/ 									installedChunkData = installedChunks[chunkId];
+/******/ 									if(installedChunkData !== 0) installedChunks[chunkId] = undefined;
+/******/ 									if(installedChunkData) {
+/******/ 										var errorType = event && (event.type === 'load' ? 'missing' : event.type);
+/******/ 										var realSrc = event && event.target && event.target.src;
+/******/ 										error.message = 'Loading chunk ' + chunkId + ' failed.\n(' + errorType + ': ' + realSrc + ')';
+/******/ 										error.name = 'ChunkLoadError';
+/******/ 										error.type = errorType;
+/******/ 										error.request = realSrc;
+/******/ 										installedChunkData[1](error);
+/******/ 									}
+/******/ 								}
+/******/ 							};
+/******/ 							__webpack_require__.l(url, loadingEnded, "chunk-" + chunkId, chunkId);
+/******/ 						}
+/******/ 					}
+/******/ 				}
+/******/ 		};
+/******/ 		
+/******/ 		// no prefetching
+/******/ 		
+/******/ 		// no preloaded
+/******/ 		
+/******/ 		// no HMR
+/******/ 		
+/******/ 		// no HMR manifest
+/******/ 		
+/******/ 		// no on chunks loaded
+/******/ 		
+/******/ 		// install a JSONP callback for chunk loading
+/******/ 		var webpackJsonpCallback = (parentChunkLoadingFunction, data) => {
+/******/ 			var [chunkIds, moreModules, runtime] = data;
+/******/ 			// add "moreModules" to the modules object,
+/******/ 			// then flag all "chunkIds" as loaded and fire callback
+/******/ 			var moduleId, chunkId, i = 0;
+/******/ 			if(chunkIds.some((id) => (installedChunks[id] !== 0))) {
+/******/ 				for(moduleId in moreModules) {
+/******/ 					if(__webpack_require__.o(moreModules, moduleId)) {
+/******/ 						__webpack_require__.m[moduleId] = moreModules[moduleId];
+/******/ 					}
+/******/ 				}
+/******/ 				if(runtime) var result = runtime(__webpack_require__);
+/******/ 			}
+/******/ 			if(parentChunkLoadingFunction) parentChunkLoadingFunction(data);
+/******/ 			for(;i < chunkIds.length; i++) {
+/******/ 				chunkId = chunkIds[i];
+/******/ 				if(__webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId]) {
+/******/ 					installedChunks[chunkId][0]();
+/******/ 				}
+/******/ 				installedChunks[chunkId] = 0;
+/******/ 			}
+/******/ 		
+/******/ 		}
+/******/ 		
+/******/ 		var chunkLoadingGlobal = global["webpackChunkvideo_dashboard_app"] = global["webpackChunkvideo_dashboard_app"] || [];
+/******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
+/******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/nonce */

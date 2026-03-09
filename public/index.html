@@ -39,6 +39,27 @@
       ::-webkit-scrollbar-track {
         background: #111;
       }
+
+      @keyframes neonGlow {
+        0% {
+          box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000, 0 0 15px #ff0000;
+        }
+        100% {
+          box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 30px #ff0000;
+        }
+      }
+
+      @keyframes neonPulse {
+        0% {
+          opacity: 0.8;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0.8;
+        }
+      }
     </style>
   </head>
   <body>

@@ -1,76 +1,631 @@
-// main.js
+﻿// main.js
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
-const path    = require('path');
-const fs      = require('fs');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
-const Store   = require('electron-store');
-const store   = new Store();
+const { pathToFileURL } = require('url');
+const Store = require('electron-store');
 
-// FFmpeg fora do ASAR
+const store = new Store();
+
+const IPTV_CACHE_TTL_MS = 2 * 60 * 1000;
+const IPTV_MAX_LIMIT = 20000;
+const iptvCache = new Map();
+const iptvLogoCache = new Map();
+const iptvLogoInFlight = new Map();
+
+const PROJECT_CACHE_DIR = path.join(__dirname, 'cache');
+const PLAYLIST_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'playlist');
+const LOCAL_PLAYLIST_PATH = path.join(PLAYLIST_CACHE_DIR, 'playlist.m3u');
+const LOGO_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'logos');
+const CHROMIUM_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'chromium');
+
+try {
+  if (!fs.existsSync(CHROMIUM_CACHE_DIR)) {
+    fs.mkdirSync(CHROMIUM_CACHE_DIR, { recursive: true });
+  }
+  app.setPath('sessionData', CHROMIUM_CACHE_DIR);
+  app.commandLine.appendSwitch('disk-cache-dir', CHROMIUM_CACHE_DIR);
+} catch (err) {
+  console.error('Failed to configure Chromium cache directory:', err);
+}
+
+const IPTV_DEFAULT_LIMITS = {
+  live: 5000,
+  movie: 5000,
+  series: 5000,
+  other: 1000,
+  all: 15000,
+};
+
+// FFmpeg outside ASAR
 function getBinPath(...segments) {
   const baseDir = app.isPackaged ? path.dirname(process.execPath) : __dirname;
   return path.join(baseDir, 'bin', ...segments);
 }
-const ffmpegPath = getBinPath(
-  process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
-);
 
-// Pasta de thumbs em userData
-const thumbsDir = path.join(app.getPath('userData'), 'thumbs');
+const ffmpegPath = getBinPath(process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
 
-// Caminho de meta do app (separado do electron-store para evitar conflitos)
+// Thumbs directory in project cache
+const thumbsDir = path.join(PROJECT_CACHE_DIR, 'thumbs');
+
+// Dedicated meta file (avoid collisions with electron-store)
 const metaPath = path.join(app.getPath('userData'), 'user-meta.json');
 
-// Cria janela e carrega HTML
 function createWindow() {
   const win = new BrowserWindow({
     width: 1300,
     height: 800,
     icon: path.join(__dirname, 'icon.ico'),
-    webPreferences: { nodeIntegration: true, contextIsolation: false }
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
   });
 
   const indexPath = path.join(app.getAppPath(), 'public', 'index.html');
-  win.loadFile(indexPath).catch(err => {
-    console.error('Erro ao carregar index.html:', err);
+  win.loadFile(indexPath).catch((err) => {
+    console.error('Error loading index.html:', err);
     dialog.showErrorBox('Erro', `Falha ao carregar interface:\n${err.message}`);
   });
 }
 
+function ensureDirSafe(targetPath, label) {
+  if (fs.existsSync(targetPath)) return;
+  try {
+    fs.mkdirSync(targetPath, { recursive: true });
+  } catch (err) {
+    console.error(`Failed to create ${label}:`, err);
+  }
+}
+
+function ensureProjectCacheDirs() {
+  ensureDirSafe(PROJECT_CACHE_DIR, 'project cache directory');
+  ensureDirSafe(PLAYLIST_CACHE_DIR, 'playlist cache directory');
+  ensureDirSafe(LOGO_CACHE_DIR, 'logo cache directory');
+  ensureDirSafe(CHROMIUM_CACHE_DIR, 'chromium cache directory');
+  ensureDirSafe(thumbsDir, 'thumbnails cache directory');
+}
+
+function clearDirContentsSafe(targetPath) {
+  if (!fs.existsSync(targetPath)) return;
+  const entries = fs.readdirSync(targetPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(targetPath, entry.name);
+    try {
+      fs.rmSync(fullPath, { recursive: true, force: true });
+    } catch (err) {
+      console.warn(`Falha ao remover item de cache: ${fullPath}`, err);
+    }
+  }
+}
+
+function clearIptvMemoryCaches() {
+  iptvCache.clear();
+  iptvLogoCache.clear();
+  iptvLogoInFlight.clear();
+}
+
+function removeFileIfExists(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.rmSync(filePath, { force: true });
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 app.whenReady().then(() => {
-  if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
+  ensureProjectCacheDirs();
   createWindow();
 });
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('activate',   () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
-// --- IPC Handlers ---
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
 
-// Ler config de meta (separado do electron-store). Fallback para antigo config.json se existir
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
+// =========================
+// IPTV helpers
+// =========================
+
+function sanitizeServerUrl(rawServer) {
+  let value = String(rawServer || '').trim();
+  if (!value) return '';
+
+  if (!/^https?:\/\//i.test(value)) {
+    value = `http://${value}`;
+  }
+  return value;
+}
+
+function ensureLogoCacheDir() {
+  if (!fs.existsSync(LOGO_CACHE_DIR)) {
+    fs.mkdirSync(LOGO_CACHE_DIR, { recursive: true });
+  }
+}
+
+function hashText(value) {
+  return crypto.createHash('sha1').update(value).digest('hex');
+}
+
+function extensionFromContentType(contentType) {
+  const normalized = String(contentType || '').toLowerCase();
+  if (normalized.includes('image/jpeg') || normalized.includes('image/jpg')) return '.jpg';
+  if (normalized.includes('image/png')) return '.png';
+  if (normalized.includes('image/webp')) return '.webp';
+  if (normalized.includes('image/gif')) return '.gif';
+  if (normalized.includes('image/svg+xml')) return '.svg';
+  if (normalized.includes('image/bmp')) return '.bmp';
+  if (normalized.includes('image/x-icon') || normalized.includes('image/vnd.microsoft.icon')) return '.ico';
+  return '';
+}
+
+function extensionFromUrl(urlValue) {
+  try {
+    const parsed = new URL(urlValue);
+    const ext = path.extname(parsed.pathname || '').toLowerCase();
+    if (ext && ext.length <= 6) return ext;
+  } catch {
+    return '';
+  }
+  return '';
+}
+
+function resolveLogoExtension(urlValue, contentType) {
+  return extensionFromContentType(contentType) || extensionFromUrl(urlValue) || '.img';
+}
+
+function findExistingLogoPathByHash(hash) {
+  const files = fs.readdirSync(LOGO_CACHE_DIR);
+  const found = files.find((name) => name.startsWith(`${hash}.`));
+  if (!found) return '';
+  return path.join(LOGO_CACHE_DIR, found);
+}
+
+async function fetchLogoBuffer(urlValue, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(urlValue, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: { 'User-Agent': 'MindFlix-IPTV/1.0' },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const contentType = response.headers.get('content-type') || '';
+    const arrayBuffer = await response.arrayBuffer();
+    return {
+      contentType,
+      buffer: Buffer.from(arrayBuffer),
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function cacheIptvLogoLocally(logoUrl) {
+  const value = String(logoUrl || '').trim();
+  if (!value) return '';
+  if (!/^https?:\/\//i.test(value)) return value;
+
+  const memoryHit = iptvLogoCache.get(value);
+  if (memoryHit && fs.existsSync(memoryHit.filePath)) {
+    return memoryHit.fileUrl;
+  }
+
+  if (iptvLogoInFlight.has(value)) {
+    return iptvLogoInFlight.get(value);
+  }
+
+  const task = (async () => {
+    try {
+      ensureLogoCacheDir();
+      const hash = hashText(value);
+      const existingPath = findExistingLogoPathByHash(hash);
+      if (existingPath && fs.existsSync(existingPath)) {
+        const existingUrl = pathToFileURL(existingPath).href;
+        iptvLogoCache.set(value, { filePath: existingPath, fileUrl: existingUrl });
+        return existingUrl;
+      }
+
+      const payload = await fetchLogoBuffer(value);
+      const ext = resolveLogoExtension(value, payload.contentType);
+      const filePath = path.join(LOGO_CACHE_DIR, `${hash}${ext}`);
+      fs.writeFileSync(filePath, payload.buffer);
+      const fileUrl = pathToFileURL(filePath).href;
+      iptvLogoCache.set(value, { filePath, fileUrl });
+      return fileUrl;
+    } catch {
+      return value;
+    } finally {
+      iptvLogoInFlight.delete(value);
+    }
+  })();
+
+  iptvLogoInFlight.set(value, task);
+  return task;
+}
+
+function parseExtInf(line) {
+  const attrs = {};
+  const attrRegex = /([\w-]+)="([^"]*)"/g;
+  let match = attrRegex.exec(line);
+
+  while (match) {
+    attrs[match[1]] = match[2];
+    match = attrRegex.exec(line);
+  }
+
+  const commaIndex = line.indexOf(',');
+  const name = commaIndex >= 0 ? line.slice(commaIndex + 1).trim() : '';
+
+  return {
+    name,
+    tvgId: attrs['tvg-id'] || '',
+    tvgName: attrs['tvg-name'] || '',
+    logo: attrs['tvg-logo'] || '',
+    group: attrs['group-title'] || 'Sem grupo',
+  };
+}
+
+function detectKind(group, streamUrl) {
+  const groupNorm = String(group || '').toLowerCase();
+  const urlNorm = String(streamUrl || '').toLowerCase();
+
+  // URL-based detection is often more reliable for Xtream Codes / XUI systems
+  if (urlNorm.includes('/series/')) return 'series';
+  if (urlNorm.includes('/movie/')) return 'movie';
+
+  if (
+    groupNorm.includes('séries') || 
+    groupNorm.includes('series') || 
+    groupNorm.includes('serie') || 
+    groupNorm.includes('novelas') ||
+    groupNorm.includes('novela') ||
+    groupNorm.includes('season') ||
+    groupNorm.includes('temporada') ||
+    groupNorm.includes('anime') ||
+    groupNorm.includes('desenho')
+  ) {
+    return 'series';
+  }
+
+  if (
+    groupNorm.includes('filmes') || 
+    groupNorm.includes('filme') || 
+    groupNorm.includes('movies') || 
+    groupNorm.includes('movie') || 
+    groupNorm.includes('vod') || 
+    groupNorm.includes('cinema') ||
+    groupNorm.includes('4k') || // Often movies
+    groupNorm.includes('fhd')   // Often movies if not channel
+  ) {
+    // Check if it's explicitly a channel
+    if (!groupNorm.includes('canais') && !groupNorm.includes('tv')) {
+        return 'movie';
+    }
+  }
+
+  if (groupNorm.includes('canais') || urlNorm.includes('/live/') || /\.(m3u8|ts)(\?|$)/i.test(streamUrl)) {
+    return 'live';
+  }
+
+  return 'other';
+}
+
+function parseM3u(text) {
+  const lines = String(text || '').split(/\r?\n/).map((line) => line.trim());
+  const channels = [];
+  let pending = null;
+
+  for (const line of lines) {
+    if (!line) continue;
+
+    if (line.startsWith('#EXTINF')) {
+      pending = parseExtInf(line);
+      continue;
+    }
+
+    if (line.startsWith('#')) continue;
+    if (!pending) continue;
+
+    let group = pending.group || 'Sem grupo';
+    let kind = 'other';
+
+    // 1. Strict Pattern Matching (Redefining content disposition based on playlist analysis)
+    // Pattern: Symbol + Category + " | " + Subcategory
+    
+    // Live TV: "♦️Canais | ..."
+    if (group.includes('Canais |')) {
+        kind = 'live';
+        // Remove the prefix (Symbol + "Canais | ")
+        // We use a regex that is flexible with the symbol part
+        group = group.replace(/^.*Canais\s*\|\s*/i, '').trim();
+    }
+    // Movies: "♠️Filmes | ..."
+    else if (group.includes('Filmes |')) {
+        kind = 'movie';
+        group = group.replace(/^.*Filmes\s*\|\s*/i, '').trim();
+    }
+    // Series: "♣️Séries | ..."
+    else if (group.includes('Séries |') || group.includes('Series |')) {
+        kind = 'series';
+        group = group.replace(/^.*(Séries|Series)\s*\|\s*/i, '').trim();
+    }
+    else {
+        // 2. Fallback Detection
+        kind = detectKind(group, line);
+    }
+
+    channels.push({
+      id: channels.length + 1,
+      name: pending.name || pending.tvgName || pending.tvgId || `Canal ${channels.length + 1}`,
+      group: group, // Now cleaned
+      logo: pending.logo || '',
+      url: line,
+      tvgId: pending.tvgId || '',
+      kind: kind,
+    });
+
+    pending = null;
+  }
+
+  return channels;
+}
+
+function parseKind(value) {
+  const normalized = String(value || 'live').toLowerCase();
+  if (['live', 'movie', 'series', 'other', 'all'].includes(normalized)) return normalized;
+  return 'live';
+}
+
+function parseLimit(rawLimit, kind) {
+  const fallback = IPTV_DEFAULT_LIMITS[kind] || IPTV_DEFAULT_LIMITS.live;
+  const parsed = Number(rawLimit);
+
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(1, Math.min(50000, Math.floor(parsed)));
+}
+
+function parseOffset(rawOffset) {
+  const parsed = Number(rawOffset);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.floor(parsed));
+}
+
+function applyFilters(channels, kind, search) {
+  const searchNorm = String(search || '').trim().toLowerCase();
+
+  return channels.filter((item) => {
+    const kindMatch = kind === 'all' || item.kind === kind;
+    if (!kindMatch) return false;
+
+    if (!searchNorm) return true;
+
+    return (
+      item.name.toLowerCase().includes(searchNorm) ||
+      item.group.toLowerCase().includes(searchNorm)
+    );
+  });
+}
+
+function uniqueGroups(channels) {
+  return [...new Set((channels || []).map((item) => item.group))].sort((a, b) => a.localeCompare(b));
+}
+
+function kindCountsFromChannels(channels) {
+  const counts = { live: 0, vod: 0, other: 0 };
+  for (const item of channels || []) {
+    if (Object.prototype.hasOwnProperty.call(counts, item.kind)) {
+      counts[item.kind] += 1;
+    }
+  }
+  return counts;
+}
+
+async function fetchTextWithTimeout(url, timeoutMs = 120000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'MindFlix-IPTV/1.0',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const buffer = await response.arrayBuffer();
+    return Buffer.from(buffer).toString('utf8');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 30000) {
+  const raw = await fetchTextWithTimeout(url, timeoutMs);
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error('Resposta JSON inválida do servidor IPTV.');
+  }
+}
+
+async function validateIptvLogin(payload) {
+  const sourceUrl = sanitizeServerUrl(payload.url);
+  if (!sourceUrl) throw new Error('URL da playlist é obrigatória.');
+
+  // Simple validation by fetching the header
+  try {
+    const response = await fetch(sourceUrl, { method: 'HEAD', headers: { 'User-Agent': 'MindFlix-IPTV/1.0' } });
+    if (!response.ok && response.status !== 405) { // Some servers block HEAD
+       // try GET with range if HEAD fails
+    }
+  } catch (e) {
+     // ignore and try full fetch in load
+  }
+
+  return {
+    sourceUrl,
+    sourceMasked: sourceUrl, // No masking needed for raw URL unless we want to hide token
+    userInfo: {
+      status: 'active',
+    },
+  };
+}
+
+async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false) {
+  const now = Date.now();
+  const existing = iptvCache.get(sourceUrl);
+
+  // In-memory cache is still valid
+  if (!forceRefresh && existing && now - existing.cachedAt < IPTV_CACHE_TTL_MS) {
+    return existing;
+  }
+
+  let playlistText = '';
+
+  if (!forceRefresh && fs.existsSync(LOCAL_PLAYLIST_PATH)) {
+    try {
+      const localText = fs.readFileSync(LOCAL_PLAYLIST_PATH, 'utf8');
+      const localChannels = parseM3u(localText);
+      if (localChannels.length) {
+        const localPayload = {
+          sourceUrl: sourceUrl,
+          sourceMasked: sourceUrl,
+          channels: localChannels,
+          kindCounts: kindCountsFromChannels(localChannels),
+          cachedAt: Date.now(),
+        };
+        iptvCache.set(sourceUrl, localPayload);
+        return localPayload;
+      }
+    } catch (err) {
+      console.warn('Falha ao ler playlist local em cache:', err);
+    }
+  }
+
+  try {
+    // 1. Try to download from URL
+    console.log('Downloading playlist from URL:', sourceUrl);
+    playlistText = await fetchTextWithTimeout(sourceUrl, 120000);
+    
+    // 2. Save to local file
+    try {
+      fs.writeFileSync(LOCAL_PLAYLIST_PATH, playlistText, 'utf8');
+      console.log('Playlist saved to disk:', LOCAL_PLAYLIST_PATH);
+    } catch (err) {
+      console.warn('Failed to save playlist to disk:', err);
+    }
+  } catch (err) {
+    console.warn('Failed to download playlist:', err);
+    
+    // 3. Fallback: Try to read from local file
+    if (fs.existsSync(LOCAL_PLAYLIST_PATH)) {
+      console.log('Using local cached playlist as fallback.');
+      playlistText = fs.readFileSync(LOCAL_PLAYLIST_PATH, 'utf8');
+    } else {
+      throw new Error('Falha ao baixar playlist e nenhum cache local encontrado.');
+    }
+  }
+
+  const channels = parseM3u(playlistText);
+
+  if (!channels.length) {
+    throw new Error('A playlist foi carregada, mas nenhum canal foi identificado.');
+  }
+
+  const payload = {
+    sourceUrl: sourceUrl,
+    sourceMasked: sourceUrl,
+    channels,
+    kindCounts: kindCountsFromChannels(channels),
+    cachedAt: Date.now(),
+  };
+
+  iptvCache.set(sourceUrl, payload);
+  return payload;
+}
+
+async function loadIptvChannels(params) {
+  const sourceUrl = String(params.sourceUrl || '').trim();
+  const kind = parseKind(params.kind);
+  const limit = parseLimit(params.limit, kind);
+  const offset = parseOffset(params.offset);
+  const force = Boolean(params.force);
+  const search = String(params.search || '');
+
+  if (!sourceUrl) {
+    throw new Error('Fonte IPTV ausente. Faça login novamente.');
+  }
+
+  const cached = await getParsedPlaylistForSource(sourceUrl, force);
+  const filtered = applyFilters(cached.channels, kind, search);
+  const groups = uniqueGroups(filtered);
+  const channels = filtered.slice(offset, offset + limit);
+  const nextOffset = offset + channels.length;
+  const hasMore = nextOffset < filtered.length;
+
+  return {
+    source: cached.sourceMasked,
+    kind,
+    totalAll: cached.channels.length,
+    totalFiltered: filtered.length,
+    returned: channels.length,
+    offset,
+    nextOffset,
+    hasMore,
+    limit,
+    groups,
+    kindCounts: cached.kindCounts,
+    channels,
+    cachedAt: new Date(cached.cachedAt).toISOString(),
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+// =========================
+// IPC handlers (existing)
+// =========================
+
 ipcMain.handle('load-config', () => {
-  const legacyCfgPath = path.join(app.getPath('userData'), 'config.json'); // usado por electron-store por padrão
+  const legacyCfgPath = path.join(app.getPath('userData'), 'config.json');
+
   try {
     if (fs.existsSync(metaPath)) {
       const cfg = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
       return cfg || {};
     }
-    // Fallback de migração: tentar ler legado (pode conter videoOrders salvo manualmente)
+
     if (fs.existsSync(legacyCfgPath)) {
       const legacy = JSON.parse(fs.readFileSync(legacyCfgPath, 'utf8'));
-      // Apenas retornar campos relevantes caso existam
       return {
         folders: legacy.folders || [],
         watchedVideos: legacy.watchedVideos || [],
-        videoOrders: legacy.videoOrders || {}
+        videoOrders: legacy.videoOrders || {},
       };
     }
   } catch (e) {
     console.warn('Falha ao ler config/meta:', e);
   }
+
   return {};
 });
 
-// Salvar config/meta em arquivo separado para não conflitar com electron-store
 ipcMain.handle('save-config', (e, cfg) => {
   try {
     fs.writeFileSync(metaPath, JSON.stringify(cfg, null, 2), 'utf8');
@@ -81,21 +636,24 @@ ipcMain.handle('save-config', (e, cfg) => {
   }
 });
 
-// Expor thumbsDir
 ipcMain.handle('get-thumbs-path', () => thumbsDir);
 
-// Selecionar pasta
 ipcMain.handle('select-folder', async () => {
   const res = await dialog.showOpenDialog({ properties: ['openDirectory'] });
   return res.canceled ? null : res.filePaths[0];
 });
 
-// Electron-store (playlists, watched, positions)
-ipcMain.handle('load-folders',  () => store.get('folders', []));
-ipcMain.handle('save-folders', (e, folders) => { store.set('folders', folders); return true; });
-ipcMain.handle('load-watched',  () => store.get('watchedVideos', []));
-ipcMain.handle('save-watched', (e, watched) => { store.set('watchedVideos', watched); return true; });
-ipcMain.handle('load-positions',() => store.get('positions', {}));
+ipcMain.handle('load-folders', () => store.get('folders', []));
+ipcMain.handle('save-folders', (e, folders) => {
+  store.set('folders', folders);
+  return true;
+});
+ipcMain.handle('load-watched', () => store.get('watchedVideos', []));
+ipcMain.handle('save-watched', (e, watched) => {
+  store.set('watchedVideos', watched);
+  return true;
+});
+ipcMain.handle('load-positions', () => store.get('positions', {}));
 ipcMain.handle('save-position', (e, { videoPath, position }) => {
   const positions = store.get('positions', {});
   positions[videoPath] = position;
@@ -109,66 +667,148 @@ ipcMain.handle('clear-positions', (e, videoPaths) => {
   return true;
 });
 
-// Handlers para anotações de vídeos
 ipcMain.handle('load-annotations', () => store.get('videoAnnotations', {}));
 ipcMain.handle('save-annotations', (e, annotations) => {
   store.set('videoAnnotations', annotations);
   return true;
 });
 
-// Gerar thumbnails
-// Função recursiva para processar todas as subpastas
+// =========================
+// IPC handlers (IPTV)
+// =========================
+
+ipcMain.handle('iptv-validate-login', async (e, payload) => {
+  try {
+    const result = await validateIptvLogin(payload || {});
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha no login IPTV.' };
+  }
+});
+
+ipcMain.handle('iptv-load-channels', async (e, params) => {
+  try {
+    const result = await loadIptvChannels(params || {});
+    return { ok: true, ...result };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao carregar canais IPTV.' };
+  }
+});
+
+ipcMain.handle('iptv-cache-logo', async (e, logoUrl) => {
+  try {
+    const logoPath = await cacheIptvLogoLocally(logoUrl);
+    return { ok: true, logoPath };
+  } catch {
+    return { ok: false, logoPath: String(logoUrl || '') };
+  }
+});
+
+ipcMain.handle('iptv-has-local-playlist', () => {
+  try {
+    if (!fs.existsSync(LOCAL_PLAYLIST_PATH)) return { ok: true, hasPlaylist: false };
+    const stat = fs.statSync(LOCAL_PLAYLIST_PATH);
+    return { ok: true, hasPlaylist: stat.isFile() && stat.size > 0 };
+  } catch (error) {
+    return { ok: false, hasPlaylist: false, error: error?.message || 'Falha ao verificar playlist local.' };
+  }
+});
+
+ipcMain.handle('iptv-clear-cache', () => {
+  try {
+    clearIptvMemoryCaches();
+    clearDirContentsSafe(PROJECT_CACHE_DIR);
+    ensureProjectCacheDirs();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao limpar cache.' };
+  }
+});
+
+ipcMain.handle('iptv-delete-local-playlist', () => {
+  try {
+    clearIptvMemoryCaches();
+    ensureDirSafe(PLAYLIST_CACHE_DIR, 'playlist cache directory');
+    const removed = removeFileIfExists(LOCAL_PLAYLIST_PATH);
+    return { ok: true, removed };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao remover playlist local.' };
+  }
+});
+
+ipcMain.handle('iptv-clear-all', () => {
+  try {
+    clearIptvMemoryCaches();
+    store.clear();
+    removeFileIfExists(metaPath);
+    removeFileIfExists(path.join(app.getPath('userData'), 'config.json'));
+    clearDirContentsSafe(PROJECT_CACHE_DIR);
+    ensureProjectCacheDirs();
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao limpar dados do aplicativo.' };
+  }
+});
+
+ipcMain.handle('iptv-exit-app', () => {
+  app.quit();
+  return { ok: true };
+});
+
+// =========================
+// Thumbnail generation
+// =========================
+
 function processDirectoryRecursive(dirPath, exts, callback) {
   let files;
-  try { files = fs.readdirSync(dirPath); } catch { return; }
-  
+  try {
+    files = fs.readdirSync(dirPath);
+  } catch {
+    return;
+  }
+
   for (const file of files) {
     const fullPath = path.join(dirPath, file);
     const stat = fs.statSync(fullPath);
-    
+
     if (stat.isDirectory()) {
-      // Processa subpasta recursivamente
       processDirectoryRecursive(fullPath, exts, callback);
     } else if (exts.includes(path.extname(file).toLowerCase())) {
-      // Processa arquivo de vídeo
       callback(fullPath, file);
     }
   }
 }
 
 ipcMain.handle('generate-thumbnails', async (e, folders) => {
-  const exts = ['.mp4','.avi','.mkv','.mov','.webm','.wmv','.flv'];
+  const exts = ['.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv'];
   let totalVideos = 0;
   let processedVideos = 0;
-  
-  // Primeiro, conta total de vídeos
+
   for (const f of folders) {
     processDirectoryRecursive(f.path, exts, () => totalVideos++);
   }
-  
-  // Depois processa e gera thumbnails
+
   for (const f of folders) {
     processDirectoryRecursive(f.path, exts, async (videoPath, fileName) => {
-      const safeName = fileName.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'.jpg';
+      const safeName = fileName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
       const thumbPath = path.join(thumbsDir, safeName);
-      
+
       if (!fs.existsSync(thumbPath)) {
         try {
-          await new Promise((res, rej) => {
-            const ff = spawn(ffmpegPath, ['-y','-i',videoPath,'-ss','00:00:01','-frames:v','1',thumbPath]);
-            ff.on('close', code => code===0 ? res() : rej());
-            ff.on('error', rej);
+          await new Promise((resolve, reject) => {
+            const ff = spawn(ffmpegPath, ['-y', '-i', videoPath, '-ss', '00:00:01', '-frames:v', '1', thumbPath]);
+            ff.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg exited ${code}`))));
+            ff.on('error', reject);
           });
         } catch (error) {
           console.error('Error generating thumbnail for:', videoPath, error);
         }
       }
-      
-      processedVideos++;
-      // Envia progresso para o renderer
+
+      processedVideos += 1;
       e.sender.send('thumbnail-progress', { processed: processedVideos, total: totalVideos });
     });
   }
-  
+
   return { success: true, total: totalVideos, processed: processedVideos };
 });

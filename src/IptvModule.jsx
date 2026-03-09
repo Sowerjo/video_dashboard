@@ -1,0 +1,2121 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import ReactPlayer from "react-player";
+import {
+  AppContainer,
+  BackgroundLayer,
+  VignetteOverlay,
+  LogoOverlay,
+  Tile,
+  FolderTitle,
+  ContentInfo,
+  ModalInput,
+} from "./styles";
+import {
+  FaBars,
+  FaCheck,
+  FaChevronLeft,
+  FaChevronRight,
+  FaFilm,
+  FaHeart,
+  FaInfoCircle,
+  FaPlus,
+  FaPlay,
+  FaSearch,
+  FaStar,
+  FaTimes,
+  FaTv,
+  FaUserCircle,
+  FaVideo,
+} from "react-icons/fa";
+
+const { ipcRenderer } = window.require("electron");
+
+const NAV_ITEMS = [
+  { key: "home", label: "Início" },
+  { key: "live", label: "TV ao Vivo" },
+  { key: "movies", label: "Filmes" },
+  { key: "series", label: "Séries" },
+];
+
+function getLimitForKind(kind) {
+  if (kind === "movie") return 5000;
+  if (kind === "series") return 5000;
+  if (kind === "live") return 5000;
+  if (kind === "all") return 10000;
+  return 3000;
+}
+
+function toPlayableUrl(rawUrl) {
+  if (!rawUrl) return "";
+  if (/\.ts(\?|$)/i.test(rawUrl)) {
+    return rawUrl.replace(/\.ts(\?|$)/i, ".m3u8$1");
+  }
+  return rawUrl;
+}
+
+function mediaTypeFromUrl(url) {
+  if (/\.m3u8(\?|$)/i.test(url)) return "application/x-mpegURL";
+  if (/\.mp4(\?|$)/i.test(url)) return "video/mp4";
+  if (/\.mkv(\?|$)/i.test(url)) return "video/mp4"; // Treat as mp4 for browser playback if supported
+  if (/\.webm(\?|$)/i.test(url)) return "video/webm";
+  if (/\.ts(\?|$)/i.test(url)) return "video/mp2t";
+  return ""; // Let Video.js/browser infer
+}
+
+function normalizeCategoryLabel(groupRaw) {
+  const cleaned = String(groupRaw || "Sem grupo")
+    .replace(/^[^A-Za-z0-9À-ÿ]+/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const parts = cleaned.split("|").map((part) => part.trim()).filter(Boolean);
+
+  if (parts.length >= 2) {
+    return `${parts[0].toUpperCase()} | ${parts[1].toUpperCase()}`;
+  }
+
+  if (parts.length === 1) {
+    return parts[0].toUpperCase();
+  }
+
+  return "SEM GRUPO";
+}
+
+function isAdultCategoryLabel(labelRaw) {
+  const normalized = String(labelRaw || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  return /\badulto?s?\b|\badult\b|18\+|\bxxx\b|\bporn\b|\bsexo\b|\bsex\b/.test(normalized);
+}
+
+function matchNav(item, activeNav) {
+  if (activeNav === "home") return true;
+  
+  // Now we rely on 'kind' which is already filtered by the backend/loadChannels
+  // But for client-side filtering if needed:
+  if (activeNav === "series") return item.kind === 'series';
+  if (activeNav === "movies") return item.kind === 'movie';
+  if (activeNav === "live") return item.kind === 'live';
+
+  return true;
+}
+
+function parseEpisodeInfo(name) {
+  // Try common patterns
+  // "Series Name S01 E01"
+  // "Series Name S01E01"
+  // "Series Name 1x01"
+  const patterns = [
+    /^(.*?) S(\d+) ?E(\d+)/i,
+    /^(.*?) S(\d+)E(\d+)/i,
+    /^(.*?) (\d+)x(\d+)/i
+  ];
+
+  for (const p of patterns) {
+    const match = name.match(p);
+    if (match) {
+      return {
+        seriesName: match[1].trim()
+          .replace(/[-_]/g, ' ')
+          .replace(/\s+/g, ' '),
+        season: parseInt(match[2], 10),
+        episode: parseInt(match[3], 10),
+        title: name
+      };
+    }
+  }
+  return {
+    seriesName: name.trim(),
+    season: 1,
+    episode: 1,
+    title: name
+  };
+}
+
+function makeChannelFavoriteId(channelId) {
+  return `channel::${String(channelId)}`;
+}
+
+function makeSeriesFavoriteId(categoryLabel, seriesName) {
+  return `series::${normalizeCategoryLabel(categoryLabel)}::${String(seriesName || "").trim().toLowerCase()}`;
+}
+
+function normalizeStorageIds(input) {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((id) => String(id || "").trim())
+    .filter(Boolean);
+}
+
+const baseButtonStyle = {
+  background: "#1a0000",
+  color: "#fff",
+  border: "1px solid #ff0000",
+  borderRadius: 8,
+  padding: "8px 12px",
+  cursor: "pointer",
+  fontWeight: 700,
+  boxShadow: "0 0 8px #ff000044",
+};
+
+const cachedLogoByUrl = new Map();
+const inFlightLogoRequests = new Map();
+const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+
+const ReactUrlPlayer = ({ src, type, onBufferingChange, onError, onEnded }) => {
+  const isHlsSource = useMemo(() => /\.m3u8(\?|$)/i.test(src || ""), [src]);
+  const playerSource = useMemo(() => src || "", [src]);
+  const playerRef = useRef(null);
+
+  useEffect(() => {
+    if (!playerSource) return;
+    playerRef.current?.play?.();
+  }, [playerSource]);
+
+  return (
+    <div 
+      style={{ 
+        width: "100%", 
+        height: "100%", 
+        position: "relative",
+        border: "2px solid #ff0000",
+        boxShadow: "0 0 20px #ff0000, inset 0 0 20px rgba(255, 0, 0, 0.3)",
+        borderRadius: "8px",
+        overflow: "hidden"
+      }}
+    >
+      <ReactPlayer
+        ref={playerRef}
+        key={`${src || "empty"}-${type || "auto"}`}
+        src={playerSource}
+        controls
+        playsInline
+        width="100%"
+        height="100%"
+        style={{ background: "#000" }}
+        config={{
+          file: {
+            forceHLS: isHlsSource,
+            attributes: {
+              crossOrigin: "anonymous",
+            },
+          },
+        }}
+        onCanPlay={() => onBufferingChange && onBufferingChange(false)}
+        onPlaying={() => onBufferingChange && onBufferingChange(false)}
+        onWaiting={() => onBufferingChange && onBufferingChange(true)}
+        onPause={() => onBufferingChange && onBufferingChange(false)}
+        onEnded={() => onEnded && onEnded()}
+        onError={(error) => {
+          onBufferingChange && onBufferingChange(false);
+          onError && onError(error);
+        }}
+      />
+      
+      <div 
+        style={{
+          position: "absolute",
+          top: "-2px",
+          left: "-2px",
+          right: "-2px",
+          bottom: "-2px",
+          borderRadius: "8px",
+          animation: "neonGlow 2s ease-in-out infinite alternate",
+          zIndex: -1
+        }}
+      />
+    </div>
+  );
+};
+
+const CachedLogoImage = ({ src, alt, style }) => {
+  const imageRef = useRef(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState(() => {
+    const source = String(src || "").trim();
+    if (!source) return "";
+    if (!/^https?:\/\//i.test(source)) return source;
+    const existing = cachedLogoByUrl.get(source);
+    return existing || TRANSPARENT_PIXEL;
+  });
+
+  useEffect(() => {
+    const source = String(src || "").trim();
+    if (!source) {
+      setShouldLoad(false);
+      return;
+    }
+    if (!/^https?:\/\//i.test(source)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const element = imageRef.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          setShouldLoad(true);
+          observer.disconnect();
+        }
+      },
+      { root: null, rootMargin: "260px", threshold: 0.01 }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [src]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const source = String(src || "").trim();
+
+    if (!source) {
+      setResolvedSrc("");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const applyResolved = (value) => {
+      if (!cancelled && value) {
+        setResolvedSrc(value);
+      }
+    };
+
+    if (!/^https?:\/\//i.test(source)) {
+      applyResolved(source);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (!shouldLoad) {
+      setResolvedSrc(TRANSPARENT_PIXEL);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const existing = cachedLogoByUrl.get(source);
+    if (existing) {
+      applyResolved(existing);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setResolvedSrc(TRANSPARENT_PIXEL);
+
+    const running = inFlightLogoRequests.get(source) || ipcRenderer.invoke("iptv-cache-logo", source);
+    inFlightLogoRequests.set(source, running);
+
+    running
+      .then((response) => {
+        const logoPath = response?.logoPath || source;
+        cachedLogoByUrl.set(source, logoPath);
+        applyResolved(logoPath);
+      })
+      .catch(() => applyResolved(source))
+      .finally(() => {
+        if (inFlightLogoRequests.get(source) === running) {
+          inFlightLogoRequests.delete(source);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src, shouldLoad]);
+
+  if (!resolvedSrc) return null;
+  return <img ref={imageRef} src={resolvedSrc} alt={alt} style={style} loading="lazy" />;
+};
+
+export default function IptvModule({ onBack }) {
+  const [form, setForm] = useState({
+    url: "",
+  });
+
+  const [session, setSession] = useState(null);
+  const [status, setStatus] = useState("Informe a URL da lista M3U.");
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingChannels, setLoadingChannels] = useState(false);
+
+  // 'home', 'live', 'movies', 'series'
+  const [activeNav, setActiveNav] = useState("home");
+  
+  // Used for data fetching
+  const kind = "all";
+
+  const [search, setSearch] = useState("");
+  const [group, setGroup] = useState("");
+
+  const [channels, setChannels] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [selected, setSelected] = useState(null);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [buffering, setBuffering] = useState(false);
+
+  // For Series Navigation
+  const [viewState, setViewState] = useState("categories"); // categories, series_list, seasons, episodes
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSeries, setSelectedSeries] = useState(null);
+  const [selectedSeason, setSelectedSeason] = useState(null);
+
+  const [hoveredCardId, setHoveredCardId] = useState(null);
+  const [headerSolid, setHeaderSolid] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [infoChannel, setInfoChannel] = useState(null);
+  const [newM3uModalOpen, setNewM3uModalOpen] = useState(false);
+  const [newM3uUrlInput, setNewM3uUrlInput] = useState("");
+  const [favoriteIds, setFavoriteIds] = useState([]);
+  const [likedIds, setLikedIds] = useState([]);
+  const [recentlyPlayedIds, setRecentlyPlayedIds] = useState([]);
+  const [adultMoviesUnlocked, setAdultMoviesUnlocked] = useState(false);
+
+  const rowRefs = useRef({});
+  const contentRef = useRef(null);
+  const menuRef = useRef(null);
+  const menuBtnRef = useRef(null);
+
+  useEffect(() => {
+    const saved = {
+      url: localStorage.getItem("iptv_url") || "",
+    };
+
+    setForm((prev) => ({ ...prev, ...saved }));
+    let cancelled = false;
+
+    const bootstrapFromLocalCache = async () => {
+      const savedUrl = String(saved.url || "").trim();
+      if (!savedUrl) return;
+
+      try {
+        const result = await ipcRenderer.invoke("iptv-has-local-playlist");
+        if (cancelled || !result?.ok || !result?.hasPlaylist) return;
+
+        setSession({
+          sourceUrl: savedUrl,
+          sourceMasked: savedUrl,
+          userInfo: { status: "cache-local" },
+        });
+        setStatus("Playlist local encontrada. Carregando conteúdo...");
+      } catch {
+        if (!cancelled) {
+          setStatus("Informe a URL da lista M3U.");
+        }
+      }
+    };
+
+    bootstrapFromLocalCache();
+
+    try {
+      const parsedFavorites = JSON.parse(localStorage.getItem("iptv_favorites") || "[]");
+      const normalizedFavorites = Array.isArray(parsedFavorites)
+        ? parsedFavorites.map((id) => {
+            const value = String(id);
+            if (value.startsWith("channel::") || value.startsWith("series::")) return value;
+            return makeChannelFavoriteId(value);
+          })
+        : [];
+      setFavoriteIds(normalizedFavorites);
+      setLikedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_likes") || "[]")));
+      setRecentlyPlayedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_recent") || "[]")));
+    } catch {
+      setFavoriteIds([]);
+      setLikedIds([]);
+      setRecentlyPlayedIds([]);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("iptv_favorites", JSON.stringify(favoriteIds));
+  }, [favoriteIds]);
+
+  useEffect(() => {
+    localStorage.setItem("iptv_likes", JSON.stringify(likedIds));
+  }, [likedIds]);
+
+  useEffect(() => {
+    localStorage.setItem("iptv_recent", JSON.stringify(recentlyPlayedIds));
+  }, [recentlyPlayedIds]);
+
+  useEffect(() => {
+    const resolvedUrl = String(session?.sourceUrl || form.url || "").trim();
+    if (!resolvedUrl) return;
+    localStorage.setItem("iptv_url", resolvedUrl);
+  }, [session?.sourceUrl, form.url]);
+
+  useEffect(() => {
+    const closeMenuByOutsideClick = (event) => {
+      if (!menuOpen) return;
+
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        menuBtnRef.current &&
+        !menuBtnRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeMenuByOutsideClick);
+    return () => document.removeEventListener("mousedown", closeMenuByOutsideClick);
+  }, [menuOpen]);
+
+  const channelById = useMemo(() => {
+    const map = new Map();
+    channels.forEach((item) => {
+      map.set(item.id, item);
+      map.set(String(item.id), item);
+    });
+    return map;
+  }, [channels]);
+
+  const seriesCatalog = useMemo(() => {
+    const catalog = new Map();
+
+    channels.forEach((channel) => {
+      if (channel.kind !== "series") return;
+      const info = parseEpisodeInfo(channel.name);
+      const groupName = normalizeCategoryLabel(channel.group);
+      const favoriteId = makeSeriesFavoriteId(groupName, info.seriesName);
+
+      if (!catalog.has(favoriteId)) {
+        catalog.set(favoriteId, {
+          id: favoriteId,
+          name: info.seriesName,
+          group: groupName,
+          logo: channel.logo,
+          kind: "series",
+          favoriteType: "series",
+        });
+      }
+    });
+
+    return catalog;
+  }, [channels]);
+
+  const favorites = useMemo(() => {
+    return favoriteIds
+      .map((favoriteId) => {
+        const id = String(favoriteId);
+
+        if (id.startsWith("series::")) {
+          return seriesCatalog.get(id) || null;
+        }
+
+        const rawId = id.replace(/^channel::/, "");
+        return channelById.get(rawId) || channelById.get(Number(rawId)) || null;
+      })
+      .filter(Boolean);
+  }, [favoriteIds, channelById, seriesCatalog]);
+
+  const recentItems = useMemo(() => {
+    return recentlyPlayedIds
+      .map((id) => channelById.get(id) || channelById.get(Number(id)))
+      .filter(Boolean);
+  }, [recentlyPlayedIds, channelById]);
+
+  const filteredChannels = useMemo(() => {
+    const searchNorm = search.trim().toLowerCase();
+    const source = activeNav === "minha-lista" ? favorites : channels;
+
+    return source.filter((item) => {
+      if (!matchNav(item, activeNav)) return false;
+
+      const groupMatch = !group || item.group === group;
+      if (!groupMatch) return false;
+
+      if (!searchNorm) return true;
+
+      return (
+        item.name.toLowerCase().includes(searchNorm) ||
+        item.group.toLowerCase().includes(searchNorm)
+      );
+    });
+  }, [channels, favorites, activeNav, group, search]);
+
+  const rows = useMemo(() => {
+    const base = filteredChannels;
+    const list = [];
+
+    if (activeNav !== "minha-lista") {
+      if (favorites.length > 0) {
+        list.push({ key: "favoritos", title: "Favoritos", items: favorites.slice(0, 30) });
+      }
+      if (recentItems.length > 0) {
+        list.push({ key: "continuar", title: "Continuar assistindo", items: recentItems.slice(0, 30) });
+      }
+      if (base.length > 0) {
+        list.push({ key: "em-alta", title: "Em alta", items: base.slice(0, 30) });
+      }
+      if (base.length > 0) {
+        list.push({ key: "top10", title: "Top 10", items: base.slice(0, 10) });
+      }
+    } else {
+      list.push({ key: "minha-lista-only", title: "Minha Lista", items: base.slice(0, 50) });
+    }
+
+    const byCategory = new Map();
+
+    base.forEach((item) => {
+      const category = normalizeCategoryLabel(item.group);
+      if (!byCategory.has(category)) byCategory.set(category, []);
+      const arr = byCategory.get(category);
+      if (arr.length < 30) arr.push(item);
+    });
+
+    const orderedCategories = [...byCategory.entries()]
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, 10);
+
+    orderedCategories.forEach(([category, items], idx) => {
+      list.push({ key: `cat-${idx}-${category}`, title: category, items });
+    });
+
+    return list.filter((row) => row.items.length > 0);
+  }, [filteredChannels, favorites, recentItems, activeNav]);
+
+  const seriesData = useMemo(() => {
+    if (activeNav !== "series") return {};
+
+    const data = {};
+    const source = filteredChannels;
+
+    source.forEach((channel) => {
+      const groupName = normalizeCategoryLabel(channel.group);
+      const info = parseEpisodeInfo(channel.name);
+
+      if (!data[groupName]) {
+        data[groupName] = {};
+      }
+
+      if (!data[groupName][info.seriesName]) {
+        data[groupName][info.seriesName] = {
+          name: info.seriesName,
+          logo: channel.logo,
+          seasons: {},
+        };
+      }
+
+      const series = data[groupName][info.seriesName];
+      const seasonKey = String(info.season);
+
+      if (!series.seasons[seasonKey]) {
+        series.seasons[seasonKey] = [];
+      }
+
+      series.seasons[seasonKey].push({
+        ...channel,
+        episodeNum: info.episode,
+      });
+    });
+
+    return data;
+  }, [filteredChannels, activeNav]);
+
+  const movieCategories = useMemo(() => {
+    if (activeNav !== "movies") return [];
+
+    const searchNorm = search.trim().toLowerCase();
+    const byCategory = new Map();
+
+    channels.forEach((item) => {
+      if (item.kind !== "movie") return;
+      if (
+        searchNorm &&
+        !item.name.toLowerCase().includes(searchNorm) &&
+        !item.group.toLowerCase().includes(searchNorm)
+      ) {
+        return;
+      }
+
+      const key = normalizeCategoryLabel(item.group);
+      if (!byCategory.has(key)) {
+        byCategory.set(key, { raw: item.group, label: key, count: 0 });
+      }
+      byCategory.get(key).count += 1;
+    });
+
+    return [...byCategory.values()].sort((a, b) => {
+      const aAdult = isAdultCategoryLabel(a.label);
+      const bAdult = isAdultCategoryLabel(b.label);
+
+      if (aAdult !== bAdult) {
+        return aAdult ? 1 : -1;
+      }
+
+      return b.count - a.count;
+    });
+  }, [channels, activeNav, search]);
+
+  const liveCategories = useMemo(() => {
+    if (activeNav !== "live") return [];
+
+    const searchNorm = search.trim().toLowerCase();
+    const byCategory = new Map();
+
+    channels.forEach((item) => {
+      if (item.kind !== "live") return;
+      if (
+        searchNorm &&
+        !item.name.toLowerCase().includes(searchNorm) &&
+        !item.group.toLowerCase().includes(searchNorm)
+      ) {
+        return;
+      }
+
+      const key = normalizeCategoryLabel(item.group);
+      if (!byCategory.has(key)) {
+        byCategory.set(key, { raw: item.group, label: key, count: 0 });
+      }
+      byCategory.get(key).count += 1;
+    });
+
+    return [...byCategory.values()].sort((a, b) => {
+      const aAdult = isAdultCategoryLabel(a.label);
+      const bAdult = isAdultCategoryLabel(b.label);
+
+      if (aAdult !== bAdult) {
+        return aAdult ? 1 : -1;
+      }
+
+      return b.count - a.count;
+    });
+  }, [channels, activeNav, search]);
+
+  useEffect(() => {
+    if (activeNav === "series") {
+      return;
+    }
+
+    if (!selected && filteredChannels.length > 0) {
+      setSelected(filteredChannels[0]);
+    }
+  }, [filteredChannels, selected, activeNav]);
+
+  useEffect(() => {
+    if (activeNav !== "movies") return;
+
+    if (movieCategories.length === 0) {
+      if (group) setGroup("");
+      return;
+    }
+
+    const fallbackCategory = movieCategories.find((category) => !isAdultCategoryLabel(category.label));
+    const selectedCategory = movieCategories.find((category) => category.raw === group);
+
+    if (selectedCategory && isAdultCategoryLabel(selectedCategory.label) && !adultMoviesUnlocked) {
+      setGroup(fallbackCategory?.raw || "");
+      setShowPlayer(false);
+      return;
+    }
+
+    if (!group || !movieCategories.some((category) => category.raw === group)) {
+      if (fallbackCategory) {
+        setGroup(fallbackCategory.raw);
+      } else if (adultMoviesUnlocked) {
+        setGroup(movieCategories[0].raw);
+      } else {
+        setGroup("");
+      }
+    }
+  }, [activeNav, movieCategories, group, adultMoviesUnlocked]);
+
+  useEffect(() => {
+    if (activeNav !== "live") return;
+
+    if (liveCategories.length === 0) {
+      if (group) setGroup("");
+      return;
+    }
+
+    if (!group || !liveCategories.some((category) => category.raw === group)) {
+      setGroup(liveCategories[0].raw);
+    }
+  }, [activeNav, liveCategories, group]);
+
+  useEffect(() => {
+    if (activeNav !== "series" || viewState !== "categories") return;
+
+    const categories = Object.keys(seriesData).sort();
+    if (!categories.length) {
+      if (selectedCategory) setSelectedCategory(null);
+      return;
+    }
+
+    if (!selectedCategory || !categories.includes(selectedCategory)) {
+      setSelectedCategory(categories[0]);
+    }
+  }, [activeNav, viewState, seriesData, selectedCategory]);
+
+  const loadChannels = async (force = false, sourceOverride = null) => {
+    const sourceUrl = sourceOverride || session?.sourceUrl;
+    if (!sourceUrl) return;
+
+    setLoadingChannels(true);
+    setStatus("Carregando canais...");
+    setChannels([]);
+    setSelected(null);
+    setGroups([]);
+    setGroup("");
+
+    const pageSize = getLimitForKind(kind);
+    let nextOffset = 0;
+    let hasMore = true;
+    let totalFiltered = 0;
+    let totalAll = 0;
+    let mergedChannels = [];
+    let resolvedGroups = [];
+
+    while (hasMore) {
+      const response = await ipcRenderer.invoke("iptv-load-channels", {
+        sourceUrl,
+        kind,
+        limit: pageSize,
+        offset: nextOffset,
+        force: force && nextOffset === 0,
+      });
+
+      if (!response?.ok) {
+        throw new Error(response?.error || "Falha ao carregar playlist IPTV.");
+      }
+
+      const incoming = response.channels || [];
+      mergedChannels = mergedChannels.concat(incoming);
+      totalFiltered = response.totalFiltered || 0;
+      totalAll = response.totalAll || 0;
+      nextOffset = Number(response.nextOffset || mergedChannels.length);
+      hasMore = Boolean(response.hasMore);
+      resolvedGroups = response.groups || resolvedGroups;
+
+      setChannels(mergedChannels);
+      setStatus(`Carregando ${mergedChannels.length} de ${totalFiltered} itens...`);
+    }
+
+    setGroups(resolvedGroups);
+
+    setStatus(
+      `Mostrando ${mergedChannels.length} de ${totalFiltered} itens (${totalAll} no total).`
+    );
+
+    if (mergedChannels.length > 0) {
+      setSelected(mergedChannels[0]);
+    }
+  };
+
+  useEffect(() => {
+    if (!session) return;
+
+    loadChannels(false)
+      .catch((error) => setStatus(error.message))
+      .finally(() => setLoadingChannels(false));
+  }, [session]);
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    if (!form.url) {
+      setStatus("Preencha a URL da lista.");
+      return;
+    }
+
+    setLoadingLogin(true);
+    setStatus("Validando URL...");
+
+    try {
+      const response = await ipcRenderer.invoke("iptv-validate-login", form);
+
+      if (!response?.ok) {
+        throw new Error(response?.error || "Falha ao carregar a lista.");
+      }
+
+      const nextSession = {
+        sourceUrl: response.sourceUrl,
+        sourceMasked: response.sourceMasked,
+        userInfo: response.userInfo,
+      };
+
+      setSession(nextSession);
+
+      localStorage.setItem("iptv_url", form.url);
+
+      setStatus("Lista validada. Carregando canais...");
+    } catch (error) {
+      setStatus(error.message || "Erro inesperado.");
+    } finally {
+      setLoadingLogin(false);
+      setLoadingChannels(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setSession(null);
+    setChannels([]);
+    setGroups([]);
+    setSelected(null);
+    setSearch("");
+    setGroup("");
+    setStatus("Sessão encerrada.");
+    setShowPlayer(false);
+  };
+
+  const handleClearCache = async () => {
+    setMenuOpen(false);
+    setStatus("Limpando cache...");
+
+    const response = await ipcRenderer.invoke("iptv-clear-cache");
+    if (!response?.ok) {
+      setStatus(response?.error || "Falha ao limpar cache.");
+      return;
+    }
+
+    setStatus("Cache limpo com sucesso.");
+  };
+
+  const handleSetNewM3uUrl = async () => {
+    const currentUrl = String(form.url || session?.sourceUrl || "").trim();
+    setMenuOpen(false);
+    setNewM3uUrlInput(currentUrl);
+    setNewM3uModalOpen(true);
+  };
+
+  const handleConfirmNewM3uUrl = async () => {
+    const normalizedUrl = String(newM3uUrlInput || "").trim();
+    if (!normalizedUrl) {
+      setStatus("Informe uma URL M3U válida.");
+      return;
+    }
+
+    setNewM3uModalOpen(false);
+    setLoadingLogin(true);
+    setStatus("Atualizando URL M3U...");
+
+    try {
+      await ipcRenderer.invoke("iptv-delete-local-playlist");
+      const response = await ipcRenderer.invoke("iptv-validate-login", { url: normalizedUrl });
+      if (!response?.ok) {
+        throw new Error(response?.error || "Falha ao validar nova URL.");
+      }
+
+      const nextSession = {
+        sourceUrl: response.sourceUrl,
+        sourceMasked: response.sourceMasked,
+        userInfo: response.userInfo,
+      };
+
+      setForm((prev) => ({ ...prev, url: normalizedUrl }));
+      localStorage.setItem("iptv_url", normalizedUrl);
+      setSession(nextSession);
+      setStatus("Nova URL salva. Carregando conteúdo...");
+    } catch (error) {
+      setStatus(error?.message || "Falha ao trocar URL M3U.");
+    } finally {
+      setLoadingLogin(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!session?.sourceUrl) return;
+
+    setLoadingChannels(true);
+    try {
+      await loadChannels(true);
+    } catch (error) {
+      setStatus(error.message || "Falha ao atualizar.");
+    } finally {
+      setLoadingChannels(false);
+    }
+  };
+
+  const handleClearAllApp = async () => {
+    setMenuOpen(false);
+    setStatus("Limpando dados do aplicativo...");
+
+    const response = await ipcRenderer.invoke("iptv-clear-all");
+    if (!response?.ok) {
+      setStatus(response?.error || "Falha ao limpar dados do aplicativo.");
+      return;
+    }
+
+    localStorage.removeItem("iptv_url");
+    localStorage.removeItem("iptv_favorites");
+    localStorage.removeItem("iptv_likes");
+    localStorage.removeItem("iptv_recent");
+
+    setForm({ url: "" });
+    setFavoriteIds([]);
+    setLikedIds([]);
+    setRecentlyPlayedIds([]);
+    setAdultMoviesUnlocked(false);
+    handleLogout();
+    setStatus("Dados do aplicativo removidos com sucesso.");
+  };
+
+  const handleExitApp = async () => {
+    setMenuOpen(false);
+    await ipcRenderer.invoke("iptv-exit-app");
+  };
+
+  const handleNavClick = (navKey) => {
+    setActiveNav(navKey);
+    setShowPlayer(false);
+    setSearch("");
+    setGroup("");
+    setViewState("categories"); // Reset series view
+    setSelectedCategory(null);
+    setSelectedSeries(null);
+    setSelectedSeason(null);
+    if (navKey === "series") {
+      setSelected(null);
+      setBuffering(false);
+    }
+
+  };
+
+  const playChannel = (channel, forceOpenPlayer = true) => {
+    setSelected(channel);
+
+    if (forceOpenPlayer) {
+      setShowPlayer(true);
+    }
+
+    setRecentlyPlayedIds((prev) => {
+      const currentId = String(channel.id);
+      const next = [currentId, ...prev.filter((id) => id !== currentId)];
+      return next.slice(0, 10);
+    });
+
+    setStatus(`Reprodução selecionada: ${channel.name}`);
+  };
+
+  const toggleFavorite = (channelId) => {
+    const favoriteKey = makeChannelFavoriteId(channelId);
+    setFavoriteIds((prev) => {
+      if (prev.includes(favoriteKey)) return prev.filter((id) => id !== favoriteKey);
+      return [favoriteKey, ...prev];
+    });
+  };
+
+  const toggleSeriesFavorite = (categoryLabel, seriesName) => {
+    const favoriteKey = makeSeriesFavoriteId(categoryLabel, seriesName);
+    setFavoriteIds((prev) => {
+      if (prev.includes(favoriteKey)) return prev.filter((id) => id !== favoriteKey);
+      return [favoriteKey, ...prev];
+    });
+  };
+
+  const isSeriesFavorited = (categoryLabel, seriesName) => {
+    return favoriteIds.includes(makeSeriesFavoriteId(categoryLabel, seriesName));
+  };
+
+  const isChannelFavorited = (channelId) => {
+    return favoriteIds.includes(makeChannelFavoriteId(channelId));
+  };
+
+  const toggleLike = (channelId) => {
+    const normalizedChannelId = String(channelId);
+    setLikedIds((prev) => {
+      if (prev.includes(normalizedChannelId)) return prev.filter((id) => id !== normalizedChannelId);
+      return [normalizedChannelId, ...prev];
+    });
+  };
+
+  const scrollRow = (rowKey, direction) => {
+    const row = rowRefs.current[rowKey];
+    if (!row) return;
+
+    row.scrollBy({ left: direction * 720, behavior: "smooth" });
+  };
+
+  const openFavoriteSeries = (seriesItem) => {
+    handleNavClick("series");
+    setSelected(null);
+    setBuffering(false);
+    setSelectedCategory(seriesItem.group);
+    setSelectedSeries(seriesItem.name);
+    setSelectedSeason(null);
+    setViewState("seasons");
+  };
+
+  const playHomeItem = (item) => {
+    if (item.favoriteType === "series") {
+      openFavoriteSeries(item);
+      return;
+    }
+
+    if (item.kind === "series") {
+      const info = parseEpisodeInfo(item.name);
+      handleNavClick("series");
+      setSelectedCategory(normalizeCategoryLabel(item.group));
+      setSelectedSeries(info.seriesName);
+      setSelectedSeason(info.season);
+      setViewState("seasons");
+      playChannel(item, false);
+      return;
+    }
+
+    if (item.kind === "movie") {
+      handleNavClick("movies");
+      setGroup(item.group || "");
+      playChannel(item, true);
+      return;
+    }
+
+    if (item.kind === "live") {
+      handleNavClick("live");
+      setGroup(item.group || "");
+      playChannel(item, true);
+      return;
+    }
+
+    playChannel(item, true);
+  };
+
+  const renderHome = () => (
+    <div style={{ padding: "0 20px" }}>
+      <div style={{ display: "flex", gap: 20, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
+        <Tile 
+          style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+          onClick={() => handleNavClick('live')}
+        >
+          <FolderTitle style={{ fontSize: "1.8em" }}>TV ao Vivo</FolderTitle>
+          <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
+            <FaTv size={75} />
+          </div>
+        </Tile>
+        <Tile 
+          style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+          onClick={() => handleNavClick('movies')}
+        >
+          <FolderTitle style={{ fontSize: "1.8em" }}>Filmes</FolderTitle>
+          <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
+            <FaFilm size={75} />
+          </div>
+        </Tile>
+        <Tile 
+          style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+          onClick={() => handleNavClick('series')}
+        >
+          <FolderTitle style={{ fontSize: "1.8em" }}>Séries</FolderTitle>
+          <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
+            <FaVideo size={75} />
+          </div>
+        </Tile>
+      </div>
+      
+      {[rows.find((row) => row.key === "continuar"), rows.find((row) => row.key === "favoritos")].filter(Boolean).map((row) => (
+        <div key={row.key} style={{ marginBottom: 20 }}>
+          <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>{row.title}</FolderTitle>
+          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+            {row.items.map((channel) => (
+              <div
+                key={channel.id}
+                onClick={() => playHomeItem(channel)}
+                style={{
+                  minWidth: 220,
+                  width: 220,
+                  height: 126,
+                  borderRadius: 12,
+                  border: "1px solid #ff000044",
+                  background: "#110000",
+                  position: "relative",
+                  overflow: "hidden",
+                  cursor: "pointer",
+                }}
+              >
+                 <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (channel.favoriteType === "series") {
+                        toggleSeriesFavorite(channel.group, channel.name);
+                      } else {
+                        toggleFavorite(channel.id);
+                      }
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                      zIndex: 5,
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      border: "1px solid #ff0000",
+                      background: "rgba(0,0,0,0.72)",
+                      color:
+                        channel.favoriteType === "series"
+                          ? (isSeriesFavorited(channel.group, channel.name) ? "#ffd700" : "#fff")
+                          : (isChannelFavorited(channel.id) ? "#ffd700" : "#fff"),
+                      display: "grid",
+                      placeItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <FaStar size={14} />
+                  </button>
+                 {channel.logo ? (
+                    <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
+                  ) : (
+                    <div style={{ padding: 10, color: "#ddd" }}>{channel.name}</div>
+                  )}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.7)", padding: 4, fontSize: 11 }}>
+                    {channel.name}
+                  </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderSeriesView = () => {
+    if (viewState === 'categories') {
+      const cats = Object.keys(seriesData).sort();
+      const activeCategory = selectedCategory && cats.includes(selectedCategory) ? selectedCategory : (cats[0] || null);
+      const seriesList = activeCategory && seriesData[activeCategory] ? Object.values(seriesData[activeCategory]) : [];
+      
+      if (cats.length === 0) {
+        return (
+          <div style={{ padding: "40px 20px", textAlign: "center", color: "#ddd" }}>
+            <FolderTitle style={{ marginBottom: 10 }}>Nenhuma série encontrada</FolderTitle>
+            <div>Verifique se sua lista possui grupos identificados como "Series", "Séries", "Novelas", etc.</div>
+            <div style={{ marginTop: 20, fontSize: "0.9em", color: "#aaa" }}>
+               Debug: Total de itens carregados: {channels.length} <br/>
+               Filtro atual: {kind}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
+          <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
+            <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
+            {cats.map((cat) => {
+              const active = activeCategory === cat;
+              const count = seriesData[cat] ? Object.keys(seriesData[cat]).length : 0;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setSelected(null);
+                    setBuffering(false);
+                    setSelectedCategory(cat);
+                  }}
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    marginBottom: 8,
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    border: active ? "1px solid #ff0000" : "1px solid #ff000033",
+                    background: active ? "#2c0000" : "#110000",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontWeight: active ? 700 : 500,
+                  }}
+                >
+                  {cat} ({count})
+                </button>
+              );
+            })}
+          </aside>
+          <div style={{ height: "100%", minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+            <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
+              {activeCategory || "Selecione uma categoria"}
+            </FolderTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+              {seriesList.map((s) => (
+                <div
+                  key={s.name}
+                  onClick={() => {
+                    setSelected(null);
+                    setBuffering(false);
+                    setSelectedCategory(activeCategory);
+                    setSelectedSeries(s.name);
+                    setViewState('seasons');
+                  }}
+                  style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative" }}
+                >
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleSeriesFavorite(activeCategory, s.name);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                      zIndex: 6,
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      border: "1px solid #ff0000",
+                      background: "rgba(0,0,0,0.72)",
+                      color: isSeriesFavorited(activeCategory, s.name) ? "#ffd700" : "#fff",
+                      display: "grid",
+                      placeItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <FaStar size={14} />
+                  </button>
+                  {s.logo ? <CachedLogoImage src={s.logo} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ padding: 10 }}>{s.name}</div>}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.8)", padding: 6, fontSize: 12, textAlign: "center" }}>{s.name}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (viewState === 'series_list') {
+      const seriesList = seriesData[selectedCategory] ? Object.values(seriesData[selectedCategory]) : [];
+      return (
+        <div style={{ padding: "0 20px" }}>
+          <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
+          <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+            {seriesList.map(s => (
+              <div 
+                key={s.name}
+                onClick={() => {
+                  setSelected(null);
+                  setBuffering(false);
+                  setSelectedSeries(s.name);
+                  setViewState('seasons');
+                }}
+                style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative" }}
+              >
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleSeriesFavorite(selectedCategory, s.name);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    zIndex: 6,
+                    width: 30,
+                    height: 30,
+                    borderRadius: "50%",
+                    border: "1px solid #ff0000",
+                    background: "rgba(0,0,0,0.72)",
+                    color: isSeriesFavorited(selectedCategory, s.name) ? "#ffd700" : "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FaStar size={14} />
+                </button>
+                {s.logo ? <CachedLogoImage src={s.logo} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ padding: 10 }}>{s.name}</div>}
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.8)", padding: 6, fontSize: 12, textAlign: "center" }}>{s.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (viewState === 'seasons') {
+      const categoryData = seriesData[selectedCategory];
+      const series = categoryData ? categoryData[selectedSeries] : null;
+
+      if (!series) {
+         // Fallback if data is missing
+         return <div onClick={() => setViewState('categories')}>Dados não encontrados. Voltar.</div>;
+      }
+
+      const seasons = Object.keys(series.seasons).sort((a,b) => parseInt(a) - parseInt(b));
+      
+      return (
+        <div style={{ padding: "0 20px" }}>
+          <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
+          <FolderTitle style={{ marginBottom: 20 }}>{series.name}</FolderTitle>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            {seasons.map(sea => (
+              <div 
+                key={sea}
+                onClick={() => {
+                  setSelected(null);
+                  setBuffering(false);
+                  setSelectedSeason(sea);
+                  setViewState('episodes');
+                }}
+                style={{ padding: "20px 40px", background: "#1a0000", border: "1px solid #ff0000", borderRadius: 12, cursor: "pointer", fontSize: "1.2em", fontWeight: "bold" }}
+              >
+                Temporada {sea}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (viewState === 'episodes') {
+      const categoryData = seriesData[selectedCategory];
+      const series = categoryData ? categoryData[selectedSeries] : null;
+
+      if (!series || !series.seasons[selectedSeason]) {
+         return <div onClick={() => setViewState('categories')}>Dados não encontrados. Voltar.</div>;
+      }
+
+      const episodes = series.seasons[selectedSeason].sort((a,b) => a.episodeNum - b.episodeNum);
+      const currentEpisode = episodes.find((ep) => ep.id === selected?.id) || null;
+      const currentEpisodeIndex = currentEpisode ? episodes.findIndex((ep) => ep.id === currentEpisode.id) : -1;
+
+      const handleEpisodeEnded = () => {
+        const nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] : null;
+        if (!nextEpisode) {
+          setBuffering(false);
+          return;
+        }
+        setBuffering(true);
+        playChannel(nextEpisode, false);
+      };
+
+      return (
+        <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "1fr 350px", gap: 20, height: "calc(100vh - 140px)" }}>
+           <div style={{ display: "flex", flexDirection: "column" }}>
+             <button style={{ ...baseButtonStyle, width: "fit-content", marginBottom: 10 }} onClick={() => setViewState('seasons')}>Voltar</button>
+             <div style={{ flex: 1, background: "#000", borderRadius: 12, overflow: "hidden", border: "1px solid #ff000044", position: "relative" }}>
+                {buffering && (
+                  <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 20,
+                    background: "rgba(0,0,0,0.6)",
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#ff0000"
+                  }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
+                        <FaSearch />
+                      </div>
+                      <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
+                    </div>
+                  </div>
+                )}
+                <ReactUrlPlayer 
+                  src={toPlayableUrl(currentEpisode?.url)} 
+                  type={mediaTypeFromUrl(toPlayableUrl(currentEpisode?.url))}
+                  onBufferingChange={setBuffering}
+                  onError={() => setBuffering(false)}
+                  onEnded={handleEpisodeEnded}
+                />
+             </div>
+             <div style={{ marginTop: 10, fontSize: "1.2em", fontWeight: "bold" }}>
+                {currentEpisode?.name || "Selecione um episódio"}
+             </div>
+           </div>
+           
+           <div style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12, border: "1px solid #ff000022", overflowY: "auto", padding: 10 }}>
+              <FolderTitle style={{ fontSize: "1.1em", marginBottom: 10 }}>Temporada {selectedSeason}</FolderTitle>
+              {episodes.map(ep => (
+                <div 
+                  key={ep.id}
+                  onClick={() => playChannel(ep, false)} // false means don't open modal, just set selected
+                  style={{ 
+                    padding: 10, 
+                    marginBottom: 8, 
+                    background: selected?.id === ep.id ? "#ff000044" : "#1a1a1a", 
+                    borderRadius: 6, 
+                    cursor: "pointer",
+                    border: selected?.id === ep.id ? "1px solid #ff0000" : "1px solid transparent"
+                  }}
+                >
+                  <div style={{ fontWeight: "bold", fontSize: 13 }}>{ep.episodeNum}. {ep.name}</div>
+                </div>
+              ))}
+           </div>
+        </div>
+      );
+    }
+  };
+
+  const handleMovieCategoryClick = (category) => {
+    if (!isAdultCategoryLabel(category.label)) {
+      setShowPlayer(false);
+      setGroup(category.raw);
+      return;
+    }
+
+    if (!adultMoviesUnlocked) {
+      const confirmed = window.confirm("Conteúdo adulto: confirme para acessar esta categoria.");
+      if (!confirmed) return;
+      setAdultMoviesUnlocked(true);
+    }
+
+    setShowPlayer(false);
+    setGroup(category.raw);
+  };
+
+  const renderMoviesView = () => {
+    const selectedMovieCategory = movieCategories.find((category) => category.raw === group) || null;
+    const selectedIsAdult = selectedMovieCategory ? isAdultCategoryLabel(selectedMovieCategory.label) : false;
+    const canShowCategoryContent = Boolean(selectedMovieCategory) && (!selectedIsAdult || adultMoviesUnlocked);
+    const movieItems = canShowCategoryContent ? filteredChannels : [];
+
+    return (
+    <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
+      <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
+        <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
+        {movieCategories.map((category) => {
+          const active = group === category.raw;
+          return (
+            <button
+              key={category.raw}
+              type="button"
+              onClick={() => handleMovieCategoryClick(category)}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                marginBottom: 8,
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: active ? "1px solid #ff0000" : "1px solid #ff000033",
+                background: active ? "#2c0000" : "#110000",
+                color: "#fff",
+                cursor: "pointer",
+                fontWeight: active ? 700 : 500,
+              }}
+            >
+              {category.label} ({category.count})
+            </button>
+          );
+        })}
+      </aside>
+
+      <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {showPlayer && selected && canShowCategoryContent && (
+          <section style={{ marginBottom: 20, border: "1px solid #ff000055", borderRadius: 14, background: "rgba(0,0,0,0.8)", padding: 12 }}>
+            <div style={{ marginBottom: 8 }}>
+              <FolderTitle style={{ textAlign: "left", fontSize: "1.08em" }}>
+                {selected?.name || "Selecione um filme"}
+              </FolderTitle>
+            </div>
+            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", height: 400, position: "relative" }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPlayer(false);
+                  setBuffering(false);
+                }}
+                style={{
+                  position: "absolute",
+                  top: 10,
+                  right: 10,
+                  zIndex: 30,
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  border: "1px solid #ff0000",
+                  background: "rgba(0,0,0,0.78)",
+                  color: "#fff",
+                  display: "grid",
+                  placeItems: "center",
+                  cursor: "pointer",
+                }}
+                aria-label="Fechar reprodução"
+              >
+                <FaTimes size={14} />
+              </button>
+              {buffering && selected && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 20,
+                    background: "rgba(0,0,0,0.6)",
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#ff0000",
+                  }}
+                >
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
+                      <FaSearch />
+                    </div>
+                    <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
+                  </div>
+                </div>
+              )}
+              <ReactUrlPlayer
+                src={toPlayableUrl(selected?.url)}
+                type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
+                onBufferingChange={setBuffering}
+                onError={() => setBuffering(false)}
+              />
+            </div>
+          </section>
+        )}
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+          <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
+            {selectedMovieCategory?.label || "Selecione uma categoria"}
+          </FolderTitle>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+            {movieItems.map((channel) => (
+              <div
+                key={channel.id}
+                onMouseEnter={() => setHoveredCardId(`movie-${channel.id}`)}
+                onMouseLeave={() => setHoveredCardId(null)}
+                onClick={() => playChannel(channel, true)}
+                style={{
+                  width: "100%",
+                  height: 126,
+                  borderRadius: 12,
+                  border: hoveredCardId === `movie-${channel.id}` ? "1px solid #ff0000" : "1px solid #ff000044",
+                  background: "#110000",
+                  position: "relative",
+                  overflow: "hidden",
+                  transform: hoveredCardId === `movie-${channel.id}` ? "scale(1.03)" : "scale(1)",
+                  transition: "all 0.2s ease",
+                  cursor: "pointer",
+                  boxShadow: hoveredCardId === `movie-${channel.id}` ? "0 10px 20px rgba(0,0,0,0.45)" : "none",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleFavorite(channel.id);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    zIndex: 6,
+                    width: 30,
+                    height: 30,
+                    borderRadius: "50%",
+                    border: "1px solid #ff0000",
+                    background: "rgba(0,0,0,0.72)",
+                    color: isChannelFavorited(channel.id) ? "#ffd700" : "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FaStar size={14} />
+                </button>
+                {channel.logo ? (
+                  <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ddd", fontWeight: 700, padding: 8, textAlign: "center" }}>
+                    {channel.name}
+                  </div>
+                )}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: hoveredCardId === `movie-${channel.id}` ? "linear-gradient(to top, rgba(0,0,0,0.94), rgba(0,0,0,0.18))" : "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0))",
+                    display: "grid",
+                    alignContent: "end",
+                    padding: 8,
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {channel.name}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {!canShowCategoryContent && (
+            <div style={{ marginTop: 16, color: "#ddd" }}>
+              {selectedIsAdult
+                ? "Confirme o acesso para exibir conteúdos da categoria Adultos."
+                : "Selecione uma categoria para ver os filmes."}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+  };
+
+  const renderLiveView = () => {
+    const selectedLiveCategory = liveCategories.find((category) => category.raw === group) || null;
+    const liveItems = selectedLiveCategory ? filteredChannels : [];
+
+    return (
+      <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
+        <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
+          <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
+          {liveCategories.map((category) => {
+            const active = group === category.raw;
+            return (
+              <button
+                key={category.raw}
+                type="button"
+                onClick={() => {
+                  setShowPlayer(false);
+                  setGroup(category.raw);
+                }}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  marginBottom: 8,
+                  padding: "10px 12px",
+                  borderRadius: 8,
+                  border: active ? "1px solid #ff0000" : "1px solid #ff000033",
+                  background: active ? "#2c0000" : "#110000",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: active ? 700 : 500,
+                }}
+              >
+                {category.label} ({category.count})
+              </button>
+            );
+          })}
+        </aside>
+
+        <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {showPlayer && selected && selectedLiveCategory && (
+            <section style={{ marginBottom: 20, border: "1px solid #ff000055", borderRadius: 14, background: "rgba(0,0,0,0.8)", padding: 12 }}>
+              <div style={{ marginBottom: 8 }}>
+                <FolderTitle style={{ textAlign: "left", fontSize: "1.08em" }}>
+                  {selected?.name || "Selecione um canal"}
+                </FolderTitle>
+              </div>
+              <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", height: 400, position: "relative" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPlayer(false);
+                    setBuffering(false);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    zIndex: 30,
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: "1px solid #ff0000",
+                    background: "rgba(0,0,0,0.78)",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    cursor: "pointer",
+                  }}
+                  aria-label="Fechar reprodução"
+                >
+                  <FaTimes size={14} />
+                </button>
+                {buffering && selected && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 20,
+                      background: "rgba(0,0,0,0.6)",
+                      display: "grid",
+                      placeItems: "center",
+                      color: "#ff0000",
+                    }}
+                  >
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
+                        <FaSearch />
+                      </div>
+                      <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
+                    </div>
+                  </div>
+                )}
+                <ReactUrlPlayer
+                  src={toPlayableUrl(selected?.url)}
+                  type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
+                  onBufferingChange={setBuffering}
+                  onError={() => setBuffering(false)}
+                />
+              </div>
+            </section>
+          )}
+
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+            <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
+              {selectedLiveCategory?.label || "Selecione uma categoria"}
+            </FolderTitle>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+              {liveItems.map((channel) => (
+                <div
+                  key={channel.id}
+                  onMouseEnter={() => setHoveredCardId(`live-${channel.id}`)}
+                  onMouseLeave={() => setHoveredCardId(null)}
+                  onClick={() => playChannel(channel, true)}
+                  style={{
+                    width: "100%",
+                    height: 126,
+                    borderRadius: 12,
+                    border: hoveredCardId === `live-${channel.id}` ? "1px solid #ff0000" : "1px solid #ff000044",
+                    background: "#110000",
+                    position: "relative",
+                    overflow: "hidden",
+                    transform: hoveredCardId === `live-${channel.id}` ? "scale(1.03)" : "scale(1)",
+                    transition: "all 0.2s ease",
+                    cursor: "pointer",
+                    boxShadow: hoveredCardId === `live-${channel.id}` ? "0 10px 20px rgba(0,0,0,0.45)" : "none",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleFavorite(channel.id);
+                    }}
+                    style={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                      zIndex: 6,
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      border: "1px solid #ff0000",
+                      background: "rgba(0,0,0,0.72)",
+                      color: isChannelFavorited(channel.id) ? "#ffd700" : "#fff",
+                      display: "grid",
+                      placeItems: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <FaStar size={14} />
+                  </button>
+                  {channel.logo ? (
+                    <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ddd", fontWeight: 700, padding: 8, textAlign: "center" }}>
+                      {channel.name}
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: hoveredCardId === `live-${channel.id}` ? "linear-gradient(to top, rgba(0,0,0,0.94), rgba(0,0,0,0.18))" : "linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0))",
+                      display: "grid",
+                      alignContent: "end",
+                      padding: 8,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {channel.name}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {!selectedLiveCategory && (
+              <div style={{ marginTop: 16, color: "#ddd" }}>
+                Selecione uma categoria para ver os canais ao vivo.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    if (loadingChannels) {
+      return (
+         <div style={{ display: "grid", placeItems: "center", height: "60vh", color: "#ff0000" }}>
+            <div style={{ textAlign: "center" }}>
+               <div style={{ fontSize: "3em", marginBottom: 20, animation: "spin 1s linear infinite", display: "inline-block" }}>
+                 <FaSearch />
+               </div>
+               <FolderTitle style={{ fontSize: "1.5em", marginBottom: 10 }}>Carregando conteúdo...</FolderTitle>
+               <div style={{ color: "#aaa" }}>Isso pode levar alguns segundos.</div>
+               <style>{`
+                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+               `}</style>
+            </div>
+         </div>
+      );
+    }
+
+    let content = null;
+    if (activeNav === 'home') content = renderHome();
+    else if (activeNav === 'series') content = renderSeriesView();
+    else if (activeNav === 'movies') content = renderMoviesView();
+    else if (activeNav === 'live') content = renderLiveView();
+    else content = renderHome();
+
+    return (
+        <>
+            {content}
+            <footer style={{ margin: "22px 20px 0", borderTop: "1px solid #ff000033", padding: "14px 0 24px", color: "#d1d1d1", fontSize: 12, display: "grid", gap: 8 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                <a href="#" style={{ color: "#ff0000" }}>Termos</a>
+                <a href="#" style={{ color: "#ff0000" }}>Privacidade</a>
+                <a href="#" style={{ color: "#ff0000" }}>Suporte</a>
+                <a href="#" style={{ color: "#ff0000" }}>Redes</a>
+                </div>
+                <div>{status}</div>
+            </footer>
+        </>
+    );
+  };
+
+  const handleContentScroll = (event) => {
+    setHeaderSolid(event.currentTarget.scrollTop > 16);
+  };
+
+  if (!session) {
+    return (
+      <>
+        <BackgroundLayer />
+        <VignetteOverlay />
+        <LogoOverlay src={"topo.png"} alt="Logo" />
+
+        <AppContainer>
+          <button
+            type="button"
+            style={{ ...baseButtonStyle, position: "fixed", top: 20, right: 20, zIndex: 99 }}
+            onClick={onBack}
+          >
+            Menu Inicial
+          </button>
+
+          <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
+            <Tile style={{ width: 520, minHeight: 280, cursor: "default" }} onClick={(e) => e.stopPropagation()}>
+              <FolderTitle style={{ fontSize: "1.5em", marginBottom: 8 }}>Entrar com M3U</FolderTitle>
+              <ContentInfo style={{ marginBottom: 20, textAlign: "center" }}>
+                Cole a URL da sua lista M3U para carregar o conteúdo.
+              </ContentInfo>
+
+              <form onSubmit={handleLogin} style={{ width: "100%", display: "grid", gap: 8 }}>
+                <label>URL da Lista (.m3u)</label>
+                <ModalInput 
+                  value={form.url} 
+                  onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))} 
+                  placeholder="http://exemplo.com/lista.m3u" 
+                  required 
+                />
+
+                <button type="submit" style={{ ...baseButtonStyle, marginTop: 14 }} disabled={loadingLogin}>
+                  {loadingLogin ? "Carregando..." : "Carregar Lista"}
+                </button>
+              </form>
+
+              <ContentInfo style={{ marginTop: 14, textAlign: "center", width: "100%" }}>{status}</ContentInfo>
+            </Tile>
+          </div>
+        </AppContainer>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <BackgroundLayer />
+      <VignetteOverlay />
+      <LogoOverlay src={"topo.png"} alt="Logo" />
+
+      <AppContainer style={{ padding: 0 }}>
+        <div style={{ height: "100vh", overflow: "hidden", position: "relative" }}>
+          <header
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 80,
+              display: "grid",
+              gridTemplateColumns: "auto 1fr auto auto",
+              alignItems: "center",
+              gap: 16,
+              padding: "14px 22px",
+              background: headerSolid ? "rgba(0,0,0,0.92)" : "linear-gradient(to bottom, rgba(0,0,0,0.86), rgba(0,0,0,0))",
+              borderBottom: headerSolid ? "1px solid #ff000044" : "1px solid transparent",
+              transition: "all 0.22s ease",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <img src={"topo.png"} alt="Logo" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover" }} />
+              <div style={{ fontWeight: 800, color: "#ff0000", letterSpacing: 1 }}>MIND FLIX</div>
+            </div>
+
+            <nav style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+              {NAV_ITEMS.map((item) => {
+                const active = activeNav === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => handleNavClick(item.key)}
+                    style={{
+                      background: active ? "#2c0000" : "transparent",
+                      color: "#fff",
+                      border: active ? "1px solid #ff0000" : "1px solid transparent",
+                      borderRadius: 8,
+                      padding: "6px 10px",
+                      cursor: "pointer",
+                      fontWeight: active ? 700 : 500,
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div style={{ position: "relative", minWidth: 220 }}>
+              <FaSearch style={{ position: "absolute", left: 10, top: 10, color: "#ff0000" }} />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar"
+                style={{ width: "100%", background: "rgba(10,10,10,0.85)", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "8px 10px 8px 30px", outline: "none" }}
+              />
+            </div>
+
+            <button
+              ref={menuBtnRef}
+              type="button"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              style={{ ...baseButtonStyle, display: "flex", alignItems: "center", gap: 8, padding: "8px 10px" }}
+            >
+              <FaUserCircle />
+              <FaBars />
+            </button>
+          </header>
+          {menuOpen && (
+            <div
+              ref={menuRef}
+              style={{
+                position: "absolute",
+                top: 70,
+                right: 20,
+                zIndex: 90,
+                width: 290,
+                background: "rgba(10,10,10,0.96)",
+                border: "1px solid #ff000055",
+                borderRadius: 12,
+                padding: 12,
+                boxShadow: "0 14px 30px rgba(0,0,0,0.5)",
+                display: "grid",
+                gap: 8,
+                maxHeight: "74vh",
+                overflowY: "auto",
+              }}
+            >
+              <button type="button" style={baseButtonStyle} onClick={handleClearCache}>
+                Limpar cache
+              </button>
+              <button type="button" style={baseButtonStyle} onClick={handleSetNewM3uUrl}>
+                Informar nova URL M3U
+              </button>
+              <button type="button" style={baseButtonStyle} onClick={handleRefresh}>
+                {loadingChannels ? "Recarregando conteúdo..." : "Recarregar Conteúdo"}
+              </button>
+              <button type="button" style={baseButtonStyle} onClick={handleClearAllApp}>
+                Limpar todo app
+              </button>
+              <button type="button" style={baseButtonStyle} onClick={handleExitApp}>
+                Sair
+              </button>
+            </div>
+          )}
+
+          {newM3uModalOpen && (
+            <div style={{ position: "fixed", inset: 0, zIndex: 110, background: "rgba(0,0,0,0.78)", display: "grid", placeItems: "center", padding: 20 }} onClick={() => setNewM3uModalOpen(false)}>
+              <div style={{ width: "min(680px, 92vw)", border: "1px solid #ff000066", borderRadius: 14, background: "#0f0f0f", padding: 16, boxShadow: "0 18px 34px rgba(0,0,0,0.5)", display: "grid", gap: 12 }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <FolderTitle style={{ textAlign: "left", fontSize: "1.25em" }}>Informar nova URL M3U</FolderTitle>
+                  <button type="button" style={{ ...baseButtonStyle, padding: "6px 10px" }} onClick={() => setNewM3uModalOpen(false)}>
+                    <FaTimes />
+                  </button>
+                </div>
+                <input
+                  value={newM3uUrlInput}
+                  onChange={(e) => setNewM3uUrlInput(e.target.value)}
+                  placeholder="https://servidor.exemplo/lista.m3u"
+                  autoFocus
+                  style={{ width: "100%", background: "rgba(10,10,10,0.85)", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "10px 12px", outline: "none" }}
+                />
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  <button type="button" style={baseButtonStyle} onClick={() => setNewM3uModalOpen(false)}>
+                    Cancelar
+                  </button>
+                  <button type="button" style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }} onClick={handleConfirmNewM3uUrl} disabled={loadingLogin}>
+                    {loadingLogin ? "Salvando..." : "Salvar e atualizar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div
+            ref={contentRef}
+            onScroll={handleContentScroll}
+            style={{ height: "100%", overflowY: "auto", paddingTop: 76, paddingBottom: 28 }}
+          >
+            {renderContent()}
+          </div>
+        </div>
+
+        {infoChannel && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.78)", display: "grid", placeItems: "center", padding: 20 }} onClick={() => setInfoChannel(null)}>
+            <div style={{ width: "min(680px, 92vw)", border: "1px solid #ff000066", borderRadius: 14, background: "#0f0f0f", padding: 16, boxShadow: "0 18px 34px rgba(0,0,0,0.5)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <FolderTitle style={{ textAlign: "left", fontSize: "1.25em" }}>{infoChannel.name}</FolderTitle>
+                <button type="button" style={{ ...baseButtonStyle, padding: "6px 10px" }} onClick={() => setInfoChannel(null)}>
+                  <FaTimes />
+                </button>
+              </div>
+
+              <ContentInfo style={{ textAlign: "left", lineHeight: 1.6 }}>
+                <div><b>Grupo:</b> {infoChannel.group}</div>
+                <div><b>Categoria:</b> {normalizeCategoryLabel(infoChannel.group)}</div>
+                <div><b>Tvg ID:</b> {infoChannel.tvgId || "N/A"}</div>
+                <div><b>URL:</b> {infoChannel.url}</div>
+              </ContentInfo>
+
+              <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                <button type="button" style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }} onClick={() => { playChannel(infoChannel, true); setInfoChannel(null); }}>
+                  <FaPlay style={{ marginRight: 6 }} /> Assistir
+                </button>
+
+                <button type="button" style={baseButtonStyle} onClick={() => toggleFavorite(infoChannel.id)}>
+                  <FaPlus style={{ marginRight: 6 }} />
+                  {favoriteIds.includes(infoChannel.id) ? "Na lista" : "Adicionar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </AppContainer>
+    </>
+  );
+}
