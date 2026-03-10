@@ -44184,12 +44184,22 @@ var baseButtonStyle = {
 var cachedLogoByUrl = new Map();
 var inFlightLogoRequests = new Map();
 var TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+var PLAYER_VOLUME_STORAGE_KEY = "iptv_player_volume_session";
 var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
   var src = _ref.src,
     type = _ref.type,
     onBufferingChange = _ref.onBufferingChange,
     _onError = _ref.onError,
-    _onEnded = _ref.onEnded;
+    _onEnded = _ref.onEnded,
+    _ref$volume = _ref.volume,
+    volume = _ref$volume === void 0 ? 0.8 : _ref$volume,
+    onVolumeStateChange = _ref.onVolumeStateChange,
+    _ref$userHasSetVolume = _ref.userHasSetVolume,
+    userHasSetVolume = _ref$userHasSetVolume === void 0 ? false : _ref$userHasSetVolume,
+    _ref$fallbackUserVolu = _ref.fallbackUserVolume,
+    fallbackUserVolume = _ref$fallbackUserVolu === void 0 ? null : _ref$fallbackUserVolu,
+    _ref$interactionTick = _ref.interactionTick,
+    interactionTick = _ref$interactionTick === void 0 ? null : _ref$interactionTick;
   var isHlsSource = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
     return /\.m3u8(\?|$)/i.test(src || "");
   }, [src]);
@@ -44197,11 +44207,127 @@ var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
     return src || "";
   }, [src]);
   var playerRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var applyingVolumeRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
+  var getMediaElement = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function () {
+    var _playerRef$current, _playerRef$current$ge;
+    var internalPlayer = (_playerRef$current = playerRef.current) === null || _playerRef$current === void 0 || (_playerRef$current$ge = _playerRef$current.getInternalPlayer) === null || _playerRef$current$ge === void 0 ? void 0 : _playerRef$current$ge.call(_playerRef$current);
+    if (!internalPlayer) return null;
+    if (typeof internalPlayer.volume === "number") return internalPlayer;
+    if (internalPlayer !== null && internalPlayer !== void 0 && internalPlayer.player && typeof internalPlayer.player.volume === "number") return internalPlayer.player;
+    return null;
+  }, []);
+  var syncVolumeToMediaElement = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function () {
+    var _mediaElement$volume;
+    var mediaElement = getMediaElement();
+    if (!mediaElement) return false;
+
+    // Usar volume do usuário se disponível e válido
+    var userVolume = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
+    var baseVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
+
+    // Se o usuário definiu um volume válido anteriormente, usar esse volume
+    var nextVolume = userHasSetVolume && (userVolume !== null && userVolume !== void 0 ? userVolume : 0) > 0.001 ? userVolume !== null && userVolume !== void 0 ? userVolume : baseVolume : baseVolume;
+    var shouldBeMuted = nextVolume <= 0.001;
+    applyingVolumeRef.current = true;
+    if (Math.abs(((_mediaElement$volume = mediaElement.volume) !== null && _mediaElement$volume !== void 0 ? _mediaElement$volume : 1) - nextVolume) > 0.001) {
+      mediaElement.volume = nextVolume;
+    }
+    if (mediaElement.muted !== shouldBeMuted) {
+      mediaElement.muted = shouldBeMuted;
+    }
+    Promise.resolve().then(function () {
+      applyingVolumeRef.current = false;
+    });
+    return true;
+  }, [getMediaElement, volume]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    var _playerRef$current, _playerRef$current$pl;
+    var _playerRef$current2, _playerRef$current2$p;
     if (!playerSource) return;
-    (_playerRef$current = playerRef.current) === null || _playerRef$current === void 0 || (_playerRef$current$pl = _playerRef$current.play) === null || _playerRef$current$pl === void 0 || _playerRef$current$pl.call(_playerRef$current);
+    var p = (_playerRef$current2 = playerRef.current) === null || _playerRef$current2 === void 0 || (_playerRef$current2$p = _playerRef$current2.play) === null || _playerRef$current2$p === void 0 ? void 0 : _playerRef$current2$p.call(_playerRef$current2);
+    if (p && typeof p["catch"] === "function") {
+      p["catch"](function () {});
+    }
   }, [playerSource]);
+
+  // Proteger volume quando o player for inicializado
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (!playerSource) return;
+
+    // Capturar valores das refs fora da função assíncrona
+    var userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
+    var volSetByUser = !!userHasSetVolume;
+    var protectVolume = function protectVolume() {
+      if (volSetByUser && userVol > 0.001) {
+        // Se o usuário já definiu um volume, garantir que seja usado
+        setTimeout(function () {
+          var mediaElement = getMediaElement();
+          if (mediaElement) {
+            if (mediaElement.volume <= 0.001) {
+              mediaElement.volume = userVol;
+              mediaElement.muted = false;
+            }
+          }
+        }, 200);
+      }
+    };
+    protectVolume();
+  }, [playerSource, getMediaElement, userHasSetVolume, fallbackUserVolume]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (!playerSource) return;
+    var cancelled = false;
+    var timeoutId = null;
+    var attempts = 0;
+
+    // Capturar valores das refs fora da função assíncrona
+    var volSetByUser = !!userHasSetVolume;
+    var userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
+    var _scheduleSync = function scheduleSync() {
+      if (cancelled) return;
+      // Proteger volume do usuário ao trocar de source
+      if (volSetByUser && userVol > 0.001) {
+        var mediaElement = getMediaElement();
+        if (mediaElement && mediaElement.volume <= 0.001) {
+          mediaElement.volume = userVol;
+          mediaElement.muted = false;
+          return;
+        }
+      }
+      syncVolumeToMediaElement();
+      attempts += 1;
+      if (attempts < 20) {
+        timeoutId = window.setTimeout(_scheduleSync, 120);
+      }
+    };
+    _scheduleSync();
+    return function () {
+      cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [playerSource, syncVolumeToMediaElement, userHasSetVolume, fallbackUserVolume]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    syncVolumeToMediaElement();
+  }, [interactionTick, syncVolumeToMediaElement]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var mediaElement = getMediaElement();
+    if (!mediaElement) return undefined;
+    var handleVolumeChange = function handleVolumeChange() {
+      if (applyingVolumeRef.current) return;
+      var nextVolume = Number.isFinite(mediaElement.volume) ? Math.max(0, Math.min(1, mediaElement.volume)) : 0.8;
+      if (mediaElement.muted && nextVolume > 0.001) {
+        syncVolumeToMediaElement();
+        return;
+      }
+      onVolumeStateChange === null || onVolumeStateChange === void 0 || onVolumeStateChange({
+        volume: nextVolume
+      });
+    };
+    mediaElement.addEventListener("volumechange", handleVolumeChange);
+    mediaElement.addEventListener("loadedmetadata", syncVolumeToMediaElement);
+    return function () {
+      mediaElement.removeEventListener("volumechange", handleVolumeChange);
+      mediaElement.removeEventListener("loadedmetadata", syncVolumeToMediaElement);
+    };
+  }, [getMediaElement, onVolumeStateChange, playerSource, syncVolumeToMediaElement]);
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       width: "100%",
@@ -44212,45 +44338,54 @@ var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
       borderRadius: "8px",
       overflow: "hidden"
     }
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_player__WEBPACK_IMPORTED_MODULE_2__["default"], {
-    ref: playerRef,
-    key: "".concat(src || "empty", "-").concat(type || "auto"),
-    src: playerSource,
-    controls: true,
-    playsInline: true,
-    width: "100%",
-    height: "100%",
-    style: {
-      background: "#000"
-    },
-    config: {
-      file: {
-        forceHLS: isHlsSource,
-        attributes: {
-          crossOrigin: "anonymous"
+  }, function () {
+    var effectiveVolume = userHasSetVolume && typeof fallbackUserVolume === "number" ? fallbackUserVolume : volume;
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_player__WEBPACK_IMPORTED_MODULE_2__["default"], {
+      ref: playerRef,
+      key: playerSource ? "player-instance" : "empty-player",
+      src: playerSource,
+      controls: true,
+      playsInline: true,
+      width: "100%",
+      height: "100%",
+      style: {
+        background: "#000"
+      },
+      volume: effectiveVolume,
+      muted: effectiveVolume <= 0.001,
+      onPlaying: function onPlaying() {
+        onBufferingChange && onBufferingChange(false);
+        syncVolumeToMediaElement();
+        setTimeout(function () {
+          syncVolumeToMediaElement();
+        }, 50);
+      },
+      config: {
+        file: {
+          forceHLS: isHlsSource,
+          attributes: {
+            crossOrigin: "anonymous"
+          }
         }
+      },
+      onCanPlay: function onCanPlay() {
+        return onBufferingChange && onBufferingChange(false);
+      },
+      onWaiting: function onWaiting() {
+        return onBufferingChange && onBufferingChange(true);
+      },
+      onPause: function onPause() {
+        return onBufferingChange && onBufferingChange(false);
+      },
+      onEnded: function onEnded() {
+        return _onEnded && _onEnded();
+      },
+      onError: function onError(error) {
+        onBufferingChange && onBufferingChange(false);
+        _onError && _onError(error);
       }
-    },
-    onCanPlay: function onCanPlay() {
-      return onBufferingChange && onBufferingChange(false);
-    },
-    onPlaying: function onPlaying() {
-      return onBufferingChange && onBufferingChange(false);
-    },
-    onWaiting: function onWaiting() {
-      return onBufferingChange && onBufferingChange(true);
-    },
-    onPause: function onPause() {
-      return onBufferingChange && onBufferingChange(false);
-    },
-    onEnded: function onEnded() {
-      return _onEnded && _onEnded();
-    },
-    onError: function onError(error) {
-      onBufferingChange && onBufferingChange(false);
-      _onError && _onError(error);
-    }
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    });
+  }(), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       position: "absolute",
       top: "-2px",
@@ -44468,32 +44603,81 @@ function IptvModule(_ref3) {
     setInfoChannel = _useState44[1];
   var _useState45 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState46 = _slicedToArray(_useState45, 2),
-    newM3uModalOpen = _useState46[0],
-    setNewM3uModalOpen = _useState46[1];
-  var _useState47 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    userInteracting = _useState46[0],
+    setUserInteracting = _useState46[1];
+  var _useState47 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState48 = _slicedToArray(_useState47, 2),
-    newM3uUrlInput = _useState48[0],
-    setNewM3uUrlInput = _useState48[1];
-  var _useState49 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    newM3uModalOpen = _useState48[0],
+    setNewM3uModalOpen = _useState48[1];
+  var _useState49 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState50 = _slicedToArray(_useState49, 2),
-    favoriteIds = _useState50[0],
-    setFavoriteIds = _useState50[1];
+    newM3uUrlInput = _useState50[0],
+    setNewM3uUrlInput = _useState50[1];
   var _useState51 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState52 = _slicedToArray(_useState51, 2),
-    likedIds = _useState52[0],
-    setLikedIds = _useState52[1];
+    favoriteIds = _useState52[0],
+    setFavoriteIds = _useState52[1];
   var _useState53 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState54 = _slicedToArray(_useState53, 2),
-    recentlyPlayedIds = _useState54[0],
-    setRecentlyPlayedIds = _useState54[1];
-  var _useState55 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    likedIds = _useState54[0],
+    setLikedIds = _useState54[1];
+  var _useState55 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState56 = _slicedToArray(_useState55, 2),
-    adultMoviesUnlocked = _useState56[0],
-    setAdultMoviesUnlocked = _useState56[1];
+    recentlyPlayedIds = _useState56[0],
+    setRecentlyPlayedIds = _useState56[1];
+  var _useState57 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState58 = _slicedToArray(_useState57, 2),
+    adultMoviesUnlocked = _useState58[0],
+    setAdultMoviesUnlocked = _useState58[1];
+  var _useState59 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState60 = _slicedToArray(_useState59, 2),
+    selectedSynopsis = _useState60[0],
+    setSelectedSynopsis = _useState60[1];
+  var _useState61 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+      year: "",
+      rating: null,
+      posterUrl: ""
+    }),
+    _useState62 = _slicedToArray(_useState61, 2),
+    selectedSynopsisMeta = _useState62[0],
+    setSelectedSynopsisMeta = _useState62[1];
+  var _useState63 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState64 = _slicedToArray(_useState63, 2),
+    synopsisHint = _useState64[0],
+    setSynopsisHint = _useState64[1];
+  var _useState65 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState66 = _slicedToArray(_useState65, 2),
+    loadingSynopsis = _useState66[0],
+    setLoadingSynopsis = _useState66[1];
+  var _useState67 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
+      var parsed = Number(sessionStorage.getItem(PLAYER_VOLUME_STORAGE_KEY));
+      if (!Number.isFinite(parsed)) return 0.8;
+      var volume = Math.max(0, Math.min(1, parsed));
+      // Garantir que não comece mutado (volume muito baixo)
+      return volume < 0.1 ? 0.8 : volume;
+    }),
+    _useState68 = _slicedToArray(_useState67, 2),
+    playerVolume = _useState68[0],
+    setPlayerVolume = _useState68[1];
   var rowRefs = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)({});
   var contentRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   var menuRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   var menuBtnRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var scrollDebounceRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+
+  // Refs para proteção do volume
+  var userVolumeRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(playerVolume);
+  var volumeProtectionRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
+  var volumeSetByUserRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
+  var handleScrollInteract = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function () {
+    setUserInteracting(true);
+    if (scrollDebounceRef.current) {
+      window.clearTimeout(scrollDebounceRef.current);
+    }
+    scrollDebounceRef.current = window.setTimeout(function () {
+      setUserInteracting(false);
+    }, 300);
+  }, []);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var saved = {
       url: localStorage.getItem("iptv_url") || ""
@@ -44581,6 +44765,140 @@ function IptvModule(_ref3) {
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     localStorage.setItem("iptv_recent", JSON.stringify(recentlyPlayedIds));
   }, [recentlyPlayedIds]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    sessionStorage.setItem(PLAYER_VOLUME_STORAGE_KEY, String(playerVolume));
+  }, [playerVolume]);
+
+  // Atualizar referência do volume do usuário quando ele muda
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (playerVolume > 0.001) {
+      userVolumeRef.current = playerVolume;
+      volumeSetByUserRef.current = true;
+    }
+  }, [playerVolume]);
+
+  // Proteger contra redefinição de volume para 0
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (volumeSetByUserRef.current && playerVolume <= 0.001 && userVolumeRef.current > 0.001) {
+      // Volume foi redefinido para 0/mudo mas usuário tinha volume maior - restaurar
+      setTimeout(function () {
+        setPlayerVolume(userVolumeRef.current);
+      }, 100);
+    }
+  }, [playerVolume]);
+  var handlePlayerVolumeStateChange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (_ref5) {
+    var volume = _ref5.volume;
+    if (userInteracting) return;
+    var nextVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
+    if (nextVolume > 0.001) {
+      volumeSetByUserRef.current = true;
+      userVolumeRef.current = nextVolume;
+    }
+    setPlayerVolume(function (prev) {
+      return Math.abs(prev - nextVolume) > 0.001 ? nextVolume : prev;
+    });
+  }, [userInteracting]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    var cancelled = false;
+    var selectedKind = String((selected === null || selected === void 0 ? void 0 : selected.kind) || "").toLowerCase();
+    var isMovieOrSeries = selectedKind === "movie" || selectedKind === "series";
+    var isSeriesEpisodesView = activeNav === "series" && viewState === "episodes" && selectedKind === "series";
+    var shouldLoadSynopsis = Boolean(selected) && (showPlayer && isMovieOrSeries || isSeriesEpisodesView);
+    if (!shouldLoadSynopsis) {
+      setSelectedSynopsis("");
+      setSelectedSynopsisMeta({
+        year: "",
+        rating: null,
+        posterUrl: ""
+      });
+      setSynopsisHint("");
+      setLoadingSynopsis(false);
+      return function () {
+        cancelled = true;
+      };
+    }
+    setLoadingSynopsis(true);
+    setSelectedSynopsis("");
+    setSelectedSynopsisMeta({
+      year: "",
+      rating: null,
+      posterUrl: ""
+    });
+    setSynopsisHint("");
+    ipcRenderer.invoke("iptv-get-synopsis", {
+      channel: {
+        id: selected.id,
+        name: selected.name,
+        tvgId: selected.tvgId,
+        kind: selected.kind,
+        group: selected.group
+      }
+    }).then(function (response) {
+      if (cancelled) return;
+      if (!(response !== null && response !== void 0 && response.ok)) {
+        setSelectedSynopsis("");
+        setSelectedSynopsisMeta({
+          year: "",
+          rating: null,
+          posterUrl: ""
+        });
+        setSynopsisHint("Falha ao consultar TMDB no momento.");
+        return;
+      }
+      var synopsisText = String((response === null || response === void 0 ? void 0 : response.synopsis) || "").trim();
+      var yearText = String((response === null || response === void 0 ? void 0 : response.year) || "").trim();
+      var ratingValue = Number(response === null || response === void 0 ? void 0 : response.rating);
+      var posterUrl = String((response === null || response === void 0 ? void 0 : response.posterUrl) || "").trim();
+      var hasMeta = Boolean(yearText || Number.isFinite(ratingValue) || posterUrl);
+      if (synopsisText || hasMeta) {
+        setSelectedSynopsis(synopsisText);
+        setSelectedSynopsisMeta({
+          year: yearText,
+          rating: Number.isFinite(ratingValue) ? ratingValue : null,
+          posterUrl: posterUrl
+        });
+        setSynopsisHint(synopsisText ? "" : "Sinopse não encontrada no TMDB.");
+        return;
+      }
+      var reason = String((response === null || response === void 0 ? void 0 : response.reason) || "").trim();
+      if (reason === "missing_api_key") {
+        setSynopsisHint("TMDB_API_KEY não configurada no ambiente.");
+        return;
+      }
+      if (reason === "unsupported_kind") {
+        setSynopsisHint("Sinopse disponível apenas para filmes e séries.");
+        return;
+      }
+      if (reason === "missing_title") {
+        setSynopsisHint("Título inválido para busca no TMDB.");
+        return;
+      }
+      if (reason === "request_error") {
+        setSynopsisHint("Falha ao consultar TMDB no momento.");
+        return;
+      }
+      if (reason === "not_found") {
+        setSynopsisHint("Sinopse não encontrada no TMDB.");
+        return;
+      }
+      setSynopsisHint("Sinopse indisponível para este conteúdo.");
+    })["catch"](function () {
+      if (!cancelled) {
+        setSelectedSynopsis("");
+        setSelectedSynopsisMeta({
+          year: "",
+          rating: null,
+          posterUrl: ""
+        });
+        setSynopsisHint("Falha ao consultar TMDB no momento.");
+      }
+    })["finally"](function () {
+      if (!cancelled) setLoadingSynopsis(false);
+    });
+    return function () {
+      cancelled = true;
+    };
+  }, [showPlayer, selected === null || selected === void 0 ? void 0 : selected.id, selected === null || selected === void 0 ? void 0 : selected.name, selected === null || selected === void 0 ? void 0 : selected.kind, selected === null || selected === void 0 ? void 0 : selected.tvgId, selected === null || selected === void 0 ? void 0 : selected.group, activeNav, viewState]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var resolvedUrl = String((session === null || session === void 0 ? void 0 : session.sourceUrl) || form.url || "").trim();
     if (!resolvedUrl) return;
@@ -44701,10 +45019,10 @@ function IptvModule(_ref3) {
     var orderedCategories = _toConsumableArray(byCategory.entries()).sort(function (a, b) {
       return b[1].length - a[1].length;
     }).slice(0, 10);
-    orderedCategories.forEach(function (_ref5, idx) {
-      var _ref6 = _slicedToArray(_ref5, 2),
-        category = _ref6[0],
-        items = _ref6[1];
+    orderedCategories.forEach(function (_ref6, idx) {
+      var _ref7 = _slicedToArray(_ref6, 2),
+        category = _ref7[0],
+        items = _ref7[1];
       list.push({
         key: "cat-".concat(idx, "-").concat(category),
         title: category,
@@ -44803,10 +45121,10 @@ function IptvModule(_ref3) {
     if (activeNav === "series") {
       return;
     }
-    if (!selected && filteredChannels.length > 0) {
+    if (!selected && filteredChannels.length > 0 && !userInteracting) {
       setSelected(filteredChannels[0]);
     }
-  }, [filteredChannels, selected, activeNav]);
+  }, [filteredChannels, selected, activeNav, userInteracting]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     if (activeNav !== "movies") return;
     if (movieCategories.length === 0) {
@@ -44860,7 +45178,7 @@ function IptvModule(_ref3) {
     }
   }, [activeNav, viewState, seriesData, selectedCategory]);
   var loadChannels = /*#__PURE__*/function () {
-    var _ref7 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+    var _ref8 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
       var force,
         sourceOverride,
         sourceUrl,
@@ -44944,7 +45262,7 @@ function IptvModule(_ref3) {
       }, _callee2);
     }));
     return function loadChannels() {
-      return _ref7.apply(this, arguments);
+      return _ref8.apply(this, arguments);
     };
   }();
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
@@ -44956,7 +45274,7 @@ function IptvModule(_ref3) {
     });
   }, [session]);
   var handleLogin = /*#__PURE__*/function () {
-    var _ref8 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3(event) {
+    var _ref9 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3(event) {
       var response, nextSession;
       return _regeneratorRuntime().wrap(function _callee3$(_context3) {
         while (1) switch (_context3.prev = _context3.next) {
@@ -45008,7 +45326,7 @@ function IptvModule(_ref3) {
       }, _callee3, null, [[6, 18, 21, 25]]);
     }));
     return function handleLogin(_x) {
-      return _ref8.apply(this, arguments);
+      return _ref9.apply(this, arguments);
     };
   }();
   var handleLogout = function handleLogout() {
@@ -45022,7 +45340,7 @@ function IptvModule(_ref3) {
     setShowPlayer(false);
   };
   var handleClearCache = /*#__PURE__*/function () {
-    var _ref9 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+    var _ref0 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
       var response;
       return _regeneratorRuntime().wrap(function _callee4$(_context4) {
         while (1) switch (_context4.prev = _context4.next) {
@@ -45048,11 +45366,11 @@ function IptvModule(_ref3) {
       }, _callee4);
     }));
     return function handleClearCache() {
-      return _ref9.apply(this, arguments);
+      return _ref0.apply(this, arguments);
     };
   }();
   var handleSetNewM3uUrl = /*#__PURE__*/function () {
-    var _ref0 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
+    var _ref1 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5() {
       var currentUrl;
       return _regeneratorRuntime().wrap(function _callee5$(_context5) {
         while (1) switch (_context5.prev = _context5.next) {
@@ -45068,11 +45386,11 @@ function IptvModule(_ref3) {
       }, _callee5);
     }));
     return function handleSetNewM3uUrl() {
-      return _ref0.apply(this, arguments);
+      return _ref1.apply(this, arguments);
     };
   }();
   var handleConfirmNewM3uUrl = /*#__PURE__*/function () {
-    var _ref1 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
+    var _ref10 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
       var normalizedUrl, response, nextSession;
       return _regeneratorRuntime().wrap(function _callee6$(_context6) {
         while (1) switch (_context6.prev = _context6.next) {
@@ -45134,11 +45452,11 @@ function IptvModule(_ref3) {
       }, _callee6, null, [[7, 22, 25, 28]]);
     }));
     return function handleConfirmNewM3uUrl() {
-      return _ref1.apply(this, arguments);
+      return _ref10.apply(this, arguments);
     };
   }();
   var handleRefresh = /*#__PURE__*/function () {
-    var _ref10 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
+    var _ref11 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
       return _regeneratorRuntime().wrap(function _callee7$(_context7) {
         while (1) switch (_context7.prev = _context7.next) {
           case 0:
@@ -45170,11 +45488,11 @@ function IptvModule(_ref3) {
       }, _callee7, null, [[3, 8, 11, 14]]);
     }));
     return function handleRefresh() {
-      return _ref10.apply(this, arguments);
+      return _ref11.apply(this, arguments);
     };
   }();
   var handleClearAllApp = /*#__PURE__*/function () {
-    var _ref11 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+    var _ref12 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
       var response;
       return _regeneratorRuntime().wrap(function _callee8$(_context8) {
         while (1) switch (_context8.prev = _context8.next) {
@@ -45212,11 +45530,11 @@ function IptvModule(_ref3) {
       }, _callee8);
     }));
     return function handleClearAllApp() {
-      return _ref11.apply(this, arguments);
+      return _ref12.apply(this, arguments);
     };
   }();
   var handleExitApp = /*#__PURE__*/function () {
-    var _ref12 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
+    var _ref13 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
       return _regeneratorRuntime().wrap(function _callee9$(_context9) {
         while (1) switch (_context9.prev = _context9.next) {
           case 0:
@@ -45230,7 +45548,7 @@ function IptvModule(_ref3) {
       }, _callee9);
     }));
     return function handleExitApp() {
-      return _ref12.apply(this, arguments);
+      return _ref13.apply(this, arguments);
     };
   }();
   var handleNavClick = function handleNavClick(navKey) {
@@ -45581,7 +45899,8 @@ function IptvModule(_ref3) {
           padding: 12,
           height: "100%",
           overflowY: "auto"
-        }
+        },
+        onScroll: handleScrollInteract
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
         style: {
           textAlign: "left",
@@ -45618,7 +45937,8 @@ function IptvModule(_ref3) {
           minHeight: 0,
           overflowY: "auto",
           paddingRight: 4
-        }
+        },
+        onScroll: handleScrollInteract
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
         style: {
           textAlign: "left",
@@ -45879,12 +46199,15 @@ function IptvModule(_ref3) {
           display: "grid",
           gridTemplateColumns: "1fr 350px",
           gap: 20,
-          height: "calc(100vh - 140px)"
+          minHeight: "calc(100vh - 140px)",
+          alignItems: "start"
         }
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
+          minHeight: 0,
+          height: "100%"
         }
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
         style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
@@ -45896,12 +46219,16 @@ function IptvModule(_ref3) {
         }
       }, "Voltar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
-          flex: 1,
           background: "#000",
           borderRadius: 12,
           overflow: "hidden",
           border: "1px solid #ff000044",
-          position: "relative"
+          aspectRatio: "16 / 9",
+          width: "100%",
+          maxHeight: "68vh",
+          minHeight: 320,
+          position: "relative",
+          flex: "0 0 auto"
         }
       }, buffering && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
@@ -45934,21 +46261,40 @@ function IptvModule(_ref3) {
         onError: function onError() {
           return setBuffering(false);
         },
-        onEnded: handleEpisodeEnded
+        onEnded: handleEpisodeEnded,
+        volume: playerVolume,
+        onVolumeStateChange: handlePlayerVolumeStateChange,
+        userHasSetVolume: volumeSetByUserRef.current,
+        fallbackUserVolume: userVolumeRef.current,
+        interactionTick: hoveredCardId
       })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
-          marginTop: 10,
-          fontSize: "1.2em",
-          fontWeight: "bold"
+          marginTop: "auto",
+          paddingTop: 10,
+          display: "grid",
+          gap: 10
         }
-      }, (currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.name) || "Selecione um episódio")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          fontSize: "1.05em",
+          fontWeight: "bold",
+          border: "1px solid #ff000055",
+          borderRadius: 10,
+          background: "rgba(0,0,0,0.58)",
+          padding: "10px 12px",
+          lineHeight: 1.35,
+          wordBreak: "break-word"
+        }
+      }, (currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.name) || "Selecione um episódio"), renderSelectedSynopsis())), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
           background: "rgba(0,0,0,0.5)",
           borderRadius: 12,
           border: "1px solid #ff000022",
           overflowY: "auto",
+          maxHeight: "calc(100vh - 220px)",
           padding: 10
-        }
+        },
+        onScroll: handleScrollInteract
       }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
         style: {
           fontSize: "1.1em",
@@ -45992,6 +46338,72 @@ function IptvModule(_ref3) {
     setShowPlayer(false);
     setGroup(category.raw);
   };
+  var renderSelectedSynopsis = function renderSelectedSynopsis() {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        border: "1px solid #ff000044",
+        borderRadius: 12,
+        background: "rgba(12,12,12,0.72)",
+        padding: "12px 14px",
+        flex: "0 0 auto"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+      style: {
+        textAlign: "left",
+        fontSize: "0.98em",
+        marginBottom: 8
+      }
+    }, "Sinopse"), (selectedSynopsisMeta.posterUrl || selectedSynopsisMeta.year || Number.isFinite(selectedSynopsisMeta.rating)) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "flex",
+        gap: 12,
+        alignItems: "flex-start",
+        marginBottom: 10
+      }
+    }, selectedSynopsisMeta.posterUrl && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
+      src: selectedSynopsisMeta.posterUrl,
+      alt: "Poster TMDB",
+      style: {
+        width: 84,
+        height: 126,
+        objectFit: "cover",
+        borderRadius: 8,
+        border: "1px solid #ff000044",
+        flex: "0 0 auto"
+      }
+    }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        display: "grid",
+        gap: 6
+      }
+    }, selectedSynopsisMeta.year && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+      style: {
+        fontSize: 12,
+        color: "#fff",
+        border: "1px solid #ff000055",
+        borderRadius: 999,
+        padding: "4px 10px",
+        width: "fit-content",
+        background: "rgba(0,0,0,0.38)"
+      }
+    }, "Ano: ", selectedSynopsisMeta.year), Number.isFinite(selectedSynopsisMeta.rating) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
+      style: {
+        fontSize: 12,
+        color: "#fff",
+        border: "1px solid #ff000055",
+        borderRadius: 999,
+        padding: "4px 10px",
+        width: "fit-content",
+        background: "rgba(0,0,0,0.38)"
+      }
+    }, "Nota TMDB: ", selectedSynopsisMeta.rating.toFixed(1)))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.ContentInfo, {
+      style: {
+        textAlign: "left",
+        lineHeight: 1.55,
+        margin: 0
+      }
+    }, loadingSynopsis ? "Carregando sinopse..." : selectedSynopsis || synopsisHint || "Sinopse indisponível para este conteúdo."));
+  };
   var renderMoviesView = function renderMoviesView() {
     var selectedMovieCategory = movieCategories.find(function (category) {
       return category.raw === group;
@@ -45999,6 +46411,101 @@ function IptvModule(_ref3) {
     var selectedIsAdult = selectedMovieCategory ? isAdultCategoryLabel(selectedMovieCategory.label) : false;
     var canShowCategoryContent = Boolean(selectedMovieCategory) && (!selectedIsAdult || adultMoviesUnlocked);
     var movieItems = canShowCategoryContent ? filteredChannels : [];
+    if (showPlayer && selected && canShowCategoryContent) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          padding: "0 20px",
+          height: "calc(100vh - 140px)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          overflowY: "auto"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        type: "button",
+        onClick: function onClick() {
+          setShowPlayer(false);
+          setBuffering(false);
+        },
+        style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+          width: "fit-content"
+        })
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaChevronLeft, {
+        style: {
+          marginRight: 8
+        }
+      }), "Voltar para filmes"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          flex: "0 0 auto",
+          border: "1px solid #ff000055",
+          borderRadius: 14,
+          background: "rgba(0,0,0,0.8)",
+          padding: 12,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          marginBottom: 8
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          textAlign: "left",
+          fontSize: "1.08em"
+        }
+      }, (selected === null || selected === void 0 ? void 0 : selected.name) || "Selecione um filme")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          background: "#000",
+          borderRadius: 12,
+          overflow: "hidden",
+          aspectRatio: "16 / 9",
+          width: "100%",
+          maxWidth: 1220,
+          maxHeight: "68vh",
+          minHeight: 320,
+          margin: "0 auto",
+          flex: "0 0 auto",
+          position: "relative"
+        }
+      }, buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          position: "absolute",
+          inset: 0,
+          zIndex: 20,
+          background: "rgba(0,0,0,0.6)",
+          display: "grid",
+          placeItems: "center",
+          color: "#ff0000"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          textAlign: "center"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          fontSize: "3em",
+          animation: "spin 1s linear infinite"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          marginTop: 10,
+          fontWeight: "bold"
+        }
+      }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+        src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
+        type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
+        onBufferingChange: setBuffering,
+        onError: function onError() {
+          return setBuffering(false);
+        },
+        volume: playerVolume,
+        onVolumeStateChange: handlePlayerVolumeStateChange,
+        userHasSetVolume: volumeSetByUserRef.current,
+        fallbackUserVolume: userVolumeRef.current,
+        interactionTick: hoveredCardId
+      }))), renderSelectedSynopsis());
+    }
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         padding: "0 20px",
@@ -46075,7 +46582,11 @@ function IptvModule(_ref3) {
         background: "#000",
         borderRadius: 12,
         overflow: "hidden",
-        height: 400,
+        aspectRatio: "16 / 9",
+        width: "100%",
+        maxWidth: 1060,
+        minHeight: 280,
+        margin: "0 auto",
         position: "relative"
       }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
@@ -46132,7 +46643,12 @@ function IptvModule(_ref3) {
       onBufferingChange: setBuffering,
       onError: function onError() {
         return setBuffering(false);
-      }
+      },
+      volume: playerVolume,
+      onVolumeStateChange: handlePlayerVolumeStateChange,
+      userHasSetVolume: volumeSetByUserRef.current,
+      fallbackUserVolume: userVolumeRef.current,
+      interactionTick: hoveredCardId
     }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         flex: 1,
@@ -46151,15 +46667,18 @@ function IptvModule(_ref3) {
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
         gap: 12
-      }
+      },
+      onScroll: handleScrollInteract
     }, movieItems.map(function (channel) {
       return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         key: channel.id,
         onMouseEnter: function onMouseEnter() {
-          return setHoveredCardId("movie-".concat(channel.id));
+          setHoveredCardId("movie-".concat(channel.id));
+          setUserInteracting(true);
         },
         onMouseLeave: function onMouseLeave() {
-          return setHoveredCardId(null);
+          setHoveredCardId(null);
+          setUserInteracting(false);
         },
         onClick: function onClick() {
           return playChannel(channel, true);
@@ -46251,6 +46770,101 @@ function IptvModule(_ref3) {
       return category.raw === group;
     }) || null;
     var liveItems = selectedLiveCategory ? filteredChannels : [];
+    if (showPlayer && selected && selectedLiveCategory) {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          padding: "0 20px",
+          height: "calc(100vh - 140px)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          overflowY: "auto"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+        type: "button",
+        onClick: function onClick() {
+          setShowPlayer(false);
+          setBuffering(false);
+        },
+        style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+          width: "fit-content"
+        })
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaChevronLeft, {
+        style: {
+          marginRight: 8
+        }
+      }), "Voltar para TV ao vivo"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          flex: "0 0 auto",
+          border: "1px solid #ff000055",
+          borderRadius: 14,
+          background: "rgba(0,0,0,0.8)",
+          padding: 12,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          marginBottom: 8
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+        style: {
+          textAlign: "left",
+          fontSize: "1.08em"
+        }
+      }, (selected === null || selected === void 0 ? void 0 : selected.name) || "Selecione um canal")), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          background: "#000",
+          borderRadius: 12,
+          overflow: "hidden",
+          aspectRatio: "16 / 9",
+          width: "100%",
+          maxWidth: 1220,
+          maxHeight: "68vh",
+          minHeight: 320,
+          margin: "0 auto",
+          flex: "0 0 auto",
+          position: "relative"
+        }
+      }, buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          position: "absolute",
+          inset: 0,
+          zIndex: 20,
+          background: "rgba(0,0,0,0.6)",
+          display: "grid",
+          placeItems: "center",
+          color: "#ff0000"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          textAlign: "center"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          fontSize: "3em",
+          animation: "spin 1s linear infinite"
+        }
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+        style: {
+          marginTop: 10,
+          fontWeight: "bold"
+        }
+      }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+        src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
+        type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
+        onBufferingChange: setBuffering,
+        onError: function onError() {
+          return setBuffering(false);
+        },
+        volume: playerVolume,
+        onVolumeStateChange: handlePlayerVolumeStateChange,
+        userHasSetVolume: volumeSetByUserRef.current,
+        fallbackUserVolume: userVolumeRef.current,
+        interactionTick: hoveredCardId
+      }))), renderSelectedSynopsis());
+    }
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         padding: "0 20px",
@@ -46328,7 +46942,11 @@ function IptvModule(_ref3) {
         background: "#000",
         borderRadius: 12,
         overflow: "hidden",
-        height: 400,
+        aspectRatio: "16 / 9",
+        width: "100%",
+        maxWidth: 1060,
+        minHeight: 280,
+        margin: "0 auto",
         position: "relative"
       }
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
@@ -46385,14 +47003,20 @@ function IptvModule(_ref3) {
       onBufferingChange: setBuffering,
       onError: function onError() {
         return setBuffering(false);
-      }
+      },
+      volume: playerVolume,
+      onVolumeStateChange: handlePlayerVolumeStateChange,
+      userHasSetVolume: volumeSetByUserRef.current,
+      fallbackUserVolume: userVolumeRef.current,
+      interactionTick: hoveredCardId
     }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         flex: 1,
         minHeight: 0,
         overflowY: "auto",
         paddingRight: 4
-      }
+      },
+      onScroll: handleScrollInteract
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
       style: {
         textAlign: "left",
@@ -46404,15 +47028,18 @@ function IptvModule(_ref3) {
         display: "grid",
         gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
         gap: 12
-      }
+      },
+      onScroll: handleScrollInteract
     }, liveItems.map(function (channel) {
       return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         key: channel.id,
         onMouseEnter: function onMouseEnter() {
-          return setHoveredCardId("live-".concat(channel.id));
+          setHoveredCardId("live-".concat(channel.id));
+          setUserInteracting(true);
         },
         onMouseLeave: function onMouseLeave() {
-          return setHoveredCardId(null);
+          setHoveredCardId(null);
+          setUserInteracting(false);
         },
         onClick: function onClick() {
           return playChannel(channel, true);

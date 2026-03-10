@@ -1,9 +1,9 @@
-﻿// main.js
+// main.js
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { pathToFileURL } = require('url');
 const Store = require('electron-store');
 
@@ -14,11 +14,18 @@ const IPTV_MAX_LIMIT = 20000;
 const iptvCache = new Map();
 const iptvLogoCache = new Map();
 const iptvLogoInFlight = new Map();
+const synopsisMemoryCache = new Map();
+const synopsisDiskCache = new Map();
+const synopsisPosterInFlight = new Map();
+let cachedTmdbApiKey = '';
 
 const PROJECT_CACHE_DIR = path.join(__dirname, 'cache');
 const PLAYLIST_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'playlist');
 const LOCAL_PLAYLIST_PATH = path.join(PLAYLIST_CACHE_DIR, 'playlist.m3u');
 const LOGO_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'logos');
+const SYNOPSIS_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'synopsis');
+const SYNOPSIS_POSTERS_DIR = path.join(SYNOPSIS_CACHE_DIR, 'posters');
+const SYNOPSIS_CACHE_FILE = path.join(SYNOPSIS_CACHE_DIR, 'synopses.json');
 const CHROMIUM_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'chromium');
 
 try {
@@ -81,6 +88,8 @@ function ensureProjectCacheDirs() {
   ensureDirSafe(PROJECT_CACHE_DIR, 'project cache directory');
   ensureDirSafe(PLAYLIST_CACHE_DIR, 'playlist cache directory');
   ensureDirSafe(LOGO_CACHE_DIR, 'logo cache directory');
+  ensureDirSafe(SYNOPSIS_CACHE_DIR, 'synopsis cache directory');
+  ensureDirSafe(SYNOPSIS_POSTERS_DIR, 'synopsis posters cache directory');
   ensureDirSafe(CHROMIUM_CACHE_DIR, 'chromium cache directory');
   ensureDirSafe(thumbsDir, 'thumbnails cache directory');
 }
@@ -102,6 +111,9 @@ function clearIptvMemoryCaches() {
   iptvCache.clear();
   iptvLogoCache.clear();
   iptvLogoInFlight.clear();
+  synopsisMemoryCache.clear();
+  synopsisDiskCache.clear();
+  synopsisPosterInFlight.clear();
 }
 
 function removeFileIfExists(filePath) {
@@ -117,6 +129,7 @@ function removeFileIfExists(filePath) {
 
 app.whenReady().then(() => {
   ensureProjectCacheDirs();
+  readSynopsisDiskCache();
   createWindow();
 });
 
@@ -179,11 +192,66 @@ function resolveLogoExtension(urlValue, contentType) {
   return extensionFromContentType(contentType) || extensionFromUrl(urlValue) || '.img';
 }
 
+function ensureSynopsisCacheDirs() {
+  if (!fs.existsSync(SYNOPSIS_CACHE_DIR)) {
+    fs.mkdirSync(SYNOPSIS_CACHE_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(SYNOPSIS_POSTERS_DIR)) {
+    fs.mkdirSync(SYNOPSIS_POSTERS_DIR, { recursive: true });
+  }
+}
+
 function findExistingLogoPathByHash(hash) {
   const files = fs.readdirSync(LOGO_CACHE_DIR);
   const found = files.find((name) => name.startsWith(`${hash}.`));
   if (!found) return '';
   return path.join(LOGO_CACHE_DIR, found);
+}
+
+function findExistingSynopsisPosterPathByHash(hash) {
+  if (!fs.existsSync(SYNOPSIS_POSTERS_DIR)) return '';
+  const files = fs.readdirSync(SYNOPSIS_POSTERS_DIR);
+  const found = files.find((name) => name.startsWith(`${hash}.`));
+  if (!found) return '';
+  return path.join(SYNOPSIS_POSTERS_DIR, found);
+}
+
+function normalizeSynopsisCacheResult(value) {
+  return {
+    text: String(value?.text || '').trim(),
+    year: String(value?.year || '').trim(),
+    rating: Number.isFinite(Number(value?.rating)) ? Number(value.rating) : null,
+    posterUrl: String(value?.posterUrl || '').trim(),
+    source: String(value?.source || '').trim(),
+    reason: String(value?.reason || '').trim(),
+  };
+}
+
+function readSynopsisDiskCache() {
+  try {
+    if (!fs.existsSync(SYNOPSIS_CACHE_FILE)) return;
+    const raw = fs.readFileSync(SYNOPSIS_CACHE_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return;
+    for (const [cacheKey, value] of Object.entries(parsed)) {
+      synopsisDiskCache.set(cacheKey, normalizeSynopsisCacheResult(value));
+    }
+  } catch {
+    synopsisDiskCache.clear();
+  }
+}
+
+function writeSynopsisDiskCache() {
+  try {
+    ensureSynopsisCacheDirs();
+    const payload = {};
+    for (const [cacheKey, value] of synopsisDiskCache.entries()) {
+      payload[cacheKey] = normalizeSynopsisCacheResult(value);
+    }
+    fs.writeFileSync(SYNOPSIS_CACHE_FILE, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Falha ao persistir cache de sinopses:', err);
+  }
 }
 
 async function fetchLogoBuffer(urlValue, timeoutMs = 20000) {
@@ -250,6 +318,40 @@ async function cacheIptvLogoLocally(logoUrl) {
   })();
 
   iptvLogoInFlight.set(value, task);
+  return task;
+}
+
+async function cacheSynopsisPosterLocally(posterUrl) {
+  const value = String(posterUrl || '').trim();
+  if (!value) return '';
+  if (!/^https?:\/\//i.test(value)) return value;
+
+  if (synopsisPosterInFlight.has(value)) {
+    return synopsisPosterInFlight.get(value);
+  }
+
+  const task = (async () => {
+    try {
+      ensureSynopsisCacheDirs();
+      const hash = hashText(value);
+      const existingPath = findExistingSynopsisPosterPathByHash(hash);
+      if (existingPath && fs.existsSync(existingPath)) {
+        return pathToFileURL(existingPath).href;
+      }
+
+      const payload = await fetchLogoBuffer(value);
+      const ext = resolveLogoExtension(value, payload.contentType);
+      const filePath = path.join(SYNOPSIS_POSTERS_DIR, `${hash}${ext}`);
+      fs.writeFileSync(filePath, payload.buffer);
+      return pathToFileURL(filePath).href;
+    } catch {
+      return value;
+    } finally {
+      synopsisPosterInFlight.delete(value);
+    }
+  })();
+
+  synopsisPosterInFlight.set(value, task);
   return task;
 }
 
@@ -378,6 +480,180 @@ function parseM3u(text) {
   }
 
   return channels;
+}
+
+function normalizeSynopsisText(value) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  if (text.length <= 240) return text;
+  return `${text.slice(0, 237).trimEnd()}...`;
+}
+
+function normalizeTitleForSearch(rawTitle) {
+  return String(rawTitle || '')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\b(s\d{1,2}e\d{1,2}|\d{1,2}x\d{1,2}|temporada\s*\d+)\b/gi, ' ')
+    .replace(/\(\d{4}\)\s*$/g, ' ')
+    .replace(/[._]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractTitleAndYear(rawTitle) {
+  const value = String(rawTitle || '').trim();
+  const yearMatch = value.match(/\((\d{4})\)\s*$/);
+  const year = yearMatch ? Number(yearMatch[1]) : null;
+  const title = normalizeTitleForSearch(value);
+  return { title, year: Number.isFinite(year) ? year : null };
+}
+
+function getTmdbApiKey() {
+  const envValue = String(process.env.TMDB_API_KEY || '').trim();
+  if (envValue) {
+    cachedTmdbApiKey = envValue;
+    return envValue;
+  }
+
+  if (cachedTmdbApiKey) {
+    return cachedTmdbApiKey;
+  }
+
+  const storedValue = String(store.get('tmdb_api_key') || '').trim();
+  if (storedValue) {
+    cachedTmdbApiKey = storedValue;
+    process.env.TMDB_API_KEY = storedValue;
+    return storedValue;
+  }
+
+  if (process.platform === 'win32') {
+    const readFromScope = (scope) => {
+      const output = spawnSync(
+        'powershell',
+        ['-NoProfile', '-Command', `[Environment]::GetEnvironmentVariable('TMDB_API_KEY','${scope}')`],
+        { encoding: 'utf8', windowsHide: true }
+      );
+      if (output.status !== 0) return '';
+      return String(output.stdout || '').trim();
+    };
+
+    const userValue = readFromScope('User');
+    if (userValue) {
+      cachedTmdbApiKey = userValue;
+      process.env.TMDB_API_KEY = userValue;
+      return userValue;
+    }
+
+    const machineValue = readFromScope('Machine');
+    if (machineValue) {
+      cachedTmdbApiKey = machineValue;
+      process.env.TMDB_API_KEY = machineValue;
+      return machineValue;
+    }
+  }
+
+  return '';
+}
+
+async function searchTmdbOverview(kind, title, year, language) {
+  const apiKey = getTmdbApiKey();
+  if (!apiKey || !title) return null;
+
+  const endpoint = kind === 'series' ? 'tv' : 'movie';
+  const url = new URL(`https://api.themoviedb.org/3/search/${endpoint}`);
+  url.searchParams.set('api_key', apiKey);
+  url.searchParams.set('query', title);
+  url.searchParams.set('language', language);
+  url.searchParams.set('include_adult', 'false');
+  if (year) {
+    if (endpoint === 'tv') url.searchParams.set('first_air_date_year', String(year));
+    else url.searchParams.set('year', String(year));
+  }
+
+  const payload = await fetchJsonWithTimeout(url.toString(), 20000);
+  const first = Array.isArray(payload?.results) ? payload.results[0] : null;
+  if (!first) return null;
+
+  const dateValue = String(first?.release_date || first?.first_air_date || '').trim();
+  const yearValue = /^\d{4}/.test(dateValue) ? dateValue.slice(0, 4) : '';
+  const ratingValue = Number(first?.vote_average);
+  const posterPath = String(first?.poster_path || '').trim();
+
+  return {
+    text: normalizeSynopsisText(first?.overview || ''),
+    year: yearValue,
+    rating: Number.isFinite(ratingValue) ? ratingValue : null,
+    posterUrl: posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : '',
+  };
+}
+
+async function getTmdbSynopsis(channel) {
+  const contentKind = String(channel?.kind || '').toLowerCase();
+  if (contentKind !== 'movie' && contentKind !== 'series') {
+    return { text: '', source: '', reason: 'unsupported_kind' };
+  }
+
+  const apiKey = getTmdbApiKey();
+  if (!apiKey) {
+    return { text: '', source: '', reason: 'missing_api_key' };
+  }
+
+  const { title, year } = extractTitleAndYear(channel?.name || channel?.tvgName || '');
+  if (!title) {
+    return { text: '', source: '', reason: 'missing_title' };
+  }
+
+  const cacheKey = `${contentKind}::${title.toLowerCase()}::${year || ''}`;
+  if (synopsisMemoryCache.has(cacheKey)) {
+    return synopsisMemoryCache.get(cacheKey);
+  }
+
+  if (synopsisDiskCache.has(cacheKey)) {
+    const diskHit = normalizeSynopsisCacheResult(synopsisDiskCache.get(cacheKey));
+    synopsisMemoryCache.set(cacheKey, diskHit);
+    return diskHit;
+  }
+
+  let details = null;
+  let reason = 'not_found';
+  try {
+    details = await searchTmdbOverview(contentKind, title, year, 'pt-BR');
+    const hasDetails =
+      details &&
+      (details.text || details.year || Number.isFinite(details.rating) || details.posterUrl);
+    if (!hasDetails) {
+      details = await searchTmdbOverview(contentKind, title, year, 'en-US');
+    }
+  } catch {
+    reason = 'request_error';
+  }
+
+  const result =
+    details && (details.text || details.year || Number.isFinite(details.rating) || details.posterUrl)
+    ? {
+        text: details.text || '',
+        year: details.year || '',
+        rating: Number.isFinite(details.rating) ? details.rating : null,
+        posterUrl: details.posterUrl ? await cacheSynopsisPosterLocally(details.posterUrl) : '',
+        source: 'tmdb',
+        reason: '',
+      }
+    : {
+        text: '',
+        year: '',
+        rating: null,
+        posterUrl: '',
+        source: '',
+        reason,
+      };
+
+  synopsisMemoryCache.set(cacheKey, result);
+  synopsisDiskCache.set(cacheKey, result);
+  writeSynopsisDiskCache();
+  return result;
+}
+
+async function resolveSynopsisForChannel(channel) {
+  return getTmdbSynopsis(channel);
 }
 
 function parseKind(value) {
@@ -692,6 +968,33 @@ ipcMain.handle('iptv-load-channels', async (e, params) => {
     return { ok: true, ...result };
   } catch (error) {
     return { ok: false, error: error?.message || 'Falha ao carregar canais IPTV.' };
+  }
+});
+
+ipcMain.handle('iptv-get-synopsis', async (e, payload) => {
+  try {
+    const channel = payload?.channel || {};
+    const result = await resolveSynopsisForChannel(channel);
+    return {
+      ok: true,
+      synopsis: result?.text || '',
+      year: result?.year || '',
+      rating: Number.isFinite(result?.rating) ? result.rating : null,
+      posterUrl: result?.posterUrl || '',
+      source: result?.source || '',
+      reason: result?.reason || '',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      synopsis: '',
+      year: '',
+      rating: null,
+      posterUrl: '',
+      source: '',
+      reason: 'request_error',
+      error: error?.message || 'Falha ao carregar sinopse.',
+    };
   }
 });
 

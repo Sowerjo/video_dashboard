@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import {
   AppContainer,
@@ -163,16 +163,153 @@ const baseButtonStyle = {
 const cachedLogoByUrl = new Map();
 const inFlightLogoRequests = new Map();
 const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+const PLAYER_VOLUME_STORAGE_KEY = "iptv_player_volume_session";
 
-const ReactUrlPlayer = ({ src, type, onBufferingChange, onError, onEnded }) => {
+const ReactUrlPlayer = ({
+  src,
+  type,
+  onBufferingChange,
+  onError,
+  onEnded,
+  volume = 0.8,
+  onVolumeStateChange,
+  userHasSetVolume = false,
+  fallbackUserVolume = null,
+  interactionTick = null,
+}) => {
   const isHlsSource = useMemo(() => /\.m3u8(\?|$)/i.test(src || ""), [src]);
   const playerSource = useMemo(() => src || "", [src]);
   const playerRef = useRef(null);
+  const applyingVolumeRef = useRef(false);
+
+  const getMediaElement = useCallback(() => {
+    const internalPlayer = playerRef.current?.getInternalPlayer?.();
+    if (!internalPlayer) return null;
+    if (typeof internalPlayer.volume === "number") return internalPlayer;
+    if (internalPlayer?.player && typeof internalPlayer.player.volume === "number") return internalPlayer.player;
+    return null;
+  }, []);
+
+  const syncVolumeToMediaElement = useCallback(() => {
+    const mediaElement = getMediaElement();
+    if (!mediaElement) return false;
+
+    // Usar volume do usuário se disponível e válido
+    const userVolume = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
+    const baseVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
+    
+    // Se o usuário definiu um volume válido anteriormente, usar esse volume
+    const nextVolume = (userHasSetVolume && (userVolume ?? 0) > 0.001) ? (userVolume ?? baseVolume) : baseVolume;
+    const shouldBeMuted = nextVolume <= 0.001;
+
+    applyingVolumeRef.current = true;
+    if (Math.abs((mediaElement.volume ?? 1) - nextVolume) > 0.001) {
+      mediaElement.volume = nextVolume;
+    }
+    if (mediaElement.muted !== shouldBeMuted) {
+      mediaElement.muted = shouldBeMuted;
+    }
+    Promise.resolve().then(() => {
+      applyingVolumeRef.current = false;
+    });
+    return true;
+  }, [getMediaElement, volume]);
 
   useEffect(() => {
     if (!playerSource) return;
-    playerRef.current?.play?.();
+    const p = playerRef.current?.play?.();
+    if (p && typeof p.catch === "function") {
+      p.catch(() => {});
+    }
   }, [playerSource]);
+
+  // Proteger volume quando o player for inicializado
+  useEffect(() => {
+    if (!playerSource) return;
+    
+    // Capturar valores das refs fora da função assíncrona
+    const userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
+    const volSetByUser = !!userHasSetVolume;
+    
+    const protectVolume = () => {
+      if (volSetByUser && userVol > 0.001) {
+        // Se o usuário já definiu um volume, garantir que seja usado
+        setTimeout(() => {
+          const mediaElement = getMediaElement();
+          if (mediaElement) {
+            if (mediaElement.volume <= 0.001) {
+              mediaElement.volume = userVol;
+              mediaElement.muted = false;
+            }
+          }
+        }, 200);
+      }
+    };
+    
+    protectVolume();
+  }, [playerSource, getMediaElement, userHasSetVolume, fallbackUserVolume]);
+
+  useEffect(() => {
+    if (!playerSource) return;
+
+    let cancelled = false;
+    let timeoutId = null;
+    let attempts = 0;
+    
+    // Capturar valores das refs fora da função assíncrona
+    const volSetByUser = !!userHasSetVolume;
+    const userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
+
+    const scheduleSync = () => {
+      if (cancelled) return;
+      // Proteger volume do usuário ao trocar de source
+      if (volSetByUser && userVol > 0.001) {
+        const mediaElement = getMediaElement();
+        if (mediaElement && mediaElement.volume <= 0.001) {
+          mediaElement.volume = userVol;
+          mediaElement.muted = false;
+          return;
+        }
+      }
+      syncVolumeToMediaElement();
+      attempts += 1;
+      if (attempts < 20) {
+        timeoutId = window.setTimeout(scheduleSync, 120);
+      }
+    };
+
+    scheduleSync();
+    return () => {
+      cancelled = true;
+      if (timeoutId) window.clearTimeout(timeoutId);
+    };
+  }, [playerSource, syncVolumeToMediaElement, userHasSetVolume, fallbackUserVolume]);
+
+  useEffect(() => {
+    syncVolumeToMediaElement();
+  }, [interactionTick, syncVolumeToMediaElement]);
+
+  useEffect(() => {
+    const mediaElement = getMediaElement();
+    if (!mediaElement) return undefined;
+
+    const handleVolumeChange = () => {
+      if (applyingVolumeRef.current) return;
+      const nextVolume = Number.isFinite(mediaElement.volume) ? Math.max(0, Math.min(1, mediaElement.volume)) : 0.8;
+      if (mediaElement.muted && nextVolume > 0.001) {
+        syncVolumeToMediaElement();
+        return;
+      }
+      onVolumeStateChange?.({ volume: nextVolume });
+    };
+
+    mediaElement.addEventListener("volumechange", handleVolumeChange);
+    mediaElement.addEventListener("loadedmetadata", syncVolumeToMediaElement);
+    return () => {
+      mediaElement.removeEventListener("volumechange", handleVolumeChange);
+      mediaElement.removeEventListener("loadedmetadata", syncVolumeToMediaElement);
+    };
+  }, [getMediaElement, onVolumeStateChange, playerSource, syncVolumeToMediaElement]);
 
   return (
     <div 
@@ -186,15 +323,27 @@ const ReactUrlPlayer = ({ src, type, onBufferingChange, onError, onEnded }) => {
         overflow: "hidden"
       }}
     >
+      {(() => {
+        const effectiveVolume = (userHasSetVolume && typeof fallbackUserVolume === "number") ? fallbackUserVolume : volume;
+        return (
       <ReactPlayer
         ref={playerRef}
-        key={`${src || "empty"}-${type || "auto"}`}
+        key={playerSource ? "player-instance" : "empty-player"}
         src={playerSource}
         controls
         playsInline
         width="100%"
         height="100%"
         style={{ background: "#000" }}
+        volume={effectiveVolume}
+        muted={effectiveVolume <= 0.001}
+        onPlaying={() => {
+          onBufferingChange && onBufferingChange(false);
+          syncVolumeToMediaElement();
+          setTimeout(() => {
+            syncVolumeToMediaElement();
+          }, 50);
+        }}
         config={{
           file: {
             forceHLS: isHlsSource,
@@ -204,7 +353,6 @@ const ReactUrlPlayer = ({ src, type, onBufferingChange, onError, onEnded }) => {
           },
         }}
         onCanPlay={() => onBufferingChange && onBufferingChange(false)}
-        onPlaying={() => onBufferingChange && onBufferingChange(false)}
         onWaiting={() => onBufferingChange && onBufferingChange(true)}
         onPause={() => onBufferingChange && onBufferingChange(false)}
         onEnded={() => onEnded && onEnded()}
@@ -212,7 +360,8 @@ const ReactUrlPlayer = ({ src, type, onBufferingChange, onError, onEnded }) => {
           onBufferingChange && onBufferingChange(false);
           onError && onError(error);
         }}
-      />
+      />);
+      })()}
       
       <div 
         style={{
@@ -371,17 +520,45 @@ export default function IptvModule({ onBack }) {
   const [headerSolid, setHeaderSolid] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [infoChannel, setInfoChannel] = useState(null);
+  const [userInteracting, setUserInteracting] = useState(false);
   const [newM3uModalOpen, setNewM3uModalOpen] = useState(false);
   const [newM3uUrlInput, setNewM3uUrlInput] = useState("");
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [likedIds, setLikedIds] = useState([]);
   const [recentlyPlayedIds, setRecentlyPlayedIds] = useState([]);
   const [adultMoviesUnlocked, setAdultMoviesUnlocked] = useState(false);
+  const [selectedSynopsis, setSelectedSynopsis] = useState("");
+  const [selectedSynopsisMeta, setSelectedSynopsisMeta] = useState({ year: "", rating: null, posterUrl: "" });
+  const [synopsisHint, setSynopsisHint] = useState("");
+  const [loadingSynopsis, setLoadingSynopsis] = useState(false);
+  const [playerVolume, setPlayerVolume] = useState(() => {
+    const parsed = Number(sessionStorage.getItem(PLAYER_VOLUME_STORAGE_KEY));
+    if (!Number.isFinite(parsed)) return 0.8;
+    const volume = Math.max(0, Math.min(1, parsed));
+    // Garantir que não comece mutado (volume muito baixo)
+    return volume < 0.1 ? 0.8 : volume;
+  });
 
   const rowRefs = useRef({});
   const contentRef = useRef(null);
   const menuRef = useRef(null);
   const menuBtnRef = useRef(null);
+  const scrollDebounceRef = useRef(null);
+  
+  // Refs para proteção do volume
+  const userVolumeRef = useRef(playerVolume);
+  const volumeProtectionRef = useRef(false);
+  const volumeSetByUserRef = useRef(false);
+
+  const handleScrollInteract = useCallback(() => {
+    setUserInteracting(true);
+    if (scrollDebounceRef.current) {
+      window.clearTimeout(scrollDebounceRef.current);
+    }
+    scrollDebounceRef.current = window.setTimeout(() => {
+      setUserInteracting(false);
+    }, 300);
+  }, []);
 
   useEffect(() => {
     const saved = {
@@ -448,6 +625,133 @@ export default function IptvModule({ onBack }) {
   useEffect(() => {
     localStorage.setItem("iptv_recent", JSON.stringify(recentlyPlayedIds));
   }, [recentlyPlayedIds]);
+
+  useEffect(() => {
+    sessionStorage.setItem(PLAYER_VOLUME_STORAGE_KEY, String(playerVolume));
+  }, [playerVolume]);
+
+  // Atualizar referência do volume do usuário quando ele muda
+  useEffect(() => {
+    if (playerVolume > 0.001) {
+      userVolumeRef.current = playerVolume;
+      volumeSetByUserRef.current = true;
+    }
+  }, [playerVolume]);
+
+  // Proteger contra redefinição de volume para 0
+  useEffect(() => {
+    if (volumeSetByUserRef.current && playerVolume <= 0.001 && userVolumeRef.current > 0.001) {
+      // Volume foi redefinido para 0/mudo mas usuário tinha volume maior - restaurar
+      setTimeout(() => {
+        setPlayerVolume(userVolumeRef.current);
+      }, 100);
+    }
+  }, [playerVolume]);
+
+  const handlePlayerVolumeStateChange = useCallback(({ volume }) => {
+    if (userInteracting) return;
+    const nextVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
+    if (nextVolume > 0.001) {
+      volumeSetByUserRef.current = true;
+      userVolumeRef.current = nextVolume;
+    }
+    setPlayerVolume((prev) => (Math.abs(prev - nextVolume) > 0.001 ? nextVolume : prev));
+  }, [userInteracting]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const selectedKind = String(selected?.kind || "").toLowerCase();
+    const isMovieOrSeries = selectedKind === "movie" || selectedKind === "series";
+    const isSeriesEpisodesView = activeNav === "series" && viewState === "episodes" && selectedKind === "series";
+    const shouldLoadSynopsis = Boolean(selected) && ((showPlayer && isMovieOrSeries) || isSeriesEpisodesView);
+
+    if (!shouldLoadSynopsis) {
+      setSelectedSynopsis("");
+      setSelectedSynopsisMeta({ year: "", rating: null, posterUrl: "" });
+      setSynopsisHint("");
+      setLoadingSynopsis(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setLoadingSynopsis(true);
+    setSelectedSynopsis("");
+    setSelectedSynopsisMeta({ year: "", rating: null, posterUrl: "" });
+    setSynopsisHint("");
+
+    ipcRenderer
+      .invoke("iptv-get-synopsis", {
+        channel: {
+          id: selected.id,
+          name: selected.name,
+          tvgId: selected.tvgId,
+          kind: selected.kind,
+          group: selected.group,
+        },
+      })
+      .then((response) => {
+        if (cancelled) return;
+        if (!response?.ok) {
+          setSelectedSynopsis("");
+          setSelectedSynopsisMeta({ year: "", rating: null, posterUrl: "" });
+          setSynopsisHint("Falha ao consultar TMDB no momento.");
+          return;
+        }
+        const synopsisText = String(response?.synopsis || "").trim();
+        const yearText = String(response?.year || "").trim();
+        const ratingValue = Number(response?.rating);
+        const posterUrl = String(response?.posterUrl || "").trim();
+        const hasMeta = Boolean(yearText || Number.isFinite(ratingValue) || posterUrl);
+        if (synopsisText || hasMeta) {
+          setSelectedSynopsis(synopsisText);
+          setSelectedSynopsisMeta({
+            year: yearText,
+            rating: Number.isFinite(ratingValue) ? ratingValue : null,
+            posterUrl,
+          });
+          setSynopsisHint(synopsisText ? "" : "Sinopse não encontrada no TMDB.");
+          return;
+        }
+
+        const reason = String(response?.reason || "").trim();
+        if (reason === "missing_api_key") {
+          setSynopsisHint("TMDB_API_KEY não configurada no ambiente.");
+          return;
+        }
+        if (reason === "unsupported_kind") {
+          setSynopsisHint("Sinopse disponível apenas para filmes e séries.");
+          return;
+        }
+        if (reason === "missing_title") {
+          setSynopsisHint("Título inválido para busca no TMDB.");
+          return;
+        }
+        if (reason === "request_error") {
+          setSynopsisHint("Falha ao consultar TMDB no momento.");
+          return;
+        }
+        if (reason === "not_found") {
+          setSynopsisHint("Sinopse não encontrada no TMDB.");
+          return;
+        }
+        setSynopsisHint("Sinopse indisponível para este conteúdo.");
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSelectedSynopsis("");
+          setSelectedSynopsisMeta({ year: "", rating: null, posterUrl: "" });
+          setSynopsisHint("Falha ao consultar TMDB no momento.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSynopsis(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showPlayer, selected?.id, selected?.name, selected?.kind, selected?.tvgId, selected?.group, activeNav, viewState]);
 
   useEffect(() => {
     const resolvedUrl = String(session?.sourceUrl || form.url || "").trim();
@@ -700,10 +1004,10 @@ export default function IptvModule({ onBack }) {
       return;
     }
 
-    if (!selected && filteredChannels.length > 0) {
+    if (!selected && filteredChannels.length > 0 && !userInteracting) {
       setSelected(filteredChannels[0]);
     }
-  }, [filteredChannels, selected, activeNav]);
+  }, [filteredChannels, selected, activeNav, userInteracting]);
 
   useEffect(() => {
     if (activeNav !== "movies") return;
@@ -1203,7 +1507,7 @@ export default function IptvModule({ onBack }) {
 
       return (
         <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
-          <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
+          <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }} onScroll={handleScrollInteract}>
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
             {cats.map((cat) => {
               const active = activeCategory === cat;
@@ -1235,7 +1539,7 @@ export default function IptvModule({ onBack }) {
               );
             })}
           </aside>
-          <div style={{ height: "100%", minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+          <div style={{ height: "100%", minHeight: 0, overflowY: "auto", paddingRight: 4 }} onScroll={handleScrollInteract}>
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
               {activeCategory || "Selecione uma categoria"}
             </FolderTitle>
@@ -1395,10 +1699,10 @@ export default function IptvModule({ onBack }) {
       };
 
       return (
-        <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "1fr 350px", gap: 20, height: "calc(100vh - 140px)" }}>
-           <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "1fr 350px", gap: 20, minHeight: "calc(100vh - 140px)", alignItems: "start" }}>
+           <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
              <button style={{ ...baseButtonStyle, width: "fit-content", marginBottom: 10 }} onClick={() => setViewState('seasons')}>Voltar</button>
-             <div style={{ flex: 1, background: "#000", borderRadius: 12, overflow: "hidden", border: "1px solid #ff000044", position: "relative" }}>
+             <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", border: "1px solid #ff000044", aspectRatio: "16 / 9", width: "100%", maxHeight: "68vh", minHeight: 320, position: "relative", flex: "0 0 auto" }}>
                 {buffering && (
                   <div style={{
                     position: "absolute",
@@ -1423,14 +1727,22 @@ export default function IptvModule({ onBack }) {
                   onBufferingChange={setBuffering}
                   onError={() => setBuffering(false)}
                   onEnded={handleEpisodeEnded}
+                  volume={playerVolume}
+                  onVolumeStateChange={handlePlayerVolumeStateChange}
+                  userHasSetVolume={volumeSetByUserRef.current}
+                  fallbackUserVolume={userVolumeRef.current}
+                  interactionTick={hoveredCardId}
                 />
              </div>
-             <div style={{ marginTop: 10, fontSize: "1.2em", fontWeight: "bold" }}>
-                {currentEpisode?.name || "Selecione um episódio"}
+             <div style={{ marginTop: "auto", paddingTop: 10, display: "grid", gap: 10 }}>
+                <div style={{ fontSize: "1.05em", fontWeight: "bold", border: "1px solid #ff000055", borderRadius: 10, background: "rgba(0,0,0,0.58)", padding: "10px 12px", lineHeight: 1.35, wordBreak: "break-word" }}>
+                   {currentEpisode?.name || "Selecione um episódio"}
+                </div>
+                {renderSelectedSynopsis()}
              </div>
            </div>
            
-           <div style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12, border: "1px solid #ff000022", overflowY: "auto", padding: 10 }}>
+           <div style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12, border: "1px solid #ff000022", overflowY: "auto", maxHeight: "calc(100vh - 220px)", padding: 10 }} onScroll={handleScrollInteract}>
               <FolderTitle style={{ fontSize: "1.1em", marginBottom: 10 }}>Temporada {selectedSeason}</FolderTitle>
               {episodes.map(ep => (
                 <div 
@@ -1471,11 +1783,112 @@ export default function IptvModule({ onBack }) {
     setGroup(category.raw);
   };
 
+  const renderSelectedSynopsis = () => (
+    <div
+      style={{
+        border: "1px solid #ff000044",
+        borderRadius: 12,
+        background: "rgba(12,12,12,0.72)",
+        padding: "12px 14px",
+        flex: "0 0 auto",
+      }}
+    >
+      <FolderTitle style={{ textAlign: "left", fontSize: "0.98em", marginBottom: 8 }}>Sinopse</FolderTitle>
+      {(selectedSynopsisMeta.posterUrl || selectedSynopsisMeta.year || Number.isFinite(selectedSynopsisMeta.rating)) && (
+        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 10 }}>
+          {selectedSynopsisMeta.posterUrl && (
+            <img
+              src={selectedSynopsisMeta.posterUrl}
+              alt="Poster TMDB"
+              style={{ width: 84, height: 126, objectFit: "cover", borderRadius: 8, border: "1px solid #ff000044", flex: "0 0 auto" }}
+            />
+          )}
+          <div style={{ display: "grid", gap: 6 }}>
+            {selectedSynopsisMeta.year && (
+              <span style={{ fontSize: 12, color: "#fff", border: "1px solid #ff000055", borderRadius: 999, padding: "4px 10px", width: "fit-content", background: "rgba(0,0,0,0.38)" }}>
+                Ano: {selectedSynopsisMeta.year}
+              </span>
+            )}
+            {Number.isFinite(selectedSynopsisMeta.rating) && (
+              <span style={{ fontSize: 12, color: "#fff", border: "1px solid #ff000055", borderRadius: 999, padding: "4px 10px", width: "fit-content", background: "rgba(0,0,0,0.38)" }}>
+                Nota TMDB: {selectedSynopsisMeta.rating.toFixed(1)}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      <ContentInfo style={{ textAlign: "left", lineHeight: 1.55, margin: 0 }}>
+        {loadingSynopsis
+          ? "Carregando sinopse..."
+          : selectedSynopsis || synopsisHint || "Sinopse indisponível para este conteúdo."}
+      </ContentInfo>
+    </div>
+  );
+
   const renderMoviesView = () => {
     const selectedMovieCategory = movieCategories.find((category) => category.raw === group) || null;
     const selectedIsAdult = selectedMovieCategory ? isAdultCategoryLabel(selectedMovieCategory.label) : false;
     const canShowCategoryContent = Boolean(selectedMovieCategory) && (!selectedIsAdult || adultMoviesUnlocked);
     const movieItems = canShowCategoryContent ? filteredChannels : [];
+
+    if (showPlayer && selected && canShowCategoryContent) {
+      return (
+        <div style={{ padding: "0 20px", height: "calc(100vh - 140px)", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowPlayer(false);
+              setBuffering(false);
+            }}
+            style={{ ...baseButtonStyle, width: "fit-content" }}
+          >
+            <FaChevronLeft style={{ marginRight: 8 }} />
+            Voltar para filmes
+          </button>
+          <div style={{ flex: "0 0 auto", border: "1px solid #ff000055", borderRadius: 14, background: "rgba(0,0,0,0.8)", padding: 12, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ marginBottom: 8 }}>
+              <FolderTitle style={{ textAlign: "left", fontSize: "1.08em" }}>
+                {selected?.name || "Selecione um filme"}
+              </FolderTitle>
+            </div>
+            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
+              {buffering && selected && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 20,
+                    background: "rgba(0,0,0,0.6)",
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#ff0000",
+                  }}
+                >
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
+                      <FaSearch />
+                    </div>
+                    <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
+                  </div>
+                </div>
+              )}
+              <ReactUrlPlayer
+                src={toPlayableUrl(selected?.url)}
+                type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
+                onBufferingChange={setBuffering}
+                onError={() => setBuffering(false)}
+                volume={playerVolume}
+                onVolumeStateChange={handlePlayerVolumeStateChange}
+                userHasSetVolume={volumeSetByUserRef.current}
+                fallbackUserVolume={userVolumeRef.current}
+                interactionTick={hoveredCardId}
+              />
+            </div>
+          </div>
+          {renderSelectedSynopsis()}
+        </div>
+      );
+    }
 
     return (
     <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
@@ -1515,7 +1928,7 @@ export default function IptvModule({ onBack }) {
                 {selected?.name || "Selecione um filme"}
               </FolderTitle>
             </div>
-            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", height: 400, position: "relative" }}>
+            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1060, minHeight: 280, margin: "0 auto", position: "relative" }}>
               <button
                 type="button"
                 onClick={() => {
@@ -1566,6 +1979,11 @@ export default function IptvModule({ onBack }) {
                 type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
                 onBufferingChange={setBuffering}
                 onError={() => setBuffering(false)}
+                volume={playerVolume}
+                onVolumeStateChange={handlePlayerVolumeStateChange}
+                userHasSetVolume={volumeSetByUserRef.current}
+                fallbackUserVolume={userVolumeRef.current}
+                interactionTick={hoveredCardId}
               />
             </div>
           </section>
@@ -1576,12 +1994,18 @@ export default function IptvModule({ onBack }) {
             {selectedMovieCategory?.label || "Selecione uma categoria"}
           </FolderTitle>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
             {movieItems.map((channel) => (
               <div
                 key={channel.id}
-                onMouseEnter={() => setHoveredCardId(`movie-${channel.id}`)}
-                onMouseLeave={() => setHoveredCardId(null)}
+                onMouseEnter={() => {
+                  setHoveredCardId(`movie-${channel.id}`);
+                  setUserInteracting(true);
+                }}
+                onMouseLeave={() => {
+                  setHoveredCardId(null);
+                  setUserInteracting(false);
+                }}
                 onClick={() => playChannel(channel, true)}
                 style={{
                   width: "100%",
@@ -1663,6 +2087,65 @@ export default function IptvModule({ onBack }) {
     const selectedLiveCategory = liveCategories.find((category) => category.raw === group) || null;
     const liveItems = selectedLiveCategory ? filteredChannels : [];
 
+    if (showPlayer && selected && selectedLiveCategory) {
+      return (
+        <div style={{ padding: "0 20px", height: "calc(100vh - 140px)", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowPlayer(false);
+              setBuffering(false);
+            }}
+            style={{ ...baseButtonStyle, width: "fit-content" }}
+          >
+            <FaChevronLeft style={{ marginRight: 8 }} />
+            Voltar para TV ao vivo
+          </button>
+          <div style={{ flex: "0 0 auto", border: "1px solid #ff000055", borderRadius: 14, background: "rgba(0,0,0,0.8)", padding: 12, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ marginBottom: 8 }}>
+              <FolderTitle style={{ textAlign: "left", fontSize: "1.08em" }}>
+                {selected?.name || "Selecione um canal"}
+              </FolderTitle>
+            </div>
+            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
+              {buffering && selected && (
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 20,
+                    background: "rgba(0,0,0,0.6)",
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#ff0000",
+                  }}
+                >
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
+                      <FaSearch />
+                    </div>
+                    <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
+                  </div>
+                </div>
+              )}
+              <ReactUrlPlayer
+                src={toPlayableUrl(selected?.url)}
+                type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
+                onBufferingChange={setBuffering}
+                onError={() => setBuffering(false)}
+                volume={playerVolume}
+                onVolumeStateChange={handlePlayerVolumeStateChange}
+                userHasSetVolume={volumeSetByUserRef.current}
+                fallbackUserVolume={userVolumeRef.current}
+                interactionTick={hoveredCardId}
+              />
+            </div>
+          </div>
+          {renderSelectedSynopsis()}
+        </div>
+      );
+    }
+
     return (
       <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
         <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
@@ -1704,7 +2187,7 @@ export default function IptvModule({ onBack }) {
                   {selected?.name || "Selecione um canal"}
                 </FolderTitle>
               </div>
-              <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", height: 400, position: "relative" }}>
+              <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1060, minHeight: 280, margin: "0 auto", position: "relative" }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -1755,22 +2238,33 @@ export default function IptvModule({ onBack }) {
                   type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
                   onBufferingChange={setBuffering}
                   onError={() => setBuffering(false)}
+                  volume={playerVolume}
+                  onVolumeStateChange={handlePlayerVolumeStateChange}
+                  userHasSetVolume={volumeSetByUserRef.current}
+                  fallbackUserVolume={userVolumeRef.current}
+                  interactionTick={hoveredCardId}
                 />
               </div>
             </section>
           )}
 
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }} onScroll={handleScrollInteract}>
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
               {selectedLiveCategory?.label || "Selecione uma categoria"}
             </FolderTitle>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
               {liveItems.map((channel) => (
                 <div
                   key={channel.id}
-                  onMouseEnter={() => setHoveredCardId(`live-${channel.id}`)}
-                  onMouseLeave={() => setHoveredCardId(null)}
+                  onMouseEnter={() => {
+                    setHoveredCardId(`live-${channel.id}`);
+                    setUserInteracting(true);
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredCardId(null);
+                    setUserInteracting(false);
+                  }}
                   onClick={() => playChannel(channel, true)}
                   style={{
                     width: "100%",
