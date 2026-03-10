@@ -998,6 +998,26 @@ ipcMain.handle('iptv-get-synopsis', async (e, payload) => {
   }
 });
 
+ipcMain.handle('iptv-get-tmdb-key-status', () => {
+  const apiKey = String(getTmdbApiKey() || '').trim();
+  return { ok: true, hasKey: Boolean(apiKey) };
+});
+
+ipcMain.handle('iptv-set-tmdb-key', (e, payload) => {
+  try {
+    const apiKey = String(payload?.apiKey || '').trim();
+    if (!apiKey) {
+      return { ok: false, error: 'Informe uma chave TMDB válida.' };
+    }
+    store.set('tmdb_api_key', apiKey);
+    cachedTmdbApiKey = apiKey;
+    process.env.TMDB_API_KEY = apiKey;
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao salvar chave TMDB.' };
+  }
+});
+
 ipcMain.handle('iptv-cache-logo', async (e, logoUrl) => {
   try {
     const logoPath = await cacheIptvLogoLocally(logoUrl);

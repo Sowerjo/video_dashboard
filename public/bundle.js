@@ -44613,52 +44613,68 @@ function IptvModule(_ref3) {
     _useState50 = _slicedToArray(_useState49, 2),
     newM3uUrlInput = _useState50[0],
     setNewM3uUrlInput = _useState50[1];
-  var _useState51 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+  var _useState51 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState52 = _slicedToArray(_useState51, 2),
-    favoriteIds = _useState52[0],
-    setFavoriteIds = _useState52[1];
-  var _useState53 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    tmdbModalOpen = _useState52[0],
+    setTmdbModalOpen = _useState52[1];
+  var _useState53 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState54 = _slicedToArray(_useState53, 2),
-    likedIds = _useState54[0],
-    setLikedIds = _useState54[1];
-  var _useState55 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    tmdbApiKeyInput = _useState54[0],
+    setTmdbApiKeyInput = _useState54[1];
+  var _useState55 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState56 = _slicedToArray(_useState55, 2),
-    recentlyPlayedIds = _useState56[0],
-    setRecentlyPlayedIds = _useState56[1];
-  var _useState57 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    savingTmdbApiKey = _useState56[0],
+    setSavingTmdbApiKey = _useState56[1];
+  var _useState57 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState58 = _slicedToArray(_useState57, 2),
-    adultMoviesUnlocked = _useState58[0],
-    setAdultMoviesUnlocked = _useState58[1];
-  var _useState59 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    favoriteIds = _useState58[0],
+    setFavoriteIds = _useState58[1];
+  var _useState59 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState60 = _slicedToArray(_useState59, 2),
-    selectedSynopsis = _useState60[0],
-    setSelectedSynopsis = _useState60[1];
-  var _useState61 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+    likedIds = _useState60[0],
+    setLikedIds = _useState60[1];
+  var _useState61 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState62 = _slicedToArray(_useState61, 2),
+    recentlyPlayedIds = _useState62[0],
+    setRecentlyPlayedIds = _useState62[1];
+  var _useState63 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState64 = _slicedToArray(_useState63, 2),
+    adultMoviesUnlocked = _useState64[0],
+    setAdultMoviesUnlocked = _useState64[1];
+  var _useState65 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState66 = _slicedToArray(_useState65, 2),
+    selectedSynopsis = _useState66[0],
+    setSelectedSynopsis = _useState66[1];
+  var _useState67 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
       year: "",
       rating: null,
       posterUrl: ""
     }),
-    _useState62 = _slicedToArray(_useState61, 2),
-    selectedSynopsisMeta = _useState62[0],
-    setSelectedSynopsisMeta = _useState62[1];
-  var _useState63 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
-    _useState64 = _slicedToArray(_useState63, 2),
-    synopsisHint = _useState64[0],
-    setSynopsisHint = _useState64[1];
-  var _useState65 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState66 = _slicedToArray(_useState65, 2),
-    loadingSynopsis = _useState66[0],
-    setLoadingSynopsis = _useState66[1];
-  var _useState67 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
+    _useState68 = _slicedToArray(_useState67, 2),
+    selectedSynopsisMeta = _useState68[0],
+    setSelectedSynopsisMeta = _useState68[1];
+  var _useState69 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState70 = _slicedToArray(_useState69, 2),
+    synopsisHint = _useState70[0],
+    setSynopsisHint = _useState70[1];
+  var _useState71 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState72 = _slicedToArray(_useState71, 2),
+    loadingSynopsis = _useState72[0],
+    setLoadingSynopsis = _useState72[1];
+  var _useState73 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    _useState74 = _slicedToArray(_useState73, 2),
+    synopsisRefreshTick = _useState74[0],
+    setSynopsisRefreshTick = _useState74[1];
+  var _useState75 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
       var parsed = Number(sessionStorage.getItem(PLAYER_VOLUME_STORAGE_KEY));
       if (!Number.isFinite(parsed)) return 0.8;
       var volume = Math.max(0, Math.min(1, parsed));
       // Garantir que não comece mutado (volume muito baixo)
       return volume < 0.1 ? 0.8 : volume;
     }),
-    _useState68 = _slicedToArray(_useState67, 2),
-    playerVolume = _useState68[0],
-    setPlayerVolume = _useState68[1];
+    _useState76 = _slicedToArray(_useState75, 2),
+    playerVolume = _useState76[0],
+    setPlayerVolume = _useState76[1];
   var rowRefs = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)({});
   var contentRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   var menuRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
@@ -44898,7 +44914,7 @@ function IptvModule(_ref3) {
     return function () {
       cancelled = true;
     };
-  }, [showPlayer, selected === null || selected === void 0 ? void 0 : selected.id, selected === null || selected === void 0 ? void 0 : selected.name, selected === null || selected === void 0 ? void 0 : selected.kind, selected === null || selected === void 0 ? void 0 : selected.tvgId, selected === null || selected === void 0 ? void 0 : selected.group, activeNav, viewState]);
+  }, [showPlayer, selected === null || selected === void 0 ? void 0 : selected.id, selected === null || selected === void 0 ? void 0 : selected.name, selected === null || selected === void 0 ? void 0 : selected.kind, selected === null || selected === void 0 ? void 0 : selected.tvgId, selected === null || selected === void 0 ? void 0 : selected.group, activeNav, viewState, synopsisRefreshTick]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var resolvedUrl = String((session === null || session === void 0 ? void 0 : session.sourceUrl) || form.url || "").trim();
     if (!resolvedUrl) return;
@@ -45389,35 +45405,116 @@ function IptvModule(_ref3) {
       return _ref1.apply(this, arguments);
     };
   }();
-  var handleConfirmNewM3uUrl = /*#__PURE__*/function () {
+  var handleConfigureTmdbKey = /*#__PURE__*/function () {
     var _ref10 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
-      var normalizedUrl, response, nextSession;
       return _regeneratorRuntime().wrap(function _callee6$(_context6) {
         while (1) switch (_context6.prev = _context6.next) {
           case 0:
+            setMenuOpen(false);
+            setTmdbApiKeyInput("");
+            setTmdbModalOpen(true);
+          case 3:
+          case "end":
+            return _context6.stop();
+        }
+      }, _callee6);
+    }));
+    return function handleConfigureTmdbKey() {
+      return _ref10.apply(this, arguments);
+    };
+  }();
+  var handleConfirmTmdbKey = /*#__PURE__*/function () {
+    var _ref11 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
+      var apiKey, saveResponse, detail;
+      return _regeneratorRuntime().wrap(function _callee7$(_context7) {
+        while (1) switch (_context7.prev = _context7.next) {
+          case 0:
+            apiKey = String(tmdbApiKeyInput || "").trim();
+            if (apiKey) {
+              _context7.next = 4;
+              break;
+            }
+            setStatus("Informe uma chave TMDB válida.");
+            return _context7.abrupt("return");
+          case 4:
+            setSavingTmdbApiKey(true);
+            _context7.prev = 5;
+            _context7.next = 8;
+            return ipcRenderer.invoke("iptv-set-tmdb-key", {
+              apiKey: apiKey
+            });
+          case 8:
+            saveResponse = _context7.sent;
+            if (saveResponse !== null && saveResponse !== void 0 && saveResponse.ok) {
+              _context7.next = 12;
+              break;
+            }
+            setStatus((saveResponse === null || saveResponse === void 0 ? void 0 : saveResponse.error) || "Falha ao salvar chave TMDB.");
+            return _context7.abrupt("return");
+          case 12:
+            setTmdbModalOpen(false);
+            setTmdbApiKeyInput("");
+            setStatus("Chave TMDB salva com sucesso.");
+            setSynopsisRefreshTick(function (prev) {
+              return prev + 1;
+            });
+            _context7.next = 25;
+            break;
+          case 18:
+            _context7.prev = 18;
+            _context7.t0 = _context7["catch"](5);
+            detail = String((_context7.t0 === null || _context7.t0 === void 0 ? void 0 : _context7.t0.message) || "").trim();
+            if (!detail.includes("No handler registered")) {
+              _context7.next = 24;
+              break;
+            }
+            setStatus("Reinicie o app para aplicar a atualização da chave TMDB.");
+            return _context7.abrupt("return");
+          case 24:
+            setStatus("Falha ao configurar chave TMDB.");
+          case 25:
+            _context7.prev = 25;
+            setSavingTmdbApiKey(false);
+            return _context7.finish(25);
+          case 28:
+          case "end":
+            return _context7.stop();
+        }
+      }, _callee7, null, [[5, 18, 25, 28]]);
+    }));
+    return function handleConfirmTmdbKey() {
+      return _ref11.apply(this, arguments);
+    };
+  }();
+  var handleConfirmNewM3uUrl = /*#__PURE__*/function () {
+    var _ref12 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+      var normalizedUrl, response, nextSession;
+      return _regeneratorRuntime().wrap(function _callee8$(_context8) {
+        while (1) switch (_context8.prev = _context8.next) {
+          case 0:
             normalizedUrl = String(newM3uUrlInput || "").trim();
             if (normalizedUrl) {
-              _context6.next = 4;
+              _context8.next = 4;
               break;
             }
             setStatus("Informe uma URL M3U válida.");
-            return _context6.abrupt("return");
+            return _context8.abrupt("return");
           case 4:
             setNewM3uModalOpen(false);
             setLoadingLogin(true);
             setStatus("Atualizando URL M3U...");
-            _context6.prev = 7;
-            _context6.next = 10;
+            _context8.prev = 7;
+            _context8.next = 10;
             return ipcRenderer.invoke("iptv-delete-local-playlist");
           case 10:
-            _context6.next = 12;
+            _context8.next = 12;
             return ipcRenderer.invoke("iptv-validate-login", {
               url: normalizedUrl
             });
           case 12:
-            response = _context6.sent;
+            response = _context8.sent;
             if (response !== null && response !== void 0 && response.ok) {
-              _context6.next = 15;
+              _context8.next = 15;
               break;
             }
             throw new Error((response === null || response === void 0 ? void 0 : response.error) || "Falha ao validar nova URL.");
@@ -45435,80 +45532,80 @@ function IptvModule(_ref3) {
             localStorage.setItem("iptv_url", normalizedUrl);
             setSession(nextSession);
             setStatus("Nova URL salva. Carregando conteúdo...");
-            _context6.next = 25;
+            _context8.next = 25;
             break;
           case 22:
-            _context6.prev = 22;
-            _context6.t0 = _context6["catch"](7);
-            setStatus((_context6.t0 === null || _context6.t0 === void 0 ? void 0 : _context6.t0.message) || "Falha ao trocar URL M3U.");
+            _context8.prev = 22;
+            _context8.t0 = _context8["catch"](7);
+            setStatus((_context8.t0 === null || _context8.t0 === void 0 ? void 0 : _context8.t0.message) || "Falha ao trocar URL M3U.");
           case 25:
-            _context6.prev = 25;
+            _context8.prev = 25;
             setLoadingLogin(false);
-            return _context6.finish(25);
+            return _context8.finish(25);
           case 28:
           case "end":
-            return _context6.stop();
+            return _context8.stop();
         }
-      }, _callee6, null, [[7, 22, 25, 28]]);
+      }, _callee8, null, [[7, 22, 25, 28]]);
     }));
     return function handleConfirmNewM3uUrl() {
-      return _ref10.apply(this, arguments);
+      return _ref12.apply(this, arguments);
     };
   }();
   var handleRefresh = /*#__PURE__*/function () {
-    var _ref11 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
-      return _regeneratorRuntime().wrap(function _callee7$(_context7) {
-        while (1) switch (_context7.prev = _context7.next) {
+    var _ref13 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
+      return _regeneratorRuntime().wrap(function _callee9$(_context9) {
+        while (1) switch (_context9.prev = _context9.next) {
           case 0:
             if (session !== null && session !== void 0 && session.sourceUrl) {
-              _context7.next = 2;
+              _context9.next = 2;
               break;
             }
-            return _context7.abrupt("return");
+            return _context9.abrupt("return");
           case 2:
             setLoadingChannels(true);
-            _context7.prev = 3;
-            _context7.next = 6;
+            _context9.prev = 3;
+            _context9.next = 6;
             return loadChannels(true);
           case 6:
-            _context7.next = 11;
+            _context9.next = 11;
             break;
           case 8:
-            _context7.prev = 8;
-            _context7.t0 = _context7["catch"](3);
-            setStatus(_context7.t0.message || "Falha ao atualizar.");
+            _context9.prev = 8;
+            _context9.t0 = _context9["catch"](3);
+            setStatus(_context9.t0.message || "Falha ao atualizar.");
           case 11:
-            _context7.prev = 11;
+            _context9.prev = 11;
             setLoadingChannels(false);
-            return _context7.finish(11);
+            return _context9.finish(11);
           case 14:
           case "end":
-            return _context7.stop();
+            return _context9.stop();
         }
-      }, _callee7, null, [[3, 8, 11, 14]]);
+      }, _callee9, null, [[3, 8, 11, 14]]);
     }));
     return function handleRefresh() {
-      return _ref11.apply(this, arguments);
+      return _ref13.apply(this, arguments);
     };
   }();
   var handleClearAllApp = /*#__PURE__*/function () {
-    var _ref12 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+    var _ref14 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee0() {
       var response;
-      return _regeneratorRuntime().wrap(function _callee8$(_context8) {
-        while (1) switch (_context8.prev = _context8.next) {
+      return _regeneratorRuntime().wrap(function _callee0$(_context0) {
+        while (1) switch (_context0.prev = _context0.next) {
           case 0:
             setMenuOpen(false);
             setStatus("Limpando dados do aplicativo...");
-            _context8.next = 4;
+            _context0.next = 4;
             return ipcRenderer.invoke("iptv-clear-all");
           case 4:
-            response = _context8.sent;
+            response = _context0.sent;
             if (response !== null && response !== void 0 && response.ok) {
-              _context8.next = 8;
+              _context0.next = 8;
               break;
             }
             setStatus((response === null || response === void 0 ? void 0 : response.error) || "Falha ao limpar dados do aplicativo.");
-            return _context8.abrupt("return");
+            return _context0.abrupt("return");
           case 8:
             localStorage.removeItem("iptv_url");
             localStorage.removeItem("iptv_favorites");
@@ -45525,30 +45622,30 @@ function IptvModule(_ref3) {
             setStatus("Dados do aplicativo removidos com sucesso.");
           case 19:
           case "end":
-            return _context8.stop();
+            return _context0.stop();
         }
-      }, _callee8);
+      }, _callee0);
     }));
     return function handleClearAllApp() {
-      return _ref12.apply(this, arguments);
+      return _ref14.apply(this, arguments);
     };
   }();
   var handleExitApp = /*#__PURE__*/function () {
-    var _ref13 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
-      return _regeneratorRuntime().wrap(function _callee9$(_context9) {
-        while (1) switch (_context9.prev = _context9.next) {
+    var _ref15 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee1() {
+      return _regeneratorRuntime().wrap(function _callee1$(_context1) {
+        while (1) switch (_context1.prev = _context1.next) {
           case 0:
             setMenuOpen(false);
-            _context9.next = 3;
+            _context1.next = 3;
             return ipcRenderer.invoke("iptv-exit-app");
           case 3:
           case "end":
-            return _context9.stop();
+            return _context1.stop();
         }
-      }, _callee9);
+      }, _callee1);
     }));
     return function handleExitApp() {
-      return _ref13.apply(this, arguments);
+      return _ref15.apply(this, arguments);
     };
   }();
   var handleNavClick = function handleNavClick(navKey) {
@@ -47417,6 +47514,10 @@ function IptvModule(_ref3) {
   }, "Informar nova URL M3U"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
     type: "button",
     style: baseButtonStyle,
+    onClick: handleConfigureTmdbKey
+  }, "Configurar chave TMDB"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
     onClick: handleRefresh
   }, loadingChannels ? "Recarregando conteúdo..." : "Recarregar Conteúdo"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
     type: "button",
@@ -47509,7 +47610,91 @@ function IptvModule(_ref3) {
     }),
     onClick: handleConfirmNewM3uUrl,
     disabled: loadingLogin
-  }, loadingLogin ? "Salvando..." : "Salvar e atualizar")))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  }, loadingLogin ? "Salvando..." : "Salvar e atualizar")))), tmdbModalOpen && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 111,
+      background: "rgba(0,0,0,0.78)",
+      display: "grid",
+      placeItems: "center",
+      padding: 20
+    },
+    onClick: function onClick() {
+      return !savingTmdbApiKey && setTmdbModalOpen(false);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "min(680px, 92vw)",
+      border: "1px solid #ff000066",
+      borderRadius: 14,
+      background: "#0f0f0f",
+      padding: 16,
+      boxShadow: "0 18px 34px rgba(0,0,0,0.5)",
+      display: "grid",
+      gap: 12
+    },
+    onClick: function onClick(e) {
+      return e.stopPropagation();
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
+    style: {
+      textAlign: "left",
+      fontSize: "1.25em"
+    }
+  }, "Configurar chave TMDB"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+      padding: "6px 10px"
+    }),
+    onClick: function onClick() {
+      return !savingTmdbApiKey && setTmdbModalOpen(false);
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, null))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
+    value: tmdbApiKeyInput,
+    onChange: function onChange(e) {
+      return setTmdbApiKeyInput(e.target.value);
+    },
+    placeholder: "Cole sua TMDB API Key",
+    autoFocus: true,
+    style: {
+      width: "100%",
+      background: "rgba(10,10,10,0.85)",
+      border: "1px solid #ff000055",
+      color: "#fff",
+      borderRadius: 8,
+      padding: "10px 12px",
+      outline: "none"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      gap: 8,
+      justifyContent: "flex-end",
+      flexWrap: "wrap"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: baseButtonStyle,
+    onClick: function onClick() {
+      return setTmdbModalOpen(false);
+    },
+    disabled: savingTmdbApiKey
+  }, "Cancelar"), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    style: _objectSpread(_objectSpread({}, baseButtonStyle), {}, {
+      background: "#ff0000",
+      color: "#000"
+    }),
+    onClick: handleConfirmTmdbKey,
+    disabled: savingTmdbApiKey
+  }, savingTmdbApiKey ? "Salvando..." : "Salvar chave")))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     ref: contentRef,
     onScroll: handleContentScroll,
     style: {

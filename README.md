@@ -40,6 +40,7 @@ Aplicativo desktop em Electron + React com dois modos de operação:
   1. `process.env.TMDB_API_KEY`
   2. valor salvo em `electron-store` (`tmdb_api_key`)
   3. variáveis de ambiente do Windows (User e Machine)
+- Também é possível configurar a chave TMDB direto pela interface do IPTV (menu do usuário), sem depender de variável de ambiente no sistema.
 
 ### 1.5 Permissões e conectividade
 - Acesso de leitura às pastas de mídia escolhidas no modo offline.
@@ -133,6 +134,7 @@ npx electron-builder --win --config.win.signAndEditExecutable=false
 - Fluxos de manutenção:
   - limpar cache IPTV
   - trocar URL da playlist
+  - configurar chave TMDB
   - excluir playlist local em cache
   - limpar todos os dados do app
 
@@ -173,6 +175,8 @@ npx electron-builder --win --config.win.signAndEditExecutable=false
   - `iptv-validate-login`
   - `iptv-load-channels`
   - `iptv-get-synopsis`
+  - `iptv-get-tmdb-key-status`
+  - `iptv-set-tmdb-key`
   - `iptv-cache-logo`
   - `iptv-has-local-playlist`
   - `iptv-delete-local-playlist`

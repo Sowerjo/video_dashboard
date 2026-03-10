@@ -523,6 +523,9 @@ export default function IptvModule({ onBack }) {
   const [userInteracting, setUserInteracting] = useState(false);
   const [newM3uModalOpen, setNewM3uModalOpen] = useState(false);
   const [newM3uUrlInput, setNewM3uUrlInput] = useState("");
+  const [tmdbModalOpen, setTmdbModalOpen] = useState(false);
+  const [tmdbApiKeyInput, setTmdbApiKeyInput] = useState("");
+  const [savingTmdbApiKey, setSavingTmdbApiKey] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [likedIds, setLikedIds] = useState([]);
   const [recentlyPlayedIds, setRecentlyPlayedIds] = useState([]);
@@ -531,6 +534,7 @@ export default function IptvModule({ onBack }) {
   const [selectedSynopsisMeta, setSelectedSynopsisMeta] = useState({ year: "", rating: null, posterUrl: "" });
   const [synopsisHint, setSynopsisHint] = useState("");
   const [loadingSynopsis, setLoadingSynopsis] = useState(false);
+  const [synopsisRefreshTick, setSynopsisRefreshTick] = useState(0);
   const [playerVolume, setPlayerVolume] = useState(() => {
     const parsed = Number(sessionStorage.getItem(PLAYER_VOLUME_STORAGE_KEY));
     if (!Number.isFinite(parsed)) return 0.8;
@@ -751,7 +755,7 @@ export default function IptvModule({ onBack }) {
     return () => {
       cancelled = true;
     };
-  }, [showPlayer, selected?.id, selected?.name, selected?.kind, selected?.tvgId, selected?.group, activeNav, viewState]);
+  }, [showPlayer, selected?.id, selected?.name, selected?.kind, selected?.tvgId, selected?.group, activeNav, viewState, synopsisRefreshTick]);
 
   useEffect(() => {
     const resolvedUrl = String(session?.sourceUrl || form.url || "").trim();
@@ -1193,6 +1197,42 @@ export default function IptvModule({ onBack }) {
     setMenuOpen(false);
     setNewM3uUrlInput(currentUrl);
     setNewM3uModalOpen(true);
+  };
+
+  const handleConfigureTmdbKey = async () => {
+    setMenuOpen(false);
+    setTmdbApiKeyInput("");
+    setTmdbModalOpen(true);
+  };
+
+  const handleConfirmTmdbKey = async () => {
+    const apiKey = String(tmdbApiKeyInput || "").trim();
+    if (!apiKey) {
+      setStatus("Informe uma chave TMDB válida.");
+      return;
+    }
+
+    setSavingTmdbApiKey(true);
+    try {
+      const saveResponse = await ipcRenderer.invoke("iptv-set-tmdb-key", { apiKey });
+      if (!saveResponse?.ok) {
+        setStatus(saveResponse?.error || "Falha ao salvar chave TMDB.");
+        return;
+      }
+      setTmdbModalOpen(false);
+      setTmdbApiKeyInput("");
+      setStatus("Chave TMDB salva com sucesso.");
+      setSynopsisRefreshTick((prev) => prev + 1);
+    } catch (error) {
+      const detail = String(error?.message || "").trim();
+      if (detail.includes("No handler registered")) {
+        setStatus("Reinicie o app para aplicar a atualização da chave TMDB.");
+        return;
+      }
+      setStatus("Falha ao configurar chave TMDB.");
+    } finally {
+      setSavingTmdbApiKey(false);
+    }
   };
 
   const handleConfirmNewM3uUrl = async () => {
@@ -2530,6 +2570,9 @@ export default function IptvModule({ onBack }) {
               <button type="button" style={baseButtonStyle} onClick={handleSetNewM3uUrl}>
                 Informar nova URL M3U
               </button>
+              <button type="button" style={baseButtonStyle} onClick={handleConfigureTmdbKey}>
+                Configurar chave TMDB
+              </button>
               <button type="button" style={baseButtonStyle} onClick={handleRefresh}>
                 {loadingChannels ? "Recarregando conteúdo..." : "Recarregar Conteúdo"}
               </button>
@@ -2564,6 +2607,34 @@ export default function IptvModule({ onBack }) {
                   </button>
                   <button type="button" style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }} onClick={handleConfirmNewM3uUrl} disabled={loadingLogin}>
                     {loadingLogin ? "Salvando..." : "Salvar e atualizar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tmdbModalOpen && (
+            <div style={{ position: "fixed", inset: 0, zIndex: 111, background: "rgba(0,0,0,0.78)", display: "grid", placeItems: "center", padding: 20 }} onClick={() => !savingTmdbApiKey && setTmdbModalOpen(false)}>
+              <div style={{ width: "min(680px, 92vw)", border: "1px solid #ff000066", borderRadius: 14, background: "#0f0f0f", padding: 16, boxShadow: "0 18px 34px rgba(0,0,0,0.5)", display: "grid", gap: 12 }} onClick={(e) => e.stopPropagation()}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <FolderTitle style={{ textAlign: "left", fontSize: "1.25em" }}>Configurar chave TMDB</FolderTitle>
+                  <button type="button" style={{ ...baseButtonStyle, padding: "6px 10px" }} onClick={() => !savingTmdbApiKey && setTmdbModalOpen(false)}>
+                    <FaTimes />
+                  </button>
+                </div>
+                <input
+                  value={tmdbApiKeyInput}
+                  onChange={(e) => setTmdbApiKeyInput(e.target.value)}
+                  placeholder="Cole sua TMDB API Key"
+                  autoFocus
+                  style={{ width: "100%", background: "rgba(10,10,10,0.85)", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "10px 12px", outline: "none" }}
+                />
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  <button type="button" style={baseButtonStyle} onClick={() => setTmdbModalOpen(false)} disabled={savingTmdbApiKey}>
+                    Cancelar
+                  </button>
+                  <button type="button" style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }} onClick={handleConfirmTmdbKey} disabled={savingTmdbApiKey}>
+                    {savingTmdbApiKey ? "Salvando..." : "Salvar chave"}
                   </button>
                 </div>
               </div>
