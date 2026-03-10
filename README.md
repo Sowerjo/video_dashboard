@@ -1,137 +1,243 @@
 # Mind Flix
 
-Aplicativo desktop (Electron + React) para organizar e assistir vídeos em pastas, com visual futurista (efeito glass), geração automática de thumbnails via FFmpeg e retomada de reprodução.
+Aplicativo desktop em Electron + React com dois modos de operação:
+- Modo Offline para biblioteca local de vídeos.
+- Modo IPTV para reprodução de listas M3U, com organização por TV ao vivo, filmes e séries.
 
-## Visão geral
-- Baseado em Electron (main process) e React (renderer) com styled-components.
-- Lê pastas do usuário, organiza por playlists (com subpastas) e extrai thumbs automaticamente.
-- Armazena o progresso de reprodução (posição do vídeo) e itens “assistidos”.
-- Interface com fundo desfocado, vinheta e logo fixo no topo.
+## 1. Requisitos de Execução
 
-## Principais recursos
-- Adicionar pastas de vídeos (com suporte a subpastas).
-- Thumbnails automáticos via FFmpeg (primeiro frame em 1s).
-- Marcação de vídeos assistidos e “limpar checks” por playlist.
-- Retomada automática do ponto onde você parou (persistência por vídeo).
-- Importar/Exportar playlists (JSON).
-- Visual com topo fixo, cartões em vidro, vinheta e background com blur.
+### 1.1 Ambiente base
+- Node.js LTS (recomendado: 18+).
+- npm (instalado junto com Node.js).
+- Sistema operacional: Windows (principal alvo de build e instalador).
 
-## Estrutura do projeto
-- <mcfile name="main.js" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\main.js"></mcfile> — Processo principal do Electron, cria a janela e expõe handlers de IPC (FFmpeg, persistência, diálogos etc.).
-- <mcfile name="webpack.config.js" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\webpack.config.js"></mcfile> — Empacota o renderer (React) em public/bundle.js.
-- <mcfile name="public/index.html" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\public\index.html"></mcfile> — HTML base carregado pelo Electron.
-- <mcfile name="src/index.jsx" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\index.jsx"></mcfile> — Ponto de entrada do React.
-- <mcfile name="src/App.jsx" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\App.jsx"></mcfile> — Orquestra estado global, camadas de fundo, top bar e integra com Electron.
-- <mcfile name="src/Dashboard.jsx" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\Dashboard.jsx"></mcfile> — Lista playlists, subpastas e vídeos, modais e full-screen player.
-- <mcfile name="src/FolderTile.jsx" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\FolderTile.jsx"></mcfile> — Card de uma playlist.
-- <mcfile name="src/styles.js" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\styles.js"></mcfile> — styled-components (BackgroundLayer, VignetteOverlay, LogoOverlay, TopBar, Tiles etc.).
-- bin/ — FFmpeg empacotado (ffmpeg/ffplay/ffprobe). 
-- public/ — Bundle, HTML e ativos estáticos (topo.png, background.png).
+### 1.2 Dependências da aplicação
+- Runtime:
+  - `electron-store`
+  - `react`
+  - `react-dom`
+  - `react-icons`
+  - `react-player`
+  - `styled-components`
+- Build:
+  - `electron`
+  - `webpack` + `webpack-cli`
+  - `babel-loader` + presets Babel
+  - `electron-builder`
+  - `sharp` + `png-to-ico` (pipeline de ícones)
 
-## Requisitos
-- Node.js LTS (18+ recomendado).
-- Windows (binaries do FFmpeg já incluídos). Para macOS/Linux, inclua binários compatíveis em bin/ (o main resolve o caminho automaticamente: ffmpeg.exe no Windows, ffmpeg no Unix).
+### 1.3 Dependências externas e recursos obrigatórios
+- FFmpeg local em `bin/`:
+  - `ffmpeg.exe`
+  - `ffprobe.exe`
+  - `ffplay.exe`
+- Ícone principal em `icon.ico` para o executável.
+- Arquivos de UI em `public/` (como `index.html`, `topo.png`, `background.png`).
 
-## Instalação e execução
-1) Instalar dependências:
-```
+### 1.4 Variáveis de ambiente e integrações
+- `TMDB_API_KEY` (opcional, mas necessária para sinopses de filmes/séries no modo IPTV).
+- A chave TMDB é buscada na seguinte ordem:
+  1. `process.env.TMDB_API_KEY`
+  2. valor salvo em `electron-store` (`tmdb_api_key`)
+  3. variáveis de ambiente do Windows (User e Machine)
+
+### 1.5 Permissões e conectividade
+- Acesso de leitura às pastas de mídia escolhidas no modo offline.
+- Acesso HTTP/HTTPS para:
+  - download de playlist M3U
+  - logos remotos
+  - consulta de metadados no TMDB
+
+## 2. Requisitos de Compilação
+
+### 2.1 Instalação e execução local
+```bash
 npm install
-```
-2) Gerar o bundle do renderer:
-```
 npm run build
-```
-3) Executar o app Electron:
-```
 npm run electron
 ```
-Dica (dev): use dois terminais — um com `npm start` (webpack --watch) e outro com `npm run electron` para recarregar mais rápido.
 
-## Empacotamento (instalador)
+Fluxo de desenvolvimento recomendado:
+```bash
+npm run start
+npm run electron
 ```
+
+### 2.2 Scripts disponíveis
+- `npm run start`: compila o renderer em modo watch.
+- `npm run build` / `npm run build-renderer`: gera `public/bundle.js`.
+- `npm run electron`: inicia a aplicação desktop.
+- `npm run build-ico`: gera `icon.ico`, `assets/icon.ico`, `assets/installer.ico` e `assets/uninstaller.ico`.
+- `npm run dist`: build do renderer + empacotamento com electron-builder.
+
+### 2.3 Empacotamento do instalador
+```bash
 npm run build-ico
 npm run dist
 ```
-- Saída em dist/ (alvo Windows NSIS). 
-- O instalador gera “Mind Flix Setup <versão>.exe”.
-- A pasta bin é instalada ao lado do executável (via extraFiles); em produção o app procura ffmpeg/ffprobe/ffplay nesse mesmo diretório.
-- Ícones:
-  - App: build.win.icon aponta para icon.ico (raiz), gerado por npm run build-ico a partir de assets/ico.png.
-  - Instalador/Desinstalador: nsis.installerIcon e nsis.uninstallerIcon (assets/installer.ico e assets/uninstaller.ico), também gerados pelo script.
-- ASAR desativado (asar: false) para facilitar o acesso a binários externos (FFmpeg).
 
-Erros comuns no build
-- image *.ico must be at least 256x256: garanta que assets/ico.png tenha pelo menos 256×256 (ideal 512/1024) e rode npm run build-ico antes do npm run dist.
-- invalid icon file size (NSIS): use os ícones installer/uninstaller gerados pelo script (somente 16/32/48).
-- O build inclui `bin/` e `thumbs/` via `extraResources` do electron-builder.
-- Atenção: o `build.win.icon` no package.json aponta para `assets/icon.ico`. Certifique-se de colocar esse arquivo (há um `assets/icon.png`; troque para `.ico` ou ajuste o caminho no package.json).
+Características atuais do build:
+- Target Windows NSIS.
+- Saída em `dist/`.
+- Binários de `bin/` incluídos via `extraFiles`.
+- `asar: false` para facilitar acesso a binários externos.
+- Ícones NSIS definidos em `assets/installer.ico` e `assets/uninstaller.ico`.
 
-## Como funciona (arquitetura)
-- Electron Main
-  - Carrega `public/index.html` e injeta o bundle do React.
-  - Define handlers de IPC:
-    - `load-config`: lê `config.json` em `app.getPath('userData')` (fallback vazio).
-    - `get-thumbs-path`: expõe o caminho da pasta `thumbs` do usuário.
-    - `select-folder`: abre diálogo para escolher uma pasta.
-    - `load-folders`/`save-folders`: playlists via electron-store.
-    - `load-watched`/`save-watched`: vídeos assistidos via electron-store.
-    - `load-positions`/`save-position`/`clear-positions`: progresso dos vídeos via electron-store.
-    - `generate-thumbnails`: percorre arquivos de cada pasta; para vídeos, chama FFmpeg para exportar 1 frame (1s) em `thumbs/<nome>.jpg`.
-- Renderer (React)
-  - `scanFolder(folderPath, thumbsDir)`: varre pastas recursivamente, filtra vídeos pelas extensões suportadas e associa thumbs existentes.
-  - Fluxo de inicialização do <mcfile name="src/App.jsx" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\App.jsx"></mcfile>:
-    1. Lê config inicial via `load-config` (folders/watchedVideos).
-    2. Obtém `thumbsDir` via `get-thumbs-path`.
-    3. Gera thumbs (`generate-thumbnails`) e re-escaneia as pastas para preencher `videos`/`subfolders`.
-    4. Persiste `folders` e `watched` continuamente (`save-folders`/`save-watched`).
-  - UI: TopBar com botões “Adicionar Pasta +”, “Atualizar”, “Importar”, “Exportar”.
-  - `Dashboard`: exibe cards de playlists; ao abrir, mostra subpastas e miniaturas. Clique abre vídeo em modal full-screen.
-  - Full-screen `<video>` salva a posição em `timeupdate`, `pause` e `seeked`; ao carregar, reposiciona para a última posição.
-  - Tecla ESC fecha modais (painéis, subpastas e full-screen).
+Observação operacional:
+- Em ambientes com restrição de assinatura no Windows, pode ser necessário gerar com:
+```bash
+npx electron-builder --win --config.win.signAndEditExecutable=false
+```
 
-## Extensões suportadas
-Definidas em `VIDEO_EXTS` no App: `.mp4, .avi, .mkv, .mov, .webm, .wmv, .flv`.
+### 2.4 Estrutura de compilação
+- `webpack.config.js` empacota `src/index.jsx` para `public/bundle.js`.
+- `target: "electron-renderer"` para compatibilidade com renderer Electron.
+- `main.js` é o entrypoint do processo principal (`"main": "main.js"`).
 
-## Persistência e arquivos
-- electron-store
-  - `folders` — array de playlists.
-  - `watchedVideos` — lista de paths de vídeos marcados.
-  - `positions` — mapa `path -> segundos`.
-- `config.json` (em `userData/`) — lido por `load-config` no boot (quando existir).
-- `thumbs/` (em `userData/`) — thumbs geradas pelo FFmpeg; nome do arquivo é derivado do nome do vídeo sanitizado.
+## 3. Funcionalidades Implementadas
 
-## Estilo/tema e camadas visuais
-Definidos em <mcfile name="src/styles.js" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\styles.js"></mcfile>.
-- Background
-  - `BackgroundLayer`: ocupa a tela (fixed), usa `topo.png` como imagem de fundo com `blur`, `brightness` e `saturate`.
-  - `VignetteOverlay`: vinheta radial para reforçar contraste com as bordas.
-  - `LogoOverlay`: imagem fixa e centralizada no topo (usa `topo.png`); não intercepta cliques.
-- Controles/Cartões
-  - `TopBar`: barra semi-transparente com blur para efeito glass.
-  - `Tile` e `Modal`: semi‑transparentes com `backdrop-filter`, borda e glow vermelhos.
+### 3.1 Menu inicial
+- Seleção entre Modo Offline e Modo IPTV em `src/App.jsx`.
 
-Para trocar imagens:
-- Coloque seu logo em `public/` (ex.: `logo.png`) e altere `LogoOverlay src` em <mcfile name="src/App.jsx" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\App.jsx"></mcfile>.
-- Troque o fundo alterando a URL de `BackgroundLayer` em <mcfile name="src/styles.js" path="c:\Users\JOEL-PREVENDAS\OneDrive - MOBITECH TECNOLOGIA LTDA\Área de Trabalho\Nova pasta\video_dashboard\src\styles.js"></mcfile>.
+### 3.2 Modo Offline
+- Cadastro de pastas locais de vídeo.
+- Varredura recursiva de subpastas.
+- Geração automática de thumbnails via FFmpeg.
+- Marcação de vídeos assistidos.
+- Retomada de reprodução por posição salva.
+- Importação/exportação de playlists em JSON.
+- Reordenação manual de:
+  - playlists
+  - subpastas
+  - vídeos
+- Reset de ordenação para padrão do sistema de arquivos.
+- Barra de progresso visual durante geração de thumbs.
 
-## Uso da interface
-1. Adicione uma pasta (botão “Adicionar Pasta +”).
-2. O app gera as miniaturas e preenche a playlist.
-3. Clique em uma playlist para abrir; clique em uma miniatura para reproduzir em tela cheia.
-4. “Limpar Checks” remove marcadores de assistido e posições daquela playlist.
-5. Use “Importar”/“Exportar” para salvar/restaurar sua lista de playlists.
+### 3.3 Modo IPTV
+- Login por URL M3U.
+- Carregamento de canais com filtros por tipo:
+  - live
+  - movie
+  - series
+  - other
+- Busca textual e agrupamento por categoria.
+- Navegação dedicada de séries:
+  - categorias
+  - lista de séries
+  - temporadas
+  - episódios
+- Reprodução com avanço automático para próximo episódio.
+- Favoritos, curtidos e recentes persistidos localmente (`localStorage`).
+- Sinopse, ano, nota e poster para filmes/séries via TMDB (com cache).
+- Cache local de logos remotos para reduzir dependência de rede.
+- Fluxos de manutenção:
+  - limpar cache IPTV
+  - trocar URL da playlist
+  - excluir playlist local em cache
+  - limpar todos os dados do app
 
-## Dicas e observações
-- Se as thumbs não aparecerem, confirme que os binários do FFmpeg existem em `bin/` e são executáveis.
-- No macOS/Linux, inclua os binários corretos e/ou instale FFmpeg no sistema se preferir.
-- Segurança: `nodeIntegration: true` e `contextIsolation: false` são adequados para app local; evite carregar conteúdo remoto.
+### 3.4 Persistência de dados
+- `electron-store` para:
+  - `folders`
+  - `watchedVideos`
+  - `positions`
+  - `videoAnnotations`
+- `user-meta.json` em `app.getPath("userData")` para metadados complementares.
+- Cache de projeto em `cache/`:
+  - `cache/playlist/playlist.m3u`
+  - `cache/logos/`
+  - `cache/synopsis/synopses.json`
+  - `cache/synopsis/posters/`
+  - `cache/thumbs/`
+  - `cache/chromium/`
 
-## Scripts disponíveis
-- `npm run start` — Webpack em watch (renderer).
-- `npm run build` — Gera `public/bundle.js`.
-- `npm run electron` — Inicia o app.
-- `npm run build-ico` — Gera os ícones (icon.ico, assets/installer.ico e assets/uninstaller.ico) a partir de `assets/ico.png`.
-- `npm run dist` — Gera instalador com electron-builder.
+## 4. Particularidades de Funcionamento
+
+### 4.1 Arquitetura Electron
+- Processo principal (`main.js`):
+  - cria janela principal
+  - registra handlers IPC
+  - executa integração com sistema de arquivos e FFmpeg
+- Renderer (`src/*`):
+  - componentes React para UI
+  - chamadas `ipcRenderer.invoke(...)` para operações nativas
+
+### 4.2 IPCs principais
+- Offline:
+  - `load-config`, `save-config`
+  - `load-folders`, `save-folders`
+  - `load-watched`, `save-watched`
+  - `load-positions`, `save-position`, `clear-positions`
+  - `generate-thumbnails`
+- IPTV:
+  - `iptv-validate-login`
+  - `iptv-load-channels`
+  - `iptv-get-synopsis`
+  - `iptv-cache-logo`
+  - `iptv-has-local-playlist`
+  - `iptv-delete-local-playlist`
+  - `iptv-clear-cache`
+  - `iptv-clear-all`
+  - `iptv-exit-app`
+
+### 4.3 Estratégia de cache e resiliência
+- Playlist IPTV:
+  - cache em memória com TTL de 2 minutos.
+  - cache em disco (`cache/playlist/playlist.m3u`) com fallback quando o download falha.
+- Sinopses:
+  - cache em memória + cache em disco (`synopses.json`).
+  - tentativa de busca TMDB em `pt-BR` com fallback para `en-US`.
+- Logos e posters:
+  - download e cache local com nome baseado em hash SHA-1.
+
+### 4.4 Organização de conteúdo IPTV
+- Parser M3U classifica canais por tipo (live/movie/series/other).
+- Séries são derivadas do nome do item e agrupadas por temporada/episódio.
+- Categorias adultas recebem bloqueio de confirmação antes da navegação.
+
+### 4.5 Particularidades de segurança
+- `nodeIntegration: true` e `contextIsolation: false`.
+- O projeto foi estruturado para uso desktop local; evitar carregamento de páginas remotas arbitrárias.
+
+## 5. Estrutura Hierárquica do Projeto
+
+```text
+video_dashboard/
+├─ main.js
+├─ package.json
+├─ webpack.config.js
+├─ scripts/
+│  └─ build-ico.js
+├─ src/
+│  ├─ index.jsx
+│  ├─ App.jsx
+│  ├─ OfflineModule.jsx
+│  ├─ IptvModule.jsx
+│  ├─ Dashboard.jsx
+│  ├─ FolderTile.jsx
+│  ├─ VideoPlayer.jsx
+│  └─ styles.js
+├─ public/
+│  ├─ index.html
+│  ├─ bundle.js
+│  ├─ topo.png
+│  └─ background.png
+├─ assets/
+│  ├─ ico.png
+│  ├─ icon.ico
+│  ├─ installer.ico
+│  └─ uninstaller.ico
+├─ bin/
+│  ├─ ffmpeg.exe
+│  ├─ ffprobe.exe
+│  └─ ffplay.exe
+└─ dist/
+```
+
+## 6. Observações Operacionais
+- Extensões de vídeo suportadas: `.mp4`, `.avi`, `.mkv`, `.mov`, `.webm`, `.wmv`, `.flv`.
+- Limpar cache IPTV remove dados temporários em `cache/` e recompõe diretórios necessários.
+- Limpar todos os dados remove também persistências de usuário (`electron-store`, `user-meta.json` e legado `config.json`).
 
 ## Licença
-MIT.
+MIT
