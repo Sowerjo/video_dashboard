@@ -62,6 +62,21 @@ function mediaTypeFromUrl(url) {
   return ""; // Let Video.js/browser infer
 }
 
+function formatMegabytes(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return "0.00 MB";
+  const mb = numeric / (1024 * 1024);
+  if (mb >= 100) return `${mb.toFixed(0)} MB`;
+  if (mb >= 10) return `${mb.toFixed(1)} MB`;
+  return `${mb.toFixed(2)} MB`;
+}
+
+function formatSpeed(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) return "--";
+  return `${formatMegabytes(numeric)}/s`;
+}
+
 function normalizeCategoryLabel(groupRaw) {
   const cleaned = String(groupRaw || "Sem grupo")
     .replace(/^[^A-Za-z0-9À-ÿ]+/u, "")
@@ -523,6 +538,17 @@ export default function IptvModule({ onBack }) {
   const [userInteracting, setUserInteracting] = useState(false);
   const [newM3uModalOpen, setNewM3uModalOpen] = useState(false);
   const [newM3uUrlInput, setNewM3uUrlInput] = useState("");
+  const [newM3uProgress, setNewM3uProgress] = useState(0);
+  const [newM3uStage, setNewM3uStage] = useState("");
+  const [newM3uError, setNewM3uError] = useState("");
+  const [newM3uDone, setNewM3uDone] = useState(false);
+  const [contentLoadProgress, setContentLoadProgress] = useState(0);
+  const [contentLoadStage, setContentLoadStage] = useState("");
+  const [downloadMetrics, setDownloadMetrics] = useState({
+    receivedBytes: 0,
+    totalBytes: 0,
+    speedBps: 0,
+  });
   const [tmdbModalOpen, setTmdbModalOpen] = useState(false);
   const [tmdbApiKeyInput, setTmdbApiKeyInput] = useState("");
   const [savingTmdbApiKey, setSavingTmdbApiKey] = useState(false);
@@ -548,6 +574,7 @@ export default function IptvModule({ onBack }) {
   const menuRef = useRef(null);
   const menuBtnRef = useRef(null);
   const scrollDebounceRef = useRef(null);
+  const skipNextSessionLoadRef = useRef(false);
   
   // Refs para proteção do volume
   const userVolumeRef = useRef(playerVolume);
@@ -562,6 +589,21 @@ export default function IptvModule({ onBack }) {
     scrollDebounceRef.current = window.setTimeout(() => {
       setUserInteracting(false);
     }, 300);
+  }, []);
+
+  useEffect(() => {
+    const onDownloadProgress = (_event, payload) => {
+      setDownloadMetrics({
+        receivedBytes: Math.max(0, Number(payload?.receivedBytes || 0)),
+        totalBytes: Math.max(0, Number(payload?.totalBytes || 0)),
+        speedBps: Math.max(0, Number(payload?.speedBps || 0)),
+      });
+    };
+
+    ipcRenderer.on("iptv-download-progress", onDownloadProgress);
+    return () => {
+      ipcRenderer.removeListener("iptv-download-progress", onDownloadProgress);
+    };
   }, []);
 
   useEffect(() => {
@@ -1068,12 +1110,16 @@ export default function IptvModule({ onBack }) {
     }
   }, [activeNav, viewState, seriesData, selectedCategory]);
 
-  const loadChannels = async (force = false, sourceOverride = null) => {
+  const loadChannels = async (force = false, sourceOverride = null, onProgress = null, options = {}) => {
     const sourceUrl = sourceOverride || session?.sourceUrl;
     if (!sourceUrl) return;
+    const reportProgress = typeof onProgress === "function" ? onProgress : null;
+    const updateStatus = options?.updateStatus !== false;
 
     setLoadingChannels(true);
-    setStatus("Carregando canais...");
+    if (updateStatus) {
+      setStatus("Carregando canais...");
+    }
     setChannels([]);
     setSelected(null);
     setGroups([]);
@@ -1086,6 +1132,7 @@ export default function IptvModule({ onBack }) {
     let totalAll = 0;
     let mergedChannels = [];
     let resolvedGroups = [];
+    reportProgress?.({ stage: "Baixando e processando M3U...", percent: 35, loaded: 0, total: 0 });
 
     while (hasMore) {
       const response = await ipcRenderer.invoke("iptv-load-channels", {
@@ -1107,16 +1154,35 @@ export default function IptvModule({ onBack }) {
       nextOffset = Number(response.nextOffset || mergedChannels.length);
       hasMore = Boolean(response.hasMore);
       resolvedGroups = response.groups || resolvedGroups;
+      const normalizedTotal = Math.max(1, Number(totalFiltered || mergedChannels.length || 1));
+      const ratio = Math.max(0, Math.min(1, mergedChannels.length / normalizedTotal));
+      const percent = Math.max(35, Math.min(98, 35 + Math.round(ratio * 63)));
 
       setChannels(mergedChannels);
-      setStatus(`Carregando ${mergedChannels.length} de ${totalFiltered} itens...`);
+      if (updateStatus) {
+        setStatus(`Carregando ${mergedChannels.length} de ${totalFiltered} itens...`);
+      }
+      reportProgress?.({
+        stage: "Processando itens da playlist...",
+        percent,
+        loaded: mergedChannels.length,
+        total: totalFiltered,
+      });
     }
 
     setGroups(resolvedGroups);
 
-    setStatus(
-      `Mostrando ${mergedChannels.length} de ${totalFiltered} itens (${totalAll} no total).`
-    );
+    if (updateStatus) {
+      setStatus(
+        `Mostrando ${mergedChannels.length} de ${totalFiltered} itens (${totalAll} no total).`
+      );
+    }
+    reportProgress?.({
+      stage: "Finalizando carregamento...",
+      percent: 100,
+      loaded: mergedChannels.length,
+      total: totalFiltered,
+    });
 
     if (mergedChannels.length > 0) {
       setSelected(mergedChannels[0]);
@@ -1125,29 +1191,66 @@ export default function IptvModule({ onBack }) {
 
   useEffect(() => {
     if (!session) return;
+    if (skipNextSessionLoadRef.current) {
+      skipNextSessionLoadRef.current = false;
+      return;
+    }
+    const fromLocalCache = String(session?.userInfo?.status || "").toLowerCase() === "cache-local";
+    setDownloadMetrics({ receivedBytes: 0, totalBytes: 0, speedBps: 0 });
+    setContentLoadProgress(8);
+    setContentLoadStage(fromLocalCache ? "Processando Conteúdo..." : "Carregando conteúdo...");
 
-    loadChannels(false)
-      .catch((error) => setStatus(error.message))
-      .finally(() => setLoadingChannels(false));
+    loadChannels(false, null, ({ stage, percent }) => {
+      if (Number.isFinite(percent)) {
+        setContentLoadProgress(percent);
+      }
+      if (fromLocalCache) {
+        setContentLoadStage("Processando Conteúdo...");
+        return;
+      }
+      if (stage) {
+        setContentLoadStage(stage);
+      }
+    })
+      .catch((error) => {
+        setContentLoadStage("Falha ao processar conteúdo.");
+        setStatus(error.message);
+      })
+      .finally(() => {
+        setContentLoadProgress(100);
+        setContentLoadStage("Finalizado.");
+        setLoadingChannels(false);
+      });
   }, [session]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    const normalizedUrl = String(form.url || "").trim();
 
-    if (!form.url) {
+    if (!normalizedUrl) {
+      setNewM3uError("Preencha a URL da lista.");
       setStatus("Preencha a URL da lista.");
       return;
     }
 
     setLoadingLogin(true);
+    setDownloadMetrics({ receivedBytes: 0, totalBytes: 0, speedBps: 0 });
+    setNewM3uError("");
+    setNewM3uDone(false);
+    setNewM3uProgress(8);
+    setNewM3uStage("Validando URL...");
     setStatus("Validando URL...");
 
     try {
-      const response = await ipcRenderer.invoke("iptv-validate-login", form);
+      setNewM3uProgress(18);
+      setNewM3uStage("Conectando à fonte da playlist...");
+      const response = await ipcRenderer.invoke("iptv-validate-login", { url: normalizedUrl });
 
       if (!response?.ok) {
         throw new Error(response?.error || "Falha ao carregar a lista.");
       }
+      setNewM3uProgress(28);
+      setNewM3uStage("Baixando e processando M3U...");
 
       const nextSession = {
         sourceUrl: response.sourceUrl,
@@ -1155,13 +1258,37 @@ export default function IptvModule({ onBack }) {
         userInfo: response.userInfo,
       };
 
+      await loadChannels(
+        true,
+        normalizedUrl,
+        ({ stage, percent }) => {
+          if (stage) setNewM3uStage(stage);
+          if (Number.isFinite(percent)) setNewM3uProgress(percent);
+        },
+        { updateStatus: false }
+      );
+
+      setForm((prev) => ({ ...prev, url: normalizedUrl }));
+      skipNextSessionLoadRef.current = true;
       setSession(nextSession);
-
-      localStorage.setItem("iptv_url", form.url);
-
-      setStatus("Lista validada. Carregando canais...");
+      localStorage.setItem("iptv_url", normalizedUrl);
+      setNewM3uProgress(100);
+      setNewM3uStage("Finalizado.");
+      setNewM3uDone(true);
+      setStatus("Lista validada e carregada com sucesso.");
     } catch (error) {
-      setStatus(error.message || "Erro inesperado.");
+      const rawMessage = String(error?.message || "").trim();
+      let friendly = rawMessage || "Erro inesperado.";
+      if (/HTTP\s+\d+/i.test(rawMessage)) {
+        friendly = `Falha no download da playlist (${rawMessage}).`;
+      } else if (rawMessage.includes("nenhum cache local")) {
+        friendly = "Não foi possível baixar a playlist e não existe cache local disponível.";
+      } else if (rawMessage.includes("nenhum canal foi identificado")) {
+        friendly = "A URL respondeu, mas o conteúdo não parece ser uma playlist M3U válida.";
+      }
+      setNewM3uError(friendly);
+      setNewM3uStage("Falha no processamento.");
+      setStatus(friendly);
     } finally {
       setLoadingLogin(false);
       setLoadingChannels(false);
@@ -1196,6 +1323,11 @@ export default function IptvModule({ onBack }) {
     const currentUrl = String(form.url || session?.sourceUrl || "").trim();
     setMenuOpen(false);
     setNewM3uUrlInput(currentUrl);
+    setNewM3uProgress(0);
+    setNewM3uStage("");
+    setNewM3uError("");
+    setNewM3uDone(false);
+    setDownloadMetrics({ receivedBytes: 0, totalBytes: 0, speedBps: 0 });
     setNewM3uModalOpen(true);
   };
 
@@ -1238,20 +1370,33 @@ export default function IptvModule({ onBack }) {
   const handleConfirmNewM3uUrl = async () => {
     const normalizedUrl = String(newM3uUrlInput || "").trim();
     if (!normalizedUrl) {
+      setNewM3uError("Informe uma URL M3U válida.");
       setStatus("Informe uma URL M3U válida.");
       return;
     }
 
-    setNewM3uModalOpen(false);
     setLoadingLogin(true);
-    setStatus("Atualizando URL M3U...");
+    setDownloadMetrics({ receivedBytes: 0, totalBytes: 0, speedBps: 0 });
+    setNewM3uError("");
+    setNewM3uDone(false);
+    setNewM3uProgress(8);
+    setNewM3uStage("Validando URL...");
+    setStatus("Validando nova URL M3U...");
 
     try {
-      await ipcRenderer.invoke("iptv-delete-local-playlist");
+      const deleteResponse = await ipcRenderer.invoke("iptv-delete-local-playlist");
+      if (!deleteResponse?.ok) {
+        throw new Error(deleteResponse?.error || "Falha ao preparar cache para nova URL.");
+      }
+
+      setNewM3uProgress(18);
+      setNewM3uStage("Conectando à fonte da playlist...");
       const response = await ipcRenderer.invoke("iptv-validate-login", { url: normalizedUrl });
       if (!response?.ok) {
         throw new Error(response?.error || "Falha ao validar nova URL.");
       }
+      setNewM3uProgress(28);
+      setNewM3uStage("Baixando e processando M3U...");
 
       const nextSession = {
         sourceUrl: response.sourceUrl,
@@ -1259,14 +1404,41 @@ export default function IptvModule({ onBack }) {
         userInfo: response.userInfo,
       };
 
+      await loadChannels(
+        true,
+        normalizedUrl,
+        ({ stage, percent }) => {
+          if (stage) setNewM3uStage(stage);
+          if (Number.isFinite(percent)) setNewM3uProgress(percent);
+        },
+        { updateStatus: false }
+      );
+
       setForm((prev) => ({ ...prev, url: normalizedUrl }));
       localStorage.setItem("iptv_url", normalizedUrl);
+      skipNextSessionLoadRef.current = true;
       setSession(nextSession);
-      setStatus("Nova URL salva. Carregando conteúdo...");
+      setNewM3uProgress(100);
+      setNewM3uStage("Finalizado.");
+      setNewM3uDone(true);
+      setStatus("Nova URL salva e carregada com sucesso.");
+      setNewM3uModalOpen(false);
     } catch (error) {
-      setStatus(error?.message || "Falha ao trocar URL M3U.");
+      const rawMessage = String(error?.message || "").trim();
+      let friendly = rawMessage || "Falha ao trocar URL M3U.";
+      if (/HTTP\s+\d+/i.test(rawMessage)) {
+        friendly = `Falha no download da playlist (${rawMessage}).`;
+      } else if (rawMessage.includes("nenhum cache local")) {
+        friendly = "Não foi possível baixar a playlist e não existe cache local disponível.";
+      } else if (rawMessage.includes("nenhum canal foi identificado")) {
+        friendly = "A URL respondeu, mas o conteúdo não parece ser uma playlist M3U válida.";
+      }
+      setNewM3uError(friendly);
+      setNewM3uStage("Falha no processamento.");
+      setStatus(friendly);
     } finally {
       setLoadingLogin(false);
+      setLoadingChannels(false);
     }
   };
 
@@ -1274,11 +1446,24 @@ export default function IptvModule({ onBack }) {
     if (!session?.sourceUrl) return;
 
     setLoadingChannels(true);
+    setDownloadMetrics({ receivedBytes: 0, totalBytes: 0, speedBps: 0 });
+    setContentLoadProgress(8);
+    setContentLoadStage("Reprocessando playlist...");
     try {
-      await loadChannels(true);
+      await loadChannels(true, null, ({ stage, percent }) => {
+        if (Number.isFinite(percent)) {
+          setContentLoadProgress(percent);
+        }
+        if (stage) {
+          setContentLoadStage(stage);
+        }
+      });
     } catch (error) {
+      setContentLoadStage("Falha ao processar conteúdo.");
       setStatus(error.message || "Falha ao atualizar.");
     } finally {
+      setContentLoadProgress(100);
+      setContentLoadStage("Finalizado.");
       setLoadingChannels(false);
     }
   };
@@ -2380,6 +2565,10 @@ export default function IptvModule({ onBack }) {
     );
   };
 
+  const downloadText = downloadMetrics.totalBytes > 0
+    ? `${formatMegabytes(downloadMetrics.receivedBytes)} / ${formatMegabytes(downloadMetrics.totalBytes)}`
+    : `${formatMegabytes(downloadMetrics.receivedBytes)}`;
+
   const renderContent = () => {
     if (loadingChannels) {
       return (
@@ -2389,7 +2578,27 @@ export default function IptvModule({ onBack }) {
                  <FaSearch />
                </div>
                <FolderTitle style={{ fontSize: "1.5em", marginBottom: 10 }}>Carregando conteúdo...</FolderTitle>
-               <div style={{ color: "#aaa" }}>Isso pode levar alguns segundos.</div>
+               <div style={{ color: "#aaa", marginBottom: 12 }}>{contentLoadStage || "Isso pode levar alguns segundos."}</div>
+               <div style={{ width: "min(560px, 72vw)", margin: "0 auto", display: "grid", gap: 8 }}>
+                 <div style={{ width: "100%", height: 12, borderRadius: 999, background: "rgba(255,255,255,0.12)", overflow: "hidden", border: "1px solid #ff000044" }}>
+                   <div
+                     style={{
+                       width: `${Math.max(0, Math.min(100, contentLoadProgress))}%`,
+                       height: "100%",
+                       background: "linear-gradient(90deg, #ff0000, #ff6b6b)",
+                       transition: "width 0.25s ease",
+                     }}
+                   />
+                 </div>
+                 <div style={{ color: "#ddd", fontSize: 13 }}>
+                   {Math.round(contentLoadProgress)}%
+                 </div>
+                 {(downloadMetrics.receivedBytes > 0 || downloadMetrics.totalBytes > 0) && (
+                   <div style={{ color: "#cfcfcf", fontSize: 12 }}>
+                     {`Baixado: ${downloadText} • Velocidade: ${formatSpeed(downloadMetrics.speedBps)}`}
+                   </div>
+                 )}
+               </div>
                <style>{`
                  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                `}</style>
@@ -2454,13 +2663,37 @@ export default function IptvModule({ onBack }) {
                   value={form.url} 
                   onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))} 
                   placeholder="http://exemplo.com/lista.m3u" 
+                  disabled={loadingLogin}
                   required 
                 />
 
                 <button type="submit" style={{ ...baseButtonStyle, marginTop: 14 }} disabled={loadingLogin}>
-                  {loadingLogin ? "Carregando..." : "Carregar Lista"}
+                  {loadingLogin ? `Processando ${Math.round(newM3uProgress)}%` : "Carregar Lista"}
                 </button>
               </form>
+
+              {(loadingLogin || newM3uError || newM3uDone || newM3uProgress > 0) && (
+                <div style={{ marginTop: 12, display: "grid", gap: 8, width: "100%" }}>
+                  <div style={{ width: "100%", height: 10, borderRadius: 999, background: "rgba(255,255,255,0.12)", overflow: "hidden", border: "1px solid #ff000044" }}>
+                    <div
+                      style={{
+                        width: `${Math.max(0, Math.min(100, newM3uProgress))}%`,
+                        height: "100%",
+                        background: newM3uError ? "#ff4d4f" : "linear-gradient(90deg, #ff0000, #ff6b6b)",
+                        transition: "width 0.25s ease",
+                      }}
+                    />
+                  </div>
+                  <div style={{ color: newM3uError ? "#ff8a8a" : "#ddd", fontSize: 13, textAlign: "left" }}>
+                    {newM3uError || newM3uStage || "Pronto para iniciar."}
+                  </div>
+                  {(downloadMetrics.receivedBytes > 0 || downloadMetrics.totalBytes > 0) && (
+                    <div style={{ color: "#cfcfcf", fontSize: 12, textAlign: "left" }}>
+                      {`Baixado: ${downloadText} • Velocidade: ${formatSpeed(downloadMetrics.speedBps)}`}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <ContentInfo style={{ marginTop: 14, textAlign: "center", width: "100%" }}>{status}</ContentInfo>
             </Tile>
@@ -2495,9 +2728,8 @@ export default function IptvModule({ onBack }) {
               transition: "all 0.22s ease",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <img src={"topo.png"} alt="Logo" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover" }} />
-              <div style={{ fontWeight: 800, color: "#ff0000", letterSpacing: 1 }}>MIND FLIX</div>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <img src={"topo.png"} alt="Logo" style={{ width: 60, height: 60, borderRadius: 12, objectFit: "cover" }} />
             </div>
 
             <nav style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
@@ -2599,14 +2831,37 @@ export default function IptvModule({ onBack }) {
                   onChange={(e) => setNewM3uUrlInput(e.target.value)}
                   placeholder="https://servidor.exemplo/lista.m3u"
                   autoFocus
+                  disabled={loadingLogin}
                   style={{ width: "100%", background: "rgba(10,10,10,0.85)", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "10px 12px", outline: "none" }}
                 />
+                {(loadingLogin || newM3uError || newM3uDone || newM3uProgress > 0) && (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={{ width: "100%", height: 10, borderRadius: 999, background: "rgba(255,255,255,0.12)", overflow: "hidden", border: "1px solid #ff000044" }}>
+                      <div
+                        style={{
+                          width: `${Math.max(0, Math.min(100, newM3uProgress))}%`,
+                          height: "100%",
+                          background: newM3uError ? "#ff4d4f" : "linear-gradient(90deg, #ff0000, #ff6b6b)",
+                          transition: "width 0.25s ease",
+                        }}
+                      />
+                    </div>
+                    <div style={{ color: newM3uError ? "#ff8a8a" : "#ddd", fontSize: 13 }}>
+                      {newM3uError || newM3uStage || "Pronto para iniciar."}
+                    </div>
+                    {(downloadMetrics.receivedBytes > 0 || downloadMetrics.totalBytes > 0) && (
+                      <div style={{ color: "#cfcfcf", fontSize: 12 }}>
+                        {`Baixado: ${downloadText} • Velocidade: ${formatSpeed(downloadMetrics.speedBps)}`}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                  <button type="button" style={baseButtonStyle} onClick={() => setNewM3uModalOpen(false)}>
+                  <button type="button" style={baseButtonStyle} onClick={() => setNewM3uModalOpen(false)} disabled={loadingLogin}>
                     Cancelar
                   </button>
                   <button type="button" style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }} onClick={handleConfirmNewM3uUrl} disabled={loadingLogin}>
-                    {loadingLogin ? "Salvando..." : "Salvar e atualizar"}
+                    {loadingLogin ? `Processando ${Math.round(newM3uProgress)}%` : "Salvar e atualizar"}
                   </button>
                 </div>
               </div>

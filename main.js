@@ -355,6 +355,35 @@ async function cacheSynopsisPosterLocally(posterUrl) {
   return task;
 }
 
+function findUnquotedCommaIndex(line) {
+  let quote = null;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === '"' || char === "'") {
+      if (!quote) {
+        quote = char;
+      } else if (quote === char) {
+        quote = null;
+      }
+      continue;
+    }
+    if (char === ',' && !quote) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function sanitizeParsedTitle(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  const cleaned = text
+    .replace(/\s+tvg-(id|name|logo)\s*=\s*["'][\s\S]*$/i, '')
+    .replace(/\s+group-title\s*=\s*["'][\s\S]*$/i, '')
+    .trim();
+  return cleaned || text;
+}
+
 function parseExtInf(line) {
   const attrs = {};
   const attrRegex = /([\w-]+)="([^"]*)"/g;
@@ -365,13 +394,15 @@ function parseExtInf(line) {
     match = attrRegex.exec(line);
   }
 
-  const commaIndex = line.indexOf(',');
-  const name = commaIndex >= 0 ? line.slice(commaIndex + 1).trim() : '';
+  const commaIndex = findUnquotedCommaIndex(line);
+  const rawName = commaIndex >= 0 ? line.slice(commaIndex + 1).trim() : '';
+  const name = sanitizeParsedTitle(rawName);
+  const tvgName = sanitizeParsedTitle(attrs['tvg-name'] || '');
 
   return {
     name,
     tvgId: attrs['tvg-id'] || '',
-    tvgName: attrs['tvg-name'] || '',
+    tvgName,
     logo: attrs['tvg-logo'] || '',
     group: attrs['group-title'] || 'Sem grupo',
   };
@@ -706,9 +737,10 @@ function kindCountsFromChannels(channels) {
   return counts;
 }
 
-async function fetchTextWithTimeout(url, timeoutMs = 120000) {
+async function fetchTextWithTimeout(url, timeoutMs = 120000, onProgress = null) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const reportProgress = typeof onProgress === 'function' ? onProgress : null;
 
   try {
     const response = await fetch(url, {
@@ -724,8 +756,60 @@ async function fetchTextWithTimeout(url, timeoutMs = 120000) {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    const buffer = await response.arrayBuffer();
-    return Buffer.from(buffer).toString('utf8');
+    const contentLength = Number(response.headers.get('content-length') || 0);
+    const totalBytes = Number.isFinite(contentLength) && contentLength > 0 ? contentLength : 0;
+    const reader = response.body && typeof response.body.getReader === 'function'
+      ? response.body.getReader()
+      : null;
+
+    if (!reader) {
+      const buffer = await response.arrayBuffer();
+      const rawBuffer = Buffer.from(buffer);
+      reportProgress?.({
+        receivedBytes: rawBuffer.length,
+        totalBytes: totalBytes || rawBuffer.length,
+        speedBps: 0,
+        done: true,
+      });
+      return rawBuffer.toString('utf8');
+    }
+
+    const chunks = [];
+    let receivedBytes = 0;
+    const startedAt = Date.now();
+    let lastEmitAt = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value || !value.byteLength) continue;
+
+      const chunkBuffer = Buffer.from(value);
+      chunks.push(chunkBuffer);
+      receivedBytes += chunkBuffer.length;
+
+      const now = Date.now();
+      if (now - lastEmitAt >= 180) {
+        const elapsed = Math.max(0.001, (now - startedAt) / 1000);
+        reportProgress?.({
+          receivedBytes,
+          totalBytes,
+          speedBps: receivedBytes / elapsed,
+          done: false,
+        });
+        lastEmitAt = now;
+      }
+    }
+
+    const elapsed = Math.max(0.001, (Date.now() - startedAt) / 1000);
+    reportProgress?.({
+      receivedBytes,
+      totalBytes: totalBytes || receivedBytes,
+      speedBps: receivedBytes / elapsed,
+      done: true,
+    });
+
+    return Buffer.concat(chunks, receivedBytes).toString('utf8');
   } finally {
     clearTimeout(timer);
   }
@@ -764,12 +848,20 @@ async function validateIptvLogin(payload) {
   };
 }
 
-async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false) {
+async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false, onProgress = null) {
+  const reportProgress = typeof onProgress === 'function' ? onProgress : null;
   const now = Date.now();
   const existing = iptvCache.get(sourceUrl);
 
   // In-memory cache is still valid
   if (!forceRefresh && existing && now - existing.cachedAt < IPTV_CACHE_TTL_MS) {
+    reportProgress?.({
+      stage: 'cache_memory',
+      receivedBytes: 0,
+      totalBytes: 0,
+      speedBps: 0,
+      done: true,
+    });
     return existing;
   }
 
@@ -777,6 +869,14 @@ async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false) {
 
   if (!forceRefresh && fs.existsSync(LOCAL_PLAYLIST_PATH)) {
     try {
+      const localStat = fs.statSync(LOCAL_PLAYLIST_PATH);
+      reportProgress?.({
+        stage: 'cache_local',
+        receivedBytes: localStat.size,
+        totalBytes: localStat.size,
+        speedBps: 0,
+        done: true,
+      });
       const localText = fs.readFileSync(LOCAL_PLAYLIST_PATH, 'utf8');
       const localChannels = parseM3u(localText);
       if (localChannels.length) {
@@ -798,7 +898,22 @@ async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false) {
   try {
     // 1. Try to download from URL
     console.log('Downloading playlist from URL:', sourceUrl);
-    playlistText = await fetchTextWithTimeout(sourceUrl, 120000);
+    reportProgress?.({
+      stage: 'download_start',
+      receivedBytes: 0,
+      totalBytes: 0,
+      speedBps: 0,
+      done: false,
+    });
+    playlistText = await fetchTextWithTimeout(sourceUrl, 120000, (payload) => {
+      reportProgress?.({
+        stage: 'downloading',
+        receivedBytes: Number(payload?.receivedBytes || 0),
+        totalBytes: Number(payload?.totalBytes || 0),
+        speedBps: Number(payload?.speedBps || 0),
+        done: Boolean(payload?.done),
+      });
+    });
     
     // 2. Save to local file
     try {
@@ -813,6 +928,14 @@ async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false) {
     // 3. Fallback: Try to read from local file
     if (fs.existsSync(LOCAL_PLAYLIST_PATH)) {
       console.log('Using local cached playlist as fallback.');
+      const localStat = fs.statSync(LOCAL_PLAYLIST_PATH);
+      reportProgress?.({
+        stage: 'cache_fallback',
+        receivedBytes: localStat.size,
+        totalBytes: localStat.size,
+        speedBps: 0,
+        done: true,
+      });
       playlistText = fs.readFileSync(LOCAL_PLAYLIST_PATH, 'utf8');
     } else {
       throw new Error('Falha ao baixar playlist e nenhum cache local encontrado.');
@@ -837,7 +960,7 @@ async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false) {
   return payload;
 }
 
-async function loadIptvChannels(params) {
+async function loadIptvChannels(params, options = {}) {
   const sourceUrl = String(params.sourceUrl || '').trim();
   const kind = parseKind(params.kind);
   const limit = parseLimit(params.limit, kind);
@@ -849,7 +972,7 @@ async function loadIptvChannels(params) {
     throw new Error('Fonte IPTV ausente. Faça login novamente.');
   }
 
-  const cached = await getParsedPlaylistForSource(sourceUrl, force);
+  const cached = await getParsedPlaylistForSource(sourceUrl, force, options.reportProgress);
   const filtered = applyFilters(cached.channels, kind, search);
   const groups = uniqueGroups(filtered);
   const channels = filtered.slice(offset, offset + limit);
@@ -963,10 +1086,27 @@ ipcMain.handle('iptv-validate-login', async (e, payload) => {
 });
 
 ipcMain.handle('iptv-load-channels', async (e, params) => {
+  const offset = Number(params?.offset || 0);
+  const shouldReportProgress = Number.isFinite(offset) && offset === 0;
+  const reportProgress = shouldReportProgress
+    ? (payload) => {
+      if (!e?.sender || e.sender.isDestroyed()) return;
+      e.sender.send('iptv-download-progress', {
+        stage: String(payload?.stage || ''),
+        receivedBytes: Number(payload?.receivedBytes || 0),
+        totalBytes: Number(payload?.totalBytes || 0),
+        speedBps: Number(payload?.speedBps || 0),
+        done: Boolean(payload?.done),
+      });
+    }
+    : null;
+
   try {
-    const result = await loadIptvChannels(params || {});
+    const result = await loadIptvChannels(params || {}, { reportProgress });
+    reportProgress?.({ stage: 'complete', done: true });
     return { ok: true, ...result };
   } catch (error) {
+    reportProgress?.({ stage: 'error', done: true });
     return { ok: false, error: error?.message || 'Falha ao carregar canais IPTV.' };
   }
 });
