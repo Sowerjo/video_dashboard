@@ -3,7 +3,7 @@ const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { spawn, spawnSync } = require('child_process');
+const { spawn } = require('child_process');
 const { pathToFileURL } = require('url');
 const Store = require('electron-store');
 
@@ -27,6 +27,9 @@ const SYNOPSIS_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'synopsis');
 const SYNOPSIS_POSTERS_DIR = path.join(SYNOPSIS_CACHE_DIR, 'posters');
 const SYNOPSIS_CACHE_FILE = path.join(SYNOPSIS_CACHE_DIR, 'synopses.json');
 const CHROMIUM_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'chromium');
+const TMDB_KEY_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'tmdbkey');
+const TMDB_CACHE_FILE = path.join(TMDB_KEY_CACHE_DIR, 'tmdb_api_key.txt');
+const TMDB_DEFAULT_API_KEY = 'ef7d11984081511de43bb6c523bb1651';
 
 try {
   if (!fs.existsSync(CHROMIUM_CACHE_DIR)) {
@@ -34,6 +37,7 @@ try {
   }
   app.setPath('sessionData', CHROMIUM_CACHE_DIR);
   app.commandLine.appendSwitch('disk-cache-dir', CHROMIUM_CACHE_DIR);
+  app.commandLine.appendSwitch('disable-features', 'HttpsOnlyMode,HTTPS-FirstMode,HttpsFirstBalancedModeAutoEnable');
 } catch (err) {
   console.error('Failed to configure Chromium cache directory:', err);
 }
@@ -53,6 +57,7 @@ function getBinPath(...segments) {
 }
 
 const ffmpegPath = getBinPath(process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg');
+const ffplayPath = getBinPath(process.platform === 'win32' ? 'ffplay.exe' : 'ffplay');
 
 // Thumbs directory in project cache
 const thumbsDir = path.join(PROJECT_CACHE_DIR, 'thumbs');
@@ -65,7 +70,12 @@ function createWindow() {
     width: 1300,
     height: 800,
     icon: path.join(__dirname, 'icon.ico'),
-    webPreferences: { nodeIntegration: true, contextIsolation: false },
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      webSecurity: false,
+      allowRunningInsecureContent: true,
+    },
   });
 
   const indexPath = path.join(app.getAppPath(), 'public', 'index.html');
@@ -91,7 +101,25 @@ function ensureProjectCacheDirs() {
   ensureDirSafe(SYNOPSIS_CACHE_DIR, 'synopsis cache directory');
   ensureDirSafe(SYNOPSIS_POSTERS_DIR, 'synopsis posters cache directory');
   ensureDirSafe(CHROMIUM_CACHE_DIR, 'chromium cache directory');
+  ensureDirSafe(TMDB_KEY_CACHE_DIR, 'tmdb key cache directory');
   ensureDirSafe(thumbsDir, 'thumbnails cache directory');
+}
+
+function readTmdbApiKeyFromCache() {
+  try {
+    if (!fs.existsSync(TMDB_CACHE_FILE)) return '';
+    return String(fs.readFileSync(TMDB_CACHE_FILE, 'utf8') || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+function writeTmdbApiKeyToCache(apiKey) {
+  try {
+    ensureProjectCacheDirs();
+    fs.writeFileSync(TMDB_CACHE_FILE, String(apiKey || '').trim(), 'utf8');
+  } catch {
+  }
 }
 
 function clearDirContentsSafe(targetPath) {
@@ -408,13 +436,39 @@ function parseExtInf(line) {
   };
 }
 
+function hasKnownStreamExtension(streamUrl) {
+  return /\.(m3u8|mp4|mkv|webm|ts)(\?|#|$)/i.test(String(streamUrl || ''));
+}
+
+function isLikelyNumericLiveStreamUrl(streamUrl) {
+  const value = String(streamUrl || '').trim();
+  if (!/^https?:\/\//i.test(value)) return false;
+  if (hasKnownStreamExtension(value)) return false;
+
+  try {
+    const parsed = new URL(value);
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    if (segments.length < 3) return false;
+
+    const lastSegment = segments[segments.length - 1];
+    const numericSegments = segments.filter((segment) => /^\d+$/.test(segment)).length;
+    return /^\d+$/.test(lastSegment) && numericSegments >= 2;
+  } catch {
+    return false;
+  }
+}
+
 function detectKind(group, streamUrl) {
   const groupNorm = String(group || '').toLowerCase();
   const urlNorm = String(streamUrl || '').toLowerCase();
+  const likelyNumericLiveUrl = isLikelyNumericLiveStreamUrl(streamUrl);
 
   // URL-based detection is often more reliable for Xtream Codes / XUI systems
   if (urlNorm.includes('/series/')) return 'series';
   if (urlNorm.includes('/movie/')) return 'movie';
+  if (groupNorm.includes('canais') || urlNorm.includes('/live/') || /\.(m3u8|ts)(\?|$)/i.test(streamUrl) || likelyNumericLiveUrl) {
+    return 'live';
+  }
 
   if (
     groupNorm.includes('séries') || 
@@ -444,10 +498,6 @@ function detectKind(group, streamUrl) {
     if (!groupNorm.includes('canais') && !groupNorm.includes('tv')) {
         return 'movie';
     }
-  }
-
-  if (groupNorm.includes('canais') || urlNorm.includes('/live/') || /\.(m3u8|ts)(\?|$)/i.test(streamUrl)) {
-    return 'live';
   }
 
   return 'other';
@@ -539,50 +589,25 @@ function extractTitleAndYear(rawTitle) {
 }
 
 function getTmdbApiKey() {
-  const envValue = String(process.env.TMDB_API_KEY || '').trim();
-  if (envValue) {
-    cachedTmdbApiKey = envValue;
-    return envValue;
-  }
-
   if (cachedTmdbApiKey) {
     return cachedTmdbApiKey;
+  }
+
+  const cacheValue = readTmdbApiKeyFromCache();
+  if (cacheValue) {
+    cachedTmdbApiKey = cacheValue;
+    return cacheValue;
   }
 
   const storedValue = String(store.get('tmdb_api_key') || '').trim();
   if (storedValue) {
     cachedTmdbApiKey = storedValue;
-    process.env.TMDB_API_KEY = storedValue;
+    writeTmdbApiKeyToCache(storedValue);
     return storedValue;
   }
 
-  if (process.platform === 'win32') {
-    const readFromScope = (scope) => {
-      const output = spawnSync(
-        'powershell',
-        ['-NoProfile', '-Command', `[Environment]::GetEnvironmentVariable('TMDB_API_KEY','${scope}')`],
-        { encoding: 'utf8', windowsHide: true }
-      );
-      if (output.status !== 0) return '';
-      return String(output.stdout || '').trim();
-    };
-
-    const userValue = readFromScope('User');
-    if (userValue) {
-      cachedTmdbApiKey = userValue;
-      process.env.TMDB_API_KEY = userValue;
-      return userValue;
-    }
-
-    const machineValue = readFromScope('Machine');
-    if (machineValue) {
-      cachedTmdbApiKey = machineValue;
-      process.env.TMDB_API_KEY = machineValue;
-      return machineValue;
-    }
-  }
-
-  return '';
+  cachedTmdbApiKey = TMDB_DEFAULT_API_KEY;
+  return TMDB_DEFAULT_API_KEY;
 }
 
 async function searchTmdbOverview(kind, title, year, language) {
@@ -1150,8 +1175,8 @@ ipcMain.handle('iptv-set-tmdb-key', (e, payload) => {
       return { ok: false, error: 'Informe uma chave TMDB válida.' };
     }
     store.set('tmdb_api_key', apiKey);
+    writeTmdbApiKeyToCache(apiKey);
     cachedTmdbApiKey = apiKey;
-    process.env.TMDB_API_KEY = apiKey;
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error?.message || 'Falha ao salvar chave TMDB.' };
@@ -1164,6 +1189,43 @@ ipcMain.handle('iptv-cache-logo', async (e, logoUrl) => {
     return { ok: true, logoPath };
   } catch {
     return { ok: false, logoPath: String(logoUrl || '') };
+  }
+});
+
+ipcMain.handle('iptv-open-external-player', async (_event, payload) => {
+  const streamUrl = sanitizeServerUrl(payload?.url);
+  if (!streamUrl) {
+    return { ok: false, error: 'URL do stream ausente.' };
+  }
+
+  if (!fs.existsSync(ffplayPath)) {
+    return { ok: false, error: 'Player nativo (ffplay) não encontrado na pasta bin.' };
+  }
+
+  try {
+    const ffplayArgs = [
+      '-hide_banner',
+      '-loglevel',
+      'warning',
+      '-fflags',
+      'nobuffer',
+      '-flags',
+      'low_delay',
+      '-user_agent',
+      'VLC/3.0.20 LibVLC/3.0.20',
+      streamUrl,
+    ];
+
+    const processHandle = spawn(ffplayPath, ffplayArgs, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: false,
+    });
+    processHandle.unref();
+
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao abrir player nativo.' };
   }
 });
 
@@ -1210,6 +1272,30 @@ ipcMain.handle('iptv-clear-all', () => {
     return { ok: true };
   } catch (error) {
     return { ok: false, error: error?.message || 'Falha ao limpar dados do aplicativo.' };
+  }
+});
+
+ipcMain.handle('iptv-get-fullscreen-state', () => {
+  const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  return { ok: true, isFullScreen: Boolean(win?.isFullScreen()) };
+});
+
+ipcMain.handle('iptv-toggle-fullscreen', (_event, payload) => {
+  try {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    if (!win) {
+      return { ok: false, error: 'Janela principal não encontrada.' };
+    }
+
+    const current = win.isFullScreen();
+    const target =
+      typeof payload?.enabled === 'boolean'
+        ? payload.enabled
+        : !current;
+    win.setFullScreen(target);
+    return { ok: true, isFullScreen: win.isFullScreen() };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao alternar tela cheia.' };
   }
 });
 
