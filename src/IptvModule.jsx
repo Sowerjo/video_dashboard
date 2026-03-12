@@ -280,7 +280,19 @@ function getKeyboardButtonProps(label, action) {
   };
 }
 
-const ReactUrlPlayer = ({
+function normalizePlayerVolume(value, fallback = 0.8) {
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+}
+
+function arePlayerPropsEqual(prevProps, nextProps) {
+  return prevProps.src === nextProps.src
+    && prevProps.type === nextProps.type
+    && normalizePlayerVolume(prevProps.volume) === normalizePlayerVolume(nextProps.volume)
+    && normalizePlayerVolume(prevProps.fallbackUserVolume, -1) === normalizePlayerVolume(nextProps.fallbackUserVolume, -1)
+    && prevProps.userHasSetVolume === nextProps.userHasSetVolume;
+}
+
+const ReactUrlPlayer = React.memo(({
   src,
   type,
   onBufferingChange,
@@ -290,7 +302,6 @@ const ReactUrlPlayer = ({
   onVolumeStateChange,
   userHasSetVolume = false,
   fallbackUserVolume = null,
-  interactionTick = null,
 }) => {
   const playableSources = useMemo(() => buildPlayableSources(src), [src]);
   const [sourceIndex, setSourceIndex] = useState(0);
@@ -317,7 +328,7 @@ const ReactUrlPlayer = ({
 
     // Usar volume do usuário se disponível e válido
     const userVolume = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
-    const baseVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
+    const baseVolume = normalizePlayerVolume(volume);
     
     // Se o usuário definiu um volume válido anteriormente, usar esse volume
     const nextVolume = (userHasSetVolume && (userVolume ?? 0) > 0.001) ? (userVolume ?? baseVolume) : baseVolume;
@@ -334,7 +345,7 @@ const ReactUrlPlayer = ({
       applyingVolumeRef.current = false;
     });
     return true;
-  }, [getMediaElement, volume]);
+  }, [fallbackUserVolume, getMediaElement, userHasSetVolume, volume]);
 
   useEffect(() => {
     if (!playerSource) return;
@@ -405,10 +416,6 @@ const ReactUrlPlayer = ({
       if (timeoutId) window.clearTimeout(timeoutId);
     };
   }, [playerSource, syncVolumeToMediaElement, userHasSetVolume, fallbackUserVolume]);
-
-  useEffect(() => {
-    syncVolumeToMediaElement();
-  }, [interactionTick, syncVolumeToMediaElement]);
 
   useEffect(() => {
     const mediaElement = getMediaElement();
@@ -503,7 +510,7 @@ const ReactUrlPlayer = ({
       />
     </div>
   );
-};
+}, arePlayerPropsEqual);
 
 const CachedLogoImage = ({ src, alt, style }) => {
   const imageRef = useRef(null);
@@ -692,7 +699,6 @@ export default function IptvModule({ onBack }) {
   
   // Refs para proteção do volume
   const userVolumeRef = useRef(playerVolume);
-  const volumeProtectionRef = useRef(false);
   const volumeSetByUserRef = useRef(false);
 
   const handleScrollInteract = useCallback(() => {
@@ -833,14 +839,13 @@ export default function IptvModule({ onBack }) {
   }, [playerVolume]);
 
   const handlePlayerVolumeStateChange = useCallback(({ volume }) => {
-    if (userInteracting) return;
     const nextVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
     if (nextVolume > 0.001) {
       volumeSetByUserRef.current = true;
       userVolumeRef.current = nextVolume;
     }
     setPlayerVolume((prev) => (Math.abs(prev - nextVolume) > 0.001 ? nextVolume : prev));
-  }, [userInteracting]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -2255,7 +2260,6 @@ export default function IptvModule({ onBack }) {
                   onVolumeStateChange={handlePlayerVolumeStateChange}
                   userHasSetVolume={volumeSetByUserRef.current}
                   fallbackUserVolume={userVolumeRef.current}
-                  interactionTick={hoveredCardId}
                 />
              </div>
              <div style={{ marginTop: "auto", paddingTop: 10, display: "grid", gap: 10 }}>
@@ -2414,7 +2418,6 @@ export default function IptvModule({ onBack }) {
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
                 fallbackUserVolume={userVolumeRef.current}
-                interactionTick={hoveredCardId}
               />
             </div>
           </div>
@@ -2516,7 +2519,6 @@ export default function IptvModule({ onBack }) {
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
                 fallbackUserVolume={userVolumeRef.current}
-                interactionTick={hoveredCardId}
               />
             </div>
           </section>
@@ -2674,7 +2676,6 @@ export default function IptvModule({ onBack }) {
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
                 fallbackUserVolume={userVolumeRef.current}
-                interactionTick={hoveredCardId}
               />
             </div>
           </div>
@@ -2779,7 +2780,6 @@ export default function IptvModule({ onBack }) {
                   onVolumeStateChange={handlePlayerVolumeStateChange}
                   userHasSetVolume={volumeSetByUserRef.current}
                   fallbackUserVolume={userVolumeRef.current}
-                  interactionTick={hoveredCardId}
                 />
               </div>
             </section>

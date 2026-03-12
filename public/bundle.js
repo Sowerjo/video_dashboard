@@ -44289,7 +44289,14 @@ function getKeyboardButtonProps(label, action) {
     }
   };
 }
-var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
+function normalizePlayerVolume(value) {
+  var fallback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0.8;
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+}
+function arePlayerPropsEqual(prevProps, nextProps) {
+  return prevProps.src === nextProps.src && prevProps.type === nextProps.type && normalizePlayerVolume(prevProps.volume) === normalizePlayerVolume(nextProps.volume) && normalizePlayerVolume(prevProps.fallbackUserVolume, -1) === normalizePlayerVolume(nextProps.fallbackUserVolume, -1) && prevProps.userHasSetVolume === nextProps.userHasSetVolume;
+}
+var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().memo(function (_ref) {
   var src = _ref.src,
     type = _ref.type,
     onBufferingChange = _ref.onBufferingChange,
@@ -44301,9 +44308,7 @@ var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
     _ref$userHasSetVolume = _ref.userHasSetVolume,
     userHasSetVolume = _ref$userHasSetVolume === void 0 ? false : _ref$userHasSetVolume,
     _ref$fallbackUserVolu = _ref.fallbackUserVolume,
-    fallbackUserVolume = _ref$fallbackUserVolu === void 0 ? null : _ref$fallbackUserVolu,
-    _ref$interactionTick = _ref.interactionTick,
-    interactionTick = _ref$interactionTick === void 0 ? null : _ref$interactionTick;
+    fallbackUserVolume = _ref$fallbackUserVolu === void 0 ? null : _ref$fallbackUserVolu;
   var playableSources = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
     return buildPlayableSources(src);
   }, [src]);
@@ -44335,7 +44340,7 @@ var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
 
     // Usar volume do usuário se disponível e válido
     var userVolume = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
-    var baseVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
+    var baseVolume = normalizePlayerVolume(volume);
 
     // Se o usuário definiu um volume válido anteriormente, usar esse volume
     var nextVolume = userHasSetVolume && (userVolume !== null && userVolume !== void 0 ? userVolume : 0) > 0.001 ? userVolume !== null && userVolume !== void 0 ? userVolume : baseVolume : baseVolume;
@@ -44351,7 +44356,7 @@ var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
       applyingVolumeRef.current = false;
     });
     return true;
-  }, [getMediaElement, volume]);
+  }, [fallbackUserVolume, getMediaElement, userHasSetVolume, volume]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var _playerRef$current2, _playerRef$current2$p;
     if (!playerSource) return;
@@ -44416,9 +44421,6 @@ var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
       if (timeoutId) window.clearTimeout(timeoutId);
     };
   }, [playerSource, syncVolumeToMediaElement, userHasSetVolume, fallbackUserVolume]);
-  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    syncVolumeToMediaElement();
-  }, [interactionTick, syncVolumeToMediaElement]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var mediaElement = getMediaElement();
     if (!mediaElement) return undefined;
@@ -44516,7 +44518,7 @@ var ReactUrlPlayer = function ReactUrlPlayer(_ref) {
       zIndex: -1
     }
   }));
-};
+}, arePlayerPropsEqual);
 var CachedLogoImage = function CachedLogoImage(_ref2) {
   var src = _ref2.src,
     alt = _ref2.alt,
@@ -44844,7 +44846,6 @@ function IptvModule(_ref3) {
 
   // Refs para proteção do volume
   var userVolumeRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(playerVolume);
-  var volumeProtectionRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
   var volumeSetByUserRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
   var handleScrollInteract = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function () {
     setUserInteracting(true);
@@ -45024,7 +45025,6 @@ function IptvModule(_ref3) {
   }, [playerVolume]);
   var handlePlayerVolumeStateChange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (_ref6) {
     var volume = _ref6.volume;
-    if (userInteracting) return;
     var nextVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
     if (nextVolume > 0.001) {
       volumeSetByUserRef.current = true;
@@ -45033,7 +45033,7 @@ function IptvModule(_ref3) {
     setPlayerVolume(function (prev) {
       return Math.abs(prev - nextVolume) > 0.001 ? nextVolume : prev;
     });
-  }, [userInteracting]);
+  }, []);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var cancelled = false;
     var selectedKind = String((selected === null || selected === void 0 ? void 0 : selected.kind) || "").toLowerCase();
@@ -47006,8 +47006,7 @@ function IptvModule(_ref3) {
         volume: playerVolume,
         onVolumeStateChange: handlePlayerVolumeStateChange,
         userHasSetVolume: volumeSetByUserRef.current,
-        fallbackUserVolume: userVolumeRef.current,
-        interactionTick: hoveredCardId
+        fallbackUserVolume: userVolumeRef.current
       })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
           marginTop: "auto",
@@ -47258,8 +47257,7 @@ function IptvModule(_ref3) {
         volume: playerVolume,
         onVolumeStateChange: handlePlayerVolumeStateChange,
         userHasSetVolume: volumeSetByUserRef.current,
-        fallbackUserVolume: userVolumeRef.current,
-        interactionTick: hoveredCardId
+        fallbackUserVolume: userVolumeRef.current
       }))), renderSelectedSynopsis());
     }
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
@@ -47403,8 +47401,7 @@ function IptvModule(_ref3) {
       volume: playerVolume,
       onVolumeStateChange: handlePlayerVolumeStateChange,
       userHasSetVolume: volumeSetByUserRef.current,
-      fallbackUserVolume: userVolumeRef.current,
-      interactionTick: hoveredCardId
+      fallbackUserVolume: userVolumeRef.current
     }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         flex: 1,
@@ -47624,8 +47621,7 @@ function IptvModule(_ref3) {
         volume: playerVolume,
         onVolumeStateChange: handlePlayerVolumeStateChange,
         userHasSetVolume: volumeSetByUserRef.current,
-        fallbackUserVolume: userVolumeRef.current,
-        interactionTick: hoveredCardId
+        fallbackUserVolume: userVolumeRef.current
       }))), renderSelectedSynopsis());
     }
     return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
@@ -47770,8 +47766,7 @@ function IptvModule(_ref3) {
       volume: playerVolume,
       onVolumeStateChange: handlePlayerVolumeStateChange,
       userHasSetVolume: volumeSetByUserRef.current,
-      fallbackUserVolume: userVolumeRef.current,
-      interactionTick: hoveredCardId
+      fallbackUserVolume: userVolumeRef.current
     }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         flex: 1,
