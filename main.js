@@ -18,6 +18,8 @@ const synopsisMemoryCache = new Map();
 const synopsisDiskCache = new Map();
 const synopsisPosterInFlight = new Map();
 let cachedTmdbApiKey = '';
+let customPlaylistsCache = [];
+let lastEpisodesCache = {};
 
 const PROJECT_CACHE_DIR = path.join(__dirname, 'cache');
 const PLAYLIST_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'playlist');
@@ -29,6 +31,10 @@ const SYNOPSIS_CACHE_FILE = path.join(SYNOPSIS_CACHE_DIR, 'synopses.json');
 const CHROMIUM_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'chromium');
 const TMDB_KEY_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'tmdbkey');
 const TMDB_CACHE_FILE = path.join(TMDB_KEY_CACHE_DIR, 'tmdb_api_key.txt');
+const CUSTOM_PLAYLISTS_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'playlists');
+const CUSTOM_PLAYLISTS_CACHE_FILE = path.join(CUSTOM_PLAYLISTS_CACHE_DIR, 'playlists.json');
+const LAST_EPISODES_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'watch');
+const LAST_EPISODES_CACHE_FILE = path.join(LAST_EPISODES_CACHE_DIR, 'last_episodes.json');
 const TMDB_DEFAULT_API_KEY = 'ef7d11984081511de43bb6c523bb1651';
 
 try {
@@ -102,6 +108,8 @@ function ensureProjectCacheDirs() {
   ensureDirSafe(SYNOPSIS_POSTERS_DIR, 'synopsis posters cache directory');
   ensureDirSafe(CHROMIUM_CACHE_DIR, 'chromium cache directory');
   ensureDirSafe(TMDB_KEY_CACHE_DIR, 'tmdb key cache directory');
+  ensureDirSafe(CUSTOM_PLAYLISTS_CACHE_DIR, 'custom playlists cache directory');
+  ensureDirSafe(LAST_EPISODES_CACHE_DIR, 'last episodes cache directory');
   ensureDirSafe(thumbsDir, 'thumbnails cache directory');
 }
 
@@ -142,6 +150,8 @@ function clearIptvMemoryCaches() {
   synopsisMemoryCache.clear();
   synopsisDiskCache.clear();
   synopsisPosterInFlight.clear();
+  customPlaylistsCache = [];
+  lastEpisodesCache = {};
 }
 
 function removeFileIfExists(filePath) {
@@ -158,6 +168,8 @@ function removeFileIfExists(filePath) {
 app.whenReady().then(() => {
   ensureProjectCacheDirs();
   readSynopsisDiskCache();
+  readCustomPlaylistsDiskCache();
+  readLastEpisodesDiskCache();
   createWindow();
 });
 
@@ -279,6 +291,121 @@ function writeSynopsisDiskCache() {
     fs.writeFileSync(SYNOPSIS_CACHE_FILE, JSON.stringify(payload, null, 2), 'utf8');
   } catch (err) {
     console.warn('Falha ao persistir cache de sinopses:', err);
+  }
+}
+
+function normalizeCustomPlaylistItem(item) {
+  return {
+    id: String(item?.id || '').trim(),
+    entryType: String(item?.entryType || '').trim(),
+    name: String(item?.name || '').trim(),
+    group: String(item?.group || '').trim(),
+    logo: String(item?.logo || '').trim(),
+    kind: String(item?.kind || '').trim(),
+    url: String(item?.url || '').trim(),
+    channelId: String(item?.channelId || '').trim(),
+    seriesName: String(item?.seriesName || '').trim(),
+    season: Number.isFinite(Number(item?.season)) ? Number(item.season) : null,
+    episode: Number.isFinite(Number(item?.episode)) ? Number(item.episode) : null,
+    addedAt: String(item?.addedAt || '').trim(),
+  };
+}
+
+function normalizeCustomPlaylist(value) {
+  return {
+    id: String(value?.id || '').trim(),
+    name: String(value?.name || '').trim(),
+    createdAt: String(value?.createdAt || '').trim(),
+    items: Array.isArray(value?.items)
+      ? value.items.map((item) => normalizeCustomPlaylistItem(item)).filter((item) => item.id && item.name)
+      : [],
+  };
+}
+
+function readCustomPlaylistsDiskCache() {
+  try {
+    ensureProjectCacheDirs();
+    if (!fs.existsSync(CUSTOM_PLAYLISTS_CACHE_FILE)) {
+      customPlaylistsCache = [];
+      return;
+    }
+    const raw = fs.readFileSync(CUSTOM_PLAYLISTS_CACHE_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      customPlaylistsCache = [];
+      return;
+    }
+    customPlaylistsCache = parsed
+      .map((playlist) => normalizeCustomPlaylist(playlist))
+      .filter((playlist) => playlist.id && playlist.name);
+  } catch {
+    customPlaylistsCache = [];
+  }
+}
+
+function writeCustomPlaylistsDiskCache() {
+  try {
+    ensureProjectCacheDirs();
+    const payload = customPlaylistsCache.map((playlist) => normalizeCustomPlaylist(playlist));
+    fs.writeFileSync(CUSTOM_PLAYLISTS_CACHE_FILE, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Falha ao persistir playlists personalizadas:', err);
+  }
+}
+
+function normalizeLastEpisodeRecord(value) {
+  return {
+    seriesKey: String(value?.seriesKey || '').trim(),
+    seriesName: String(value?.seriesName || '').trim(),
+    group: String(value?.group || '').trim(),
+    channelId: String(value?.channelId || '').trim(),
+    episodeName: String(value?.episodeName || '').trim(),
+    season: Number.isFinite(Number(value?.season)) ? Number(value.season) : 1,
+    episode: Number.isFinite(Number(value?.episode)) ? Number(value.episode) : 1,
+    kind: String(value?.kind || 'series').trim(),
+    updatedAt: String(value?.updatedAt || '').trim(),
+  };
+}
+
+function readLastEpisodesDiskCache() {
+  try {
+    ensureProjectCacheDirs();
+    if (!fs.existsSync(LAST_EPISODES_CACHE_FILE)) {
+      lastEpisodesCache = {};
+      return;
+    }
+    const raw = fs.readFileSync(LAST_EPISODES_CACHE_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      lastEpisodesCache = {};
+      return;
+    }
+    const normalized = {};
+    for (const [seriesKey, value] of Object.entries(parsed)) {
+      const key = String(seriesKey || '').trim();
+      if (!key) continue;
+      const record = normalizeLastEpisodeRecord({ ...value, seriesKey: key });
+      if (!record.seriesKey) continue;
+      normalized[key] = record;
+    }
+    lastEpisodesCache = normalized;
+  } catch {
+    lastEpisodesCache = {};
+  }
+}
+
+function writeLastEpisodesDiskCache() {
+  try {
+    ensureProjectCacheDirs();
+    const payload = {};
+    for (const [seriesKey, value] of Object.entries(lastEpisodesCache)) {
+      const key = String(seriesKey || '').trim();
+      if (!key) continue;
+      payload[key] = normalizeLastEpisodeRecord({ ...value, seriesKey: key });
+    }
+    fs.writeFileSync(LAST_EPISODES_CACHE_FILE, JSON.stringify(payload, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Falha ao persistir progresso de episódios:', err);
   }
 }
 
@@ -1236,6 +1363,167 @@ ipcMain.handle('iptv-has-local-playlist', () => {
     return { ok: true, hasPlaylist: stat.isFile() && stat.size > 0 };
   } catch (error) {
     return { ok: false, hasPlaylist: false, error: error?.message || 'Falha ao verificar playlist local.' };
+  }
+});
+
+ipcMain.handle('iptv-get-custom-playlists', () => {
+  try {
+    return { ok: true, playlists: customPlaylistsCache.map((playlist) => normalizeCustomPlaylist(playlist)) };
+  } catch (error) {
+    return { ok: false, playlists: [], error: error?.message || 'Falha ao carregar playlists personalizadas.' };
+  }
+});
+
+ipcMain.handle('iptv-create-custom-playlist', (_event, payload) => {
+  try {
+    const rawName = String(payload?.name || '').trim();
+    if (!rawName) {
+      return { ok: false, error: 'Informe um nome para a playlist.' };
+    }
+    const normalizedName = rawName.slice(0, 80);
+    const alreadyExists = customPlaylistsCache.some(
+      (playlist) => String(playlist.name || '').trim().toLowerCase() === normalizedName.toLowerCase()
+    );
+    if (alreadyExists) {
+      return { ok: false, error: 'Já existe uma playlist com este nome.' };
+    }
+    const createdAt = new Date().toISOString();
+    const playlist = {
+      id: `playlist_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+      name: normalizedName,
+      createdAt,
+      items: [],
+    };
+    customPlaylistsCache = [playlist, ...customPlaylistsCache];
+    writeCustomPlaylistsDiskCache();
+    return {
+      ok: true,
+      playlist: normalizeCustomPlaylist(playlist),
+      playlists: customPlaylistsCache.map((item) => normalizeCustomPlaylist(item)),
+    };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao criar playlist personalizada.' };
+  }
+});
+
+ipcMain.handle('iptv-add-item-to-custom-playlist', (_event, payload) => {
+  try {
+    const playlistId = String(payload?.playlistId || '').trim();
+    if (!playlistId) {
+      return { ok: false, error: 'Playlist inválida.' };
+    }
+    const normalizedItem = normalizeCustomPlaylistItem({
+      ...payload?.item,
+      addedAt: String(payload?.item?.addedAt || new Date().toISOString()),
+    });
+    if (!normalizedItem.name) {
+      return { ok: false, error: 'Item inválido para adicionar à playlist.' };
+    }
+    if (!normalizedItem.id) {
+      normalizedItem.id = `item_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+    const playlistIndex = customPlaylistsCache.findIndex((playlist) => String(playlist.id) === playlistId);
+    if (playlistIndex < 0) {
+      return { ok: false, error: 'Playlist não encontrada.' };
+    }
+    const current = normalizeCustomPlaylist(customPlaylistsCache[playlistIndex]);
+    const duplicate = current.items.some((item) => {
+      const sameChannel = item.channelId && normalizedItem.channelId && item.channelId === normalizedItem.channelId;
+      const sameSeriesSlot =
+        item.seriesName &&
+        normalizedItem.seriesName &&
+        item.seriesName.toLowerCase() === normalizedItem.seriesName.toLowerCase() &&
+        Number(item.season || 0) === Number(normalizedItem.season || 0) &&
+        Number(item.episode || 0) === Number(normalizedItem.episode || 0);
+      const sameNamedSeries =
+        item.entryType === 'series' &&
+        normalizedItem.entryType === 'series' &&
+        item.name.toLowerCase() === normalizedItem.name.toLowerCase() &&
+        item.group.toLowerCase() === normalizedItem.group.toLowerCase();
+      return sameChannel || sameSeriesSlot || sameNamedSeries;
+    });
+    if (duplicate) {
+      return { ok: false, error: 'Este item já existe na playlist selecionada.' };
+    }
+    current.items = [normalizedItem, ...current.items].slice(0, 500);
+    customPlaylistsCache[playlistIndex] = current;
+    writeCustomPlaylistsDiskCache();
+    return { ok: true, playlist: current, playlists: customPlaylistsCache.map((item) => normalizeCustomPlaylist(item)) };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao adicionar item à playlist.' };
+  }
+});
+
+ipcMain.handle('iptv-remove-custom-playlist', (_event, payload) => {
+  try {
+    const playlistId = String(payload?.playlistId || '').trim();
+    if (!playlistId) {
+      return { ok: false, error: 'Playlist inválida.' };
+    }
+    const currentLength = customPlaylistsCache.length;
+    customPlaylistsCache = customPlaylistsCache.filter((playlist) => String(playlist.id) !== playlistId);
+    if (customPlaylistsCache.length === currentLength) {
+      return { ok: false, error: 'Playlist não encontrada.' };
+    }
+    writeCustomPlaylistsDiskCache();
+    return { ok: true, playlists: customPlaylistsCache.map((item) => normalizeCustomPlaylist(item)) };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao remover playlist.' };
+  }
+});
+
+ipcMain.handle('iptv-remove-item-from-custom-playlist', (_event, payload) => {
+  try {
+    const playlistId = String(payload?.playlistId || '').trim();
+    const itemId = String(payload?.itemId || '').trim();
+    if (!playlistId || !itemId) {
+      return { ok: false, error: 'Dados inválidos para remover item.' };
+    }
+    const playlistIndex = customPlaylistsCache.findIndex((playlist) => String(playlist.id) === playlistId);
+    if (playlistIndex < 0) {
+      return { ok: false, error: 'Playlist não encontrada.' };
+    }
+    const current = normalizeCustomPlaylist(customPlaylistsCache[playlistIndex]);
+    const nextItems = current.items.filter((item) => String(item.id) !== itemId);
+    if (nextItems.length === current.items.length) {
+      return { ok: false, error: 'Item não encontrado na playlist.' };
+    }
+    current.items = nextItems;
+    customPlaylistsCache[playlistIndex] = current;
+    writeCustomPlaylistsDiskCache();
+    return { ok: true, playlist: current, playlists: customPlaylistsCache.map((item) => normalizeCustomPlaylist(item)) };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao remover item da playlist.' };
+  }
+});
+
+ipcMain.handle('iptv-get-last-episodes', () => {
+  try {
+    const payload = {};
+    for (const [seriesKey, value] of Object.entries(lastEpisodesCache)) {
+      payload[seriesKey] = normalizeLastEpisodeRecord({ ...value, seriesKey });
+    }
+    return { ok: true, data: payload };
+  } catch (error) {
+    return { ok: false, data: {}, error: error?.message || 'Falha ao carregar episódios assistidos.' };
+  }
+});
+
+ipcMain.handle('iptv-set-last-episode', (_event, payload) => {
+  try {
+    const record = normalizeLastEpisodeRecord(payload || {});
+    if (!record.seriesKey) {
+      return { ok: false, error: 'Chave da série não informada.' };
+    }
+    record.updatedAt = new Date().toISOString();
+    lastEpisodesCache = {
+      ...lastEpisodesCache,
+      [record.seriesKey]: record,
+    };
+    writeLastEpisodesDiskCache();
+    return { ok: true, record };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao salvar último episódio assistido.' };
   }
 });
 

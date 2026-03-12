@@ -1,0 +1,79 @@
+[
+  {
+    "id": "playlist_mmny0pni_mftk6h",
+    "name": "test",
+    "createdAt": "2026-03-12T20:51:23.742Z",
+    "items": [
+      {
+        "id": "36214",
+        "entryType": "episode",
+        "name": "Avenida Brasil S01 E06",
+        "group": "NOVELAS",
+        "logo": "https://image.tmdb.org/t/p/w780/p8uzK1Lngu9q9dpnn4SwPKIT1H7.jpg",
+        "kind": "series",
+        "url": "http://krows.xyz:80/series/3828385371/0671639699/1176605.mp4",
+        "channelId": "36214",
+        "seriesName": "Avenida Brasil",
+        "season": 1,
+        "episode": 6,
+        "addedAt": "2026-03-12T21:08:41.598Z"
+      },
+      {
+        "id": "358",
+        "entryType": "live",
+        "name": "GLOBO BAHIA FHD",
+        "group": "✨ CANAIS | GLOBO",
+        "logo": "http://au.bl-02.xyz:80/images/909f6c90b6db150078092be31dc47ffd.png",
+        "kind": "live",
+        "url": "http://krows.xyz:80/3828385371/0671639699/1026284",
+        "channelId": "358",
+        "seriesName": "",
+        "season": 0,
+        "episode": 0,
+        "addedAt": "2026-03-12T21:08:27.295Z"
+      },
+      {
+        "id": "36213",
+        "entryType": "episode",
+        "name": "Avenida Brasil S01 E05",
+        "group": "NOVELAS",
+        "logo": "https://image.tmdb.org/t/p/w780/p8uzK1Lngu9q9dpnn4SwPKIT1H7.jpg",
+        "kind": "series",
+        "url": "http://krows.xyz:80/series/3828385371/0671639699/1176604.mp4",
+        "channelId": "36213",
+        "seriesName": "Avenida Brasil",
+        "season": 1,
+        "episode": 5,
+        "addedAt": "2026-03-12T21:07:29.525Z"
+      },
+      {
+        "id": "series-verdades secretas-mmny93j7",
+        "entryType": "series",
+        "name": "Verdades Secretas",
+        "group": "NOVELAS",
+        "logo": "https://image.tmdb.org/t/p/w780/js4ME0psGSLwJQs3zbiYN2fhlEE.jpg",
+        "kind": "series",
+        "url": "",
+        "channelId": "",
+        "seriesName": "Verdades Secretas",
+        "season": 0,
+        "episode": 0,
+        "addedAt": "2026-03-12T20:57:54.979Z"
+      },
+      {
+        "id": "8509",
+        "entryType": "movie",
+        "name": "Somos Marshall (2006)",
+        "group": "Drama",
+        "logo": "https://image.tmdb.org/t/p/w780/Qf0jXym7ayEfkUHK4aMffALj2a.jpg",
+        "kind": "movie",
+        "url": "http://krows.xyz:80/movie/3828385371/0671639699/1293883.mp4",
+        "channelId": "8509",
+        "seriesName": "",
+        "season": 0,
+        "episode": 0,
+        "addedAt": "2026-03-12T20:54:57.680Z"
+      }
+    ]
+  }
+]

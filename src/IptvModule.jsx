@@ -35,6 +35,7 @@ const NAV_ITEMS = [
   { key: "live", label: "TV ao Vivo" },
   { key: "movies", label: "Filmes" },
   { key: "series", label: "Séries" },
+  { key: "playlists", label: "Playlists" },
 ];
 
 function getLimitForKind(kind) {
@@ -242,6 +243,10 @@ function normalizeStorageIds(input) {
     .filter(Boolean);
 }
 
+function makeSeriesProgressKey(categoryLabel, seriesName) {
+  return `${normalizeCategoryLabel(categoryLabel)}::${String(seriesName || "").trim().toLowerCase()}`;
+}
+
 const baseButtonStyle = {
   background: "#1a0000",
   color: "#fff",
@@ -259,6 +264,7 @@ const cachedLogoByUrl = new Map();
 const inFlightLogoRequests = new Map();
 const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 const PLAYER_VOLUME_STORAGE_KEY = "iptv_player_volume_session";
+const HOME_PINNED_PLAYLISTS_STORAGE_KEY = "iptv_home_pinned_playlists";
 const APP_HEADER_HEIGHT = 96;
 
 function isKeyboardActivationKey(event) {
@@ -628,7 +634,7 @@ export default function IptvModule({ onBack }) {
   const [loadingLogin, setLoadingLogin] = useState(false);
   const [loadingChannels, setLoadingChannels] = useState(false);
 
-  // 'home', 'live', 'movies', 'series'
+  // 'home', 'live', 'movies', 'series', 'playlists'
   const [activeNav, setActiveNav] = useState("home");
   
   // Used for data fetching
@@ -662,6 +668,8 @@ export default function IptvModule({ onBack }) {
   const [newM3uStage, setNewM3uStage] = useState("");
   const [newM3uError, setNewM3uError] = useState("");
   const [newM3uDone, setNewM3uDone] = useState(false);
+  const [createPlaylistModalOpen, setCreatePlaylistModalOpen] = useState(false);
+  const [createPlaylistNameInput, setCreatePlaylistNameInput] = useState("");
   const [contentLoadProgress, setContentLoadProgress] = useState(0);
   const [contentLoadStage, setContentLoadStage] = useState("");
   const [downloadMetrics, setDownloadMetrics] = useState({
@@ -675,6 +683,13 @@ export default function IptvModule({ onBack }) {
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [likedIds, setLikedIds] = useState([]);
   const [recentlyPlayedIds, setRecentlyPlayedIds] = useState([]);
+  const [customPlaylists, setCustomPlaylists] = useState([]);
+  const [hasLoadedCustomPlaylists, setHasLoadedCustomPlaylists] = useState(false);
+  const [pinnedPlaylistIds, setPinnedPlaylistIds] = useState([]);
+  const [playlistDeleteModalState, setPlaylistDeleteModalState] = useState(null);
+  const [lastEpisodesBySeries, setLastEpisodesBySeries] = useState({});
+  const [homeTab, setHomeTab] = useState("inicio");
+  const [contextMenuState, setContextMenuState] = useState(null);
   const [adultMoviesUnlocked, setAdultMoviesUnlocked] = useState(false);
   const [selectedSynopsis, setSelectedSynopsis] = useState("");
   const [selectedSynopsisMeta, setSelectedSynopsisMeta] = useState({ year: "", rating: null, posterUrl: "" });
@@ -696,6 +711,7 @@ export default function IptvModule({ onBack }) {
   const scrollDebounceRef = useRef(null);
   const skipNextSessionLoadRef = useRef(false);
   const nativeFallbackKeyRef = useRef("");
+  const contextMenuRef = useRef(null);
   
   // Refs para proteção do volume
   const userVolumeRef = useRef(playerVolume);
@@ -793,12 +809,41 @@ export default function IptvModule({ onBack }) {
       setFavoriteIds(normalizedFavorites);
       setLikedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_likes") || "[]")));
       setRecentlyPlayedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_recent") || "[]")));
+      setPinnedPlaylistIds(normalizeStorageIds(JSON.parse(localStorage.getItem(HOME_PINNED_PLAYLISTS_STORAGE_KEY) || "[]")));
     } catch {
       setFavoriteIds([]);
       setLikedIds([]);
       setRecentlyPlayedIds([]);
+      setPinnedPlaylistIds([]);
     }
 
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPersistentIptvState = async () => {
+      try {
+        const [playlistsResponse, lastEpisodesResponse] = await Promise.all([
+          ipcRenderer.invoke("iptv-get-custom-playlists"),
+          ipcRenderer.invoke("iptv-get-last-episodes"),
+        ]);
+        if (cancelled) return;
+        if (playlistsResponse?.ok) {
+          setCustomPlaylists(Array.isArray(playlistsResponse.playlists) ? playlistsResponse.playlists : []);
+          setHasLoadedCustomPlaylists(true);
+        }
+        if (lastEpisodesResponse?.ok) {
+          setLastEpisodesBySeries(lastEpisodesResponse.data && typeof lastEpisodesResponse.data === "object" ? lastEpisodesResponse.data : {});
+        }
+      } catch {
+      }
+    };
+
+    loadPersistentIptvState();
     return () => {
       cancelled = true;
     };
@@ -815,6 +860,22 @@ export default function IptvModule({ onBack }) {
   useEffect(() => {
     localStorage.setItem("iptv_recent", JSON.stringify(recentlyPlayedIds));
   }, [recentlyPlayedIds]);
+
+  useEffect(() => {
+    localStorage.setItem(HOME_PINNED_PLAYLISTS_STORAGE_KEY, JSON.stringify(pinnedPlaylistIds));
+  }, [pinnedPlaylistIds]);
+
+  useEffect(() => {
+    if (!hasLoadedCustomPlaylists) {
+      return;
+    }
+    const validIds = new Set(customPlaylists.map((playlist) => String(playlist.id || "")));
+    setPinnedPlaylistIds((prev) => {
+      const next = prev.filter((id) => validIds.has(String(id)));
+      if (next.length === prev.length) return prev;
+      return next;
+    });
+  }, [customPlaylists, hasLoadedCustomPlaylists]);
 
   useEffect(() => {
     sessionStorage.setItem(PLAYER_VOLUME_STORAGE_KEY, String(playerVolume));
@@ -965,6 +1026,25 @@ export default function IptvModule({ onBack }) {
     document.addEventListener("mousedown", closeMenuByOutsideClick);
     return () => document.removeEventListener("mousedown", closeMenuByOutsideClick);
   }, [menuOpen]);
+
+  useEffect(() => {
+    if (!contextMenuState) return undefined;
+    const closeContextMenu = (event) => {
+      if (contextMenuRef.current && contextMenuRef.current.contains(event.target)) return;
+      setContextMenuState(null);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setContextMenuState(null);
+      }
+    };
+    document.addEventListener("mousedown", closeContextMenu);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeContextMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [contextMenuState]);
 
   const channelById = useMemo(() => {
     const map = new Map();
@@ -1642,6 +1722,9 @@ export default function IptvModule({ onBack }) {
     setFavoriteIds([]);
     setLikedIds([]);
     setRecentlyPlayedIds([]);
+    setCustomPlaylists([]);
+    setLastEpisodesBySeries({});
+    setHomeTab("inicio");
     setAdultMoviesUnlocked(false);
     handleLogout();
     setStatus("Dados do aplicativo removidos com sucesso.");
@@ -1653,7 +1736,8 @@ export default function IptvModule({ onBack }) {
   };
 
   const handleNavClick = (navKey) => {
-    setActiveNav(navKey);
+    const nextNav = navKey === "playlists" ? "home" : navKey;
+    setActiveNav(nextNav);
     setShowPlayer(false);
     setSearch("");
     setGroup("");
@@ -1665,7 +1749,215 @@ export default function IptvModule({ onBack }) {
       setSelected(null);
       setBuffering(false);
     }
+    if (navKey === "playlists") {
+      setHomeTab("playlists");
+    } else if (navKey !== "home") {
+      setHomeTab("inicio");
+    }
 
+  };
+
+  const persistLastEpisode = useCallback(async (payload) => {
+    try {
+      const response = await ipcRenderer.invoke("iptv-set-last-episode", payload);
+      return Boolean(response?.ok);
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const buildPlaylistItemFromChannel = useCallback((channel) => {
+    if (!channel) return null;
+    const normalizedKind = String(channel.kind || "").toLowerCase();
+    const info = parseEpisodeInfo(String(channel.name || ""));
+    const entryType = normalizedKind === "series" ? "episode" : normalizedKind;
+    const itemId = String(channel.id || `${entryType}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
+    return {
+      id: itemId,
+      entryType,
+      kind: normalizedKind || entryType,
+      channelId: String(channel.id || ""),
+      name: String(channel.name || ""),
+      group: String(channel.group || ""),
+      logo: String(channel.logo || ""),
+      url: String(channel.url || ""),
+      seriesName: normalizedKind === "series" ? info.seriesName : "",
+      season: normalizedKind === "series" ? info.season : null,
+      episode: normalizedKind === "series" ? info.episode : null,
+      addedAt: new Date().toISOString(),
+    };
+  }, []);
+
+  const buildPlaylistItemFromSeriesCard = useCallback((seriesItem, categoryLabel) => {
+    if (!seriesItem) return null;
+    return {
+      id: `series-${String(seriesItem.name || "").trim().toLowerCase()}-${Date.now().toString(36)}`,
+      entryType: "series",
+      kind: "series",
+      channelId: "",
+      name: String(seriesItem.name || ""),
+      group: String(categoryLabel || seriesItem.group || ""),
+      logo: String(seriesItem.logo || ""),
+      url: "",
+      seriesName: String(seriesItem.name || ""),
+      season: null,
+      episode: null,
+      addedAt: new Date().toISOString(),
+    };
+  }, []);
+
+  const handleOpenCardContextMenu = useCallback((event, item) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!item) return;
+    setContextMenuState({
+      x: event.clientX,
+      y: event.clientY,
+      item,
+    });
+  }, []);
+
+  const handleOpenCreatePlaylistModal = useCallback(() => {
+    setMenuOpen(false);
+    setContextMenuState(null);
+    setCreatePlaylistNameInput("");
+    setCreatePlaylistModalOpen(true);
+  }, []);
+
+  const handleCreatePlaylist = useCallback(async (rawName) => {
+    const name = String(rawName || "").trim();
+    if (!name) {
+      setStatus("Informe um nome para a playlist.");
+      return;
+    }
+    const response = await ipcRenderer.invoke("iptv-create-custom-playlist", { name });
+    if (!response?.ok) {
+      setStatus(response?.error || "Falha ao criar playlist.");
+      return;
+    }
+    setCustomPlaylists(Array.isArray(response.playlists) ? response.playlists : []);
+    setStatus(`Playlist criada: ${name}`);
+    setHomeTab("playlists");
+    setActiveNav("home");
+    setCreatePlaylistModalOpen(false);
+    setCreatePlaylistNameInput("");
+  }, []);
+
+  const handleAddItemToPlaylist = useCallback(async (playlistId, item) => {
+    if (!playlistId || !item) return;
+    const response = await ipcRenderer.invoke("iptv-add-item-to-custom-playlist", { playlistId, item });
+    if (!response?.ok) {
+      setStatus(response?.error || "Falha ao adicionar item à playlist.");
+      return;
+    }
+    setCustomPlaylists(Array.isArray(response.playlists) ? response.playlists : []);
+    setStatus(`"${item.name}" foi adicionado à playlist.`);
+    setContextMenuState(null);
+  }, []);
+
+  const handleRequestRemovePlaylist = useCallback((playlist) => {
+    if (!playlist?.id) return;
+    setPlaylistDeleteModalState({
+      id: String(playlist.id),
+      name: String(playlist.name || "Playlist"),
+    });
+  }, []);
+
+  const handleCancelRemovePlaylist = useCallback(() => {
+    setPlaylistDeleteModalState(null);
+  }, []);
+
+  const handleConfirmRemovePlaylist = useCallback(async () => {
+    const playlistId = String(playlistDeleteModalState?.id || "").trim();
+    const playlistName = String(playlistDeleteModalState?.name || "Playlist");
+    if (!playlistId) return;
+    const response = await ipcRenderer.invoke("iptv-remove-custom-playlist", { playlistId });
+    if (!response?.ok) {
+      setStatus(response?.error || "Falha ao remover playlist.");
+      return;
+    }
+    setCustomPlaylists(Array.isArray(response.playlists) ? response.playlists : []);
+    setPinnedPlaylistIds((prev) => prev.filter((id) => String(id) !== playlistId));
+    setPlaylistDeleteModalState(null);
+    setStatus(`Playlist "${playlistName}" removida.`);
+  }, [playlistDeleteModalState]);
+
+  const handleRemovePlaylistItem = useCallback(async (playlistId, item) => {
+    const itemId = String(item?.id || "").trim();
+    if (!playlistId || !itemId) {
+      setStatus("Item inválido para remoção.");
+      return;
+    }
+    const response = await ipcRenderer.invoke("iptv-remove-item-from-custom-playlist", { playlistId, itemId });
+    if (!response?.ok) {
+      setStatus(response?.error || "Falha ao remover item da playlist.");
+      return;
+    }
+    setCustomPlaylists(Array.isArray(response.playlists) ? response.playlists : []);
+    setStatus(`"${item.name}" removido da playlist.`);
+  }, []);
+
+  const togglePinnedPlaylist = useCallback((playlistId) => {
+    const normalizedId = String(playlistId || "").trim();
+    if (!normalizedId) return;
+    setPinnedPlaylistIds((prev) => {
+      if (prev.includes(normalizedId)) {
+        return prev.filter((id) => id !== normalizedId);
+      }
+      return [normalizedId, ...prev];
+    });
+  }, []);
+
+  const pinnedHomePlaylists = useMemo(() => {
+    if (pinnedPlaylistIds.length === 0 || customPlaylists.length === 0) return [];
+    const byId = new Map(customPlaylists.map((playlist) => [String(playlist.id || ""), playlist]));
+    return pinnedPlaylistIds
+      .map((playlistId) => byId.get(String(playlistId)))
+      .filter(Boolean);
+  }, [pinnedPlaylistIds, customPlaylists]);
+
+  const isEpisodeWatched = useCallback((episodeChannel) => {
+    if (!episodeChannel) return false;
+    const info = parseEpisodeInfo(String(episodeChannel.name || ""));
+    const seriesKey = makeSeriesProgressKey(episodeChannel.group, info.seriesName);
+    const progress = lastEpisodesBySeries[seriesKey];
+    if (!progress) return false;
+    const progressSeason = Number(progress.season || 1);
+    const progressEpisode = Number(progress.episode || 1);
+    if (info.season < progressSeason) return true;
+    if (info.season > progressSeason) return false;
+    return info.episode <= progressEpisode;
+  }, [lastEpisodesBySeries]);
+
+  const getLastEpisodeForSeries = useCallback((channelLike) => {
+    if (!channelLike) return null;
+    const info = parseEpisodeInfo(String(channelLike.name || ""));
+    const seriesKey = makeSeriesProgressKey(channelLike.group, info.seriesName);
+    return lastEpisodesBySeries[seriesKey] || null;
+  }, [lastEpisodesBySeries]);
+
+  const tryResumeFromLastEpisode = (channelLike) => {
+    const progress = getLastEpisodeForSeries(channelLike);
+    if (!progress) return false;
+    const normalizedSeries = String(progress.seriesName || "").trim().toLowerCase();
+    const target = channels.find((item) => {
+      if (String(item.kind || "").toLowerCase() !== "series") return false;
+      const info = parseEpisodeInfo(String(item.name || ""));
+      if (String(info.seriesName || "").trim().toLowerCase() !== normalizedSeries) return false;
+      const sameSeason = Number(info.season || 0) === Number(progress.season || 0);
+      const sameEpisode = Number(info.episode || 0) === Number(progress.episode || 0);
+      return sameSeason && sameEpisode;
+    });
+    if (!target) return false;
+    handleNavClick("series");
+    setSelectedCategory(normalizeCategoryLabel(target.group));
+    setSelectedSeries(parseEpisodeInfo(target.name).seriesName);
+    setSelectedSeason(String(parseEpisodeInfo(target.name).season));
+    setViewState("episodes");
+    setBuffering(true);
+    setSelected(target);
+    setStatus(`Retomando ${target.name}`);
+    return true;
   };
 
   const playChannel = (channel, forceOpenPlayer = true) => {
@@ -1681,6 +1973,28 @@ export default function IptvModule({ onBack }) {
       const next = [currentId, ...prev.filter((id) => id !== currentId)];
       return next.slice(0, 10);
     });
+
+    if (String(channel?.kind || "").toLowerCase() === "series") {
+      const info = parseEpisodeInfo(String(channel.name || ""));
+      const payload = {
+        seriesKey: makeSeriesProgressKey(channel.group, info.seriesName),
+        seriesName: info.seriesName,
+        group: String(channel.group || ""),
+        channelId: String(channel.id || ""),
+        episodeName: String(channel.name || ""),
+        season: info.season,
+        episode: info.episode,
+        kind: "series",
+      };
+      setLastEpisodesBySeries((prev) => ({
+        ...prev,
+        [payload.seriesKey]: {
+          ...payload,
+          updatedAt: new Date().toISOString(),
+        },
+      }));
+      persistLastEpisode(payload);
+    }
 
     setStatus(`Reprodução selecionada: ${channel.name}`);
   };
@@ -1809,19 +2123,23 @@ export default function IptvModule({ onBack }) {
       </div>
     ));
 
-  const playHomeItem = (item) => {
+  const playHomeItem = (item, sourceRowKey = "") => {
     if (item.favoriteType === "series") {
       openFavoriteSeries(item);
       return;
     }
 
     if (item.kind === "series") {
+      if (sourceRowKey === "continuar" && tryResumeFromLastEpisode(item)) {
+        return;
+      }
       const info = parseEpisodeInfo(item.name);
       handleNavClick("series");
       setSelectedCategory(normalizeCategoryLabel(item.group));
       setSelectedSeries(info.seriesName);
-      setSelectedSeason(info.season);
-      setViewState("seasons");
+      setSelectedSeason(String(info.season));
+      setViewState("episodes");
+      setBuffering(true);
       playChannel(item, false);
       return;
     }
@@ -1843,122 +2161,359 @@ export default function IptvModule({ onBack }) {
     playChannel(item, true);
   };
 
-  const renderHome = () => (
-    <div style={{ padding: "0 20px" }}>
-      <div style={{ display: "flex", gap: 20, marginBottom: 40, flexWrap: "wrap", justifyContent: "center" }}>
-        <Tile 
-          style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
-          onClick={() => handleNavClick('live')}
-          {...getKeyboardButtonProps("Abrir TV ao vivo", () => handleNavClick("live"))}
-        >
-          <FolderTitle style={{ fontSize: "1.8em" }}>TV ao Vivo</FolderTitle>
-          <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
-            <FaTv size={75} />
-          </div>
-        </Tile>
-        <Tile 
-          style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
-          onClick={() => handleNavClick('movies')}
-          {...getKeyboardButtonProps("Abrir filmes", () => handleNavClick("movies"))}
-        >
-          <FolderTitle style={{ fontSize: "1.8em" }}>Filmes</FolderTitle>
-          <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
-            <FaFilm size={75} />
-          </div>
-        </Tile>
-        <Tile 
-          style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
-          onClick={() => handleNavClick('series')}
-          {...getKeyboardButtonProps("Abrir séries", () => handleNavClick("series"))}
-        >
-          <FolderTitle style={{ fontSize: "1.8em" }}>Séries</FolderTitle>
-          <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
-            <FaVideo size={75} />
-          </div>
-        </Tile>
-      </div>
-      
-      {[rows.find((row) => row.key === "continuar"), rows.find((row) => row.key === "favoritos")].filter(Boolean).map((row) => (
-        <div key={row.key} style={{ marginBottom: 20 }}>
-          <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>{row.title}</FolderTitle>
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
-            {row.items.map((channel) => {
-              const homeCardKey = `home-${channel.id}`;
-              return (
-              <div
-                key={channel.id}
-                onMouseEnter={() => {
-                  setHoveredCardId(homeCardKey);
-                  setUserInteracting(true);
-                }}
-                onMouseLeave={() => {
-                  setHoveredCardId(null);
-                  setUserInteracting(false);
-                }}
-                onFocus={() => setFocusedCardId(homeCardKey)}
-                onBlur={() => setFocusedCardId(null)}
-                onClick={() => playHomeItem(channel)}
-                {...getKeyboardButtonProps(`Assistir ${channel.name}`, () => playHomeItem(channel))}
-                style={{
-                  minWidth: 220,
-                  width: 220,
-                  height: 126,
-                  borderRadius: 12,
-                  border: "1px solid #ff000044",
-                  background: "#110000",
-                  position: "relative",
-                  overflow: "hidden",
-                  cursor: "pointer",
-                  ...getCardInteractiveStyle(homeCardKey),
-                }}
-              >
-                 <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (channel.favoriteType === "series") {
-                        toggleSeriesFavorite(channel.group, channel.name);
-                      } else {
-                        toggleFavorite(channel.id);
-                      }
-                    }}
-                    style={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      zIndex: 5,
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      border: "1px solid #ff0000",
-                      background: "rgba(0,0,0,0.72)",
-                      color:
-                        channel.favoriteType === "series"
-                          ? (isSeriesFavorited(channel.group, channel.name) ? "#ffd700" : "#fff")
-                          : (isChannelFavorited(channel.id) ? "#ffd700" : "#fff"),
-                      display: "grid",
-                      placeItems: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <FaStar size={14} />
-                  </button>
-                 {channel.logo ? (
-                    <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
-                  ) : (
-                    <div style={{ padding: 10, color: "#ddd" }}>{channel.name}</div>
-                  )}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: getCardInteractiveState(homeCardKey) ? "rgba(0,0,0,0.86)" : "rgba(0,0,0,0.7)", padding: 4, fontSize: 11 }}>
-                    {channel.name}
-                  </div>
-              </div>
-            );
-            })}
-          </div>
+  const playCustomPlaylistItem = (item) => {
+    if (!item) return;
+    const channelId = String(item.channelId || "");
+    const channel = channelById.get(channelId) || channelById.get(Number(channelId));
+    if (channel) {
+      playHomeItem(channel, "playlists");
+      return;
+    }
+
+    if (item.entryType === "series") {
+      openFavoriteSeries({
+        group: normalizeCategoryLabel(item.group),
+        name: item.seriesName || item.name,
+      });
+      return;
+    }
+
+    if (item.entryType === "episode" || item.kind === "series") {
+      const normalizedSeries = String(item.seriesName || item.name || "").trim().toLowerCase();
+      const fallbackEpisode = channels.find((episode) => {
+        if (String(episode.kind || "").toLowerCase() !== "series") return false;
+        const info = parseEpisodeInfo(String(episode.name || ""));
+        return (
+          String(info.seriesName || "").trim().toLowerCase() === normalizedSeries &&
+          Number(info.season || 0) === Number(item.season || 0) &&
+          Number(info.episode || 0) === Number(item.episode || 0)
+        );
+      });
+      if (fallbackEpisode) {
+        playHomeItem(fallbackEpisode, "playlists");
+        return;
+      }
+    }
+
+    if (item.url) {
+      playChannel({
+        id: item.id || `playlist-item-${Date.now().toString(36)}`,
+        name: item.name || "Conteúdo da playlist",
+        kind: item.kind || "movie",
+        group: item.group || "",
+        url: item.url,
+        logo: item.logo || "",
+      }, true);
+      return;
+    }
+
+    setStatus("Item da playlist não encontrado na lista atual.");
+  };
+
+  const renderHome = () => {
+    const featuredRows = [rows.find((row) => row.key === "continuar"), rows.find((row) => row.key === "favoritos")].filter(Boolean);
+
+    return (
+      <div style={{ padding: "0 20px" }}>
+        <div style={{ display: "flex", gap: 20, marginBottom: 28, flexWrap: "wrap", justifyContent: "center" }}>
+          <Tile
+            style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+            onClick={() => handleNavClick("live")}
+            {...getKeyboardButtonProps("Abrir TV ao vivo", () => handleNavClick("live"))}
+          >
+            <FolderTitle style={{ fontSize: "1.8em" }}>TV ao Vivo</FolderTitle>
+            <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
+              <FaTv size={75} />
+            </div>
+          </Tile>
+          <Tile
+            style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+            onClick={() => handleNavClick("movies")}
+            {...getKeyboardButtonProps("Abrir filmes", () => handleNavClick("movies"))}
+          >
+            <FolderTitle style={{ fontSize: "1.8em" }}>Filmes</FolderTitle>
+            <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
+              <FaFilm size={75} />
+            </div>
+          </Tile>
+          <Tile
+            style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+            onClick={() => handleNavClick("series")}
+            {...getKeyboardButtonProps("Abrir séries", () => handleNavClick("series"))}
+          >
+            <FolderTitle style={{ fontSize: "1.8em" }}>Séries</FolderTitle>
+            <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
+              <FaVideo size={75} />
+            </div>
+          </Tile>
         </div>
-      ))}
-    </div>
-  );
+
+        <div style={{ marginBottom: 18, display: "flex", justifyContent: "flex-end" }}>
+          {homeTab === "playlists" && (
+            <button type="button" style={baseButtonStyle} onClick={handleOpenCreatePlaylistModal}>
+              <FaPlus style={{ marginRight: 8 }} />
+              Criar Playlist
+            </button>
+          )}
+        </div>
+
+        {homeTab === "inicio" && (
+          <>
+            {featuredRows.map((row) => (
+            <div key={row.key} style={{ marginBottom: 20 }}>
+              <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>{row.title}</FolderTitle>
+              <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+                {row.items.map((channel) => {
+                  const homeCardKey = `home-${channel.id}-${row.key}`;
+                  const hasProgress = row.key === "continuar" && String(channel.kind || "").toLowerCase() === "series";
+                  const progress = hasProgress ? getLastEpisodeForSeries(channel) : null;
+                  const playlistItem =
+                    channel.favoriteType === "series"
+                      ? buildPlaylistItemFromSeriesCard(channel, channel.group)
+                      : buildPlaylistItemFromChannel(channel);
+
+                  return (
+                    <div
+                      key={`${row.key}-${channel.id}`}
+                      onMouseEnter={() => {
+                        setHoveredCardId(homeCardKey);
+                        setUserInteracting(true);
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredCardId(null);
+                        setUserInteracting(false);
+                      }}
+                      onFocus={() => setFocusedCardId(homeCardKey)}
+                      onBlur={() => setFocusedCardId(null)}
+                      onClick={() => playHomeItem(channel, row.key)}
+                      onContextMenu={(event) => handleOpenCardContextMenu(event, {
+                        displayName: channel.name,
+                        playlistItem,
+                      })}
+                      {...getKeyboardButtonProps(`Assistir ${channel.name}`, () => playHomeItem(channel, row.key))}
+                      style={{
+                        minWidth: 220,
+                        width: 220,
+                        height: 126,
+                        borderRadius: 12,
+                        border: "1px solid #ff000044",
+                        background: "#110000",
+                        position: "relative",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        ...getCardInteractiveStyle(homeCardKey),
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (channel.favoriteType === "series") {
+                            toggleSeriesFavorite(channel.group, channel.name);
+                          } else {
+                            toggleFavorite(channel.id);
+                          }
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          zIndex: 5,
+                          width: 28,
+                          height: 28,
+                          borderRadius: "50%",
+                          border: "1px solid #ff0000",
+                          background: "rgba(0,0,0,0.72)",
+                          color:
+                            channel.favoriteType === "series"
+                              ? (isSeriesFavorited(channel.group, channel.name) ? "#ffd700" : "#fff")
+                              : (isChannelFavorited(channel.id) ? "#ffd700" : "#fff"),
+                          display: "grid",
+                          placeItems: "center",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <FaStar size={14} />
+                      </button>
+                      {channel.logo ? (
+                        <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
+                      ) : (
+                        <div style={{ padding: 10, color: "#ddd" }}>{channel.name}</div>
+                      )}
+                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: getCardInteractiveState(homeCardKey) ? "rgba(0,0,0,0.86)" : "rgba(0,0,0,0.7)", padding: 4, fontSize: 11 }}>
+                        {channel.name}
+                      </div>
+                      {progress && (
+                        <div style={{ position: "absolute", top: 8, left: 8, borderRadius: 999, border: "1px solid #16a34a", background: "rgba(0,0,0,0.76)", color: "#86efac", padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
+                          S{progress.season}E{progress.episode}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            ))}
+            {pinnedHomePlaylists.map((playlist) => (
+              Array.isArray(playlist.items) && playlist.items.length > 0 ? (
+                <div key={`home-pinned-${playlist.id}`} style={{ marginBottom: 20 }}>
+                  <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>{playlist.name}</FolderTitle>
+                  <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+                    {playlist.items.slice(0, 30).map((item, index) => {
+                      const homePlaylistCardKey = `home-pinned-${playlist.id}-${item.id || index}`;
+                      return (
+                        <div
+                          key={`home-pinned-item-${playlist.id}-${item.id || index}`}
+                          onMouseEnter={() => {
+                            setHoveredCardId(homePlaylistCardKey);
+                            setUserInteracting(true);
+                          }}
+                          onMouseLeave={() => {
+                            setHoveredCardId(null);
+                            setUserInteracting(false);
+                          }}
+                          onFocus={() => setFocusedCardId(homePlaylistCardKey)}
+                          onBlur={() => setFocusedCardId(null)}
+                          onClick={() => playCustomPlaylistItem(item)}
+                          {...getKeyboardButtonProps(`Reproduzir ${item.name}`, () => playCustomPlaylistItem(item))}
+                          style={{
+                            minWidth: 220,
+                            width: 220,
+                            height: 126,
+                            borderRadius: 12,
+                            border: "1px solid #ff000044",
+                            background: "#110000",
+                            position: "relative",
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            ...getCardInteractiveStyle(homePlaylistCardKey),
+                          }}
+                        >
+                          {item.logo ? (
+                            <CachedLogoImage src={item.logo} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
+                          ) : (
+                            <div style={{ padding: 10, color: "#ddd" }}>{item.name}</div>
+                          )}
+                          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: getCardInteractiveState(homePlaylistCardKey) ? "rgba(0,0,0,0.86)" : "rgba(0,0,0,0.7)", padding: 4, fontSize: 11 }}>
+                            {item.name}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null
+            ))}
+          </>
+        )}
+
+        {homeTab === "playlists" && (
+          <div style={{ display: "grid", gap: 14 }}>
+            {customPlaylists.length === 0 && (
+              <div style={{ border: "1px solid #ff000044", borderRadius: 12, background: "rgba(0,0,0,0.45)", padding: 16, color: "#ddd" }}>
+                Nenhuma playlist criada ainda.
+              </div>
+            )}
+            {customPlaylists.map((playlist) => (
+              <div key={playlist.id} style={{ border: "1px solid #ff000044", borderRadius: 12, background: "rgba(0,0,0,0.52)", padding: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 8 }}>
+                  <FolderTitle style={{ textAlign: "left", margin: 0, fontSize: "1.05em" }}>{playlist.name}</FolderTitle>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ color: "#ddd", fontSize: 12 }}>{Array.isArray(playlist.items) ? playlist.items.length : 0} itens</span>
+                    <button
+                      type="button"
+                      onClick={() => togglePinnedPlaylist(playlist.id)}
+                      style={{ ...baseButtonStyle, padding: "6px 10px", borderColor: pinnedPlaylistIds.includes(String(playlist.id)) ? "#16a34a" : "#ff0000", color: pinnedPlaylistIds.includes(String(playlist.id)) ? "#86efac" : "#fff" }}
+                    >
+                      {pinnedPlaylistIds.includes(String(playlist.id)) ? "Na tela inicial" : "Adicionar na tela inicial"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRequestRemovePlaylist(playlist)}
+                      style={{ ...baseButtonStyle, padding: "6px 10px", borderColor: "#ff6666", color: "#ff9f9f" }}
+                    >
+                      Excluir Playlist
+                    </button>
+                  </div>
+                </div>
+                {Array.isArray(playlist.items) && playlist.items.length > 0 ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+                    {playlist.items.map((item, index) => {
+                      const playlistCardKey = `playlist-card-${playlist.id}-${item.id || index}`;
+                      const typeLabel = (item.entryType || item.kind || "item").toString().toUpperCase();
+                      const typeColor = typeLabel === "LIVE" ? "#22d3ee" : typeLabel === "MOVIE" ? "#f97316" : "#a78bfa";
+                      return (
+                        <div
+                          key={`${playlist.id}-${item.id || index}`}
+                          onMouseEnter={() => setHoveredCardId(playlistCardKey)}
+                          onMouseLeave={() => setHoveredCardId(null)}
+                          onFocus={() => setFocusedCardId(playlistCardKey)}
+                          onBlur={() => setFocusedCardId(null)}
+                          onClick={() => playCustomPlaylistItem(item)}
+                          {...getKeyboardButtonProps(`Reproduzir ${item.name}`, () => playCustomPlaylistItem(item))}
+                          style={{
+                            width: "100%",
+                            minHeight: 146,
+                            textAlign: "left",
+                            border: "1px solid #ff000044",
+                            borderRadius: 12,
+                            background: "#120000",
+                            color: "#fff",
+                            padding: 0,
+                            cursor: "pointer",
+                            display: "grid",
+                            overflow: "hidden",
+                            ...getCardInteractiveStyle(playlistCardKey),
+                          }}
+                        >
+                          <div style={{ height: 92, background: "linear-gradient(180deg, #3a0000 0%, #140000 100%)", position: "relative" }}>
+                            {item.logo ? (
+                              <CachedLogoImage src={item.logo} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
+                            ) : (
+                              <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ffd2d2", fontSize: 12, letterSpacing: 0.7 }}>
+                                SEM CAPA
+                              </div>
+                            )}
+                            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.05))" }} />
+                            <div style={{ position: "absolute", top: 8, left: 8, borderRadius: 999, border: `1px solid ${typeColor}`, background: "rgba(0,0,0,0.72)", color: typeColor, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
+                              {typeLabel}
+                            </div>
+                            <div style={{ position: "absolute", right: 8, bottom: 8, width: 24, height: 24, borderRadius: "50%", border: "1px solid #ffffff66", background: "rgba(0,0,0,0.58)", color: "#fff", display: "grid", placeItems: "center" }}>
+                              <FaPlay size={10} />
+                            </div>
+                            <button
+                              type="button"
+                              title="Remover da playlist"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleRemovePlaylistItem(playlist.id, item);
+                              }}
+                              style={{ position: "absolute", right: 8, top: 8, width: 24, height: 24, borderRadius: "50%", border: "1px solid #ff9f9f", background: "rgba(0,0,0,0.72)", color: "#ff9f9f", display: "grid", placeItems: "center", cursor: "pointer" }}
+                            >
+                              <FaTimes size={10} />
+                            </button>
+                          </div>
+                          <div style={{ display: "grid", gap: 4, padding: "10px 12px" }}>
+                            <span style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</span>
+                            <span style={{ color: "#d4d4d4", fontSize: 11, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {item.group || "Sem categoria"}
+                              {item.season && item.episode ? ` • S${item.season}E${item.episode}` : ""}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ color: "#bbb", fontSize: 13 }}>Sem itens nesta playlist.</div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderSeriesView = () => {
     if (viewState === 'categories') {
@@ -2027,6 +2582,10 @@ export default function IptvModule({ onBack }) {
                   onMouseLeave={() => setHoveredCardId(null)}
                   onFocus={() => setFocusedCardId(seriesCardKey)}
                   onBlur={() => setFocusedCardId(null)}
+                  onContextMenu={(event) => handleOpenCardContextMenu(event, {
+                    displayName: s.name,
+                    playlistItem: buildPlaylistItemFromSeriesCard(s, activeCategory),
+                  })}
                   onClick={() => {
                     setSelected(null);
                     setBuffering(false);
@@ -2094,6 +2653,10 @@ export default function IptvModule({ onBack }) {
                 onMouseLeave={() => setHoveredCardId(null)}
                 onFocus={() => setFocusedCardId(seriesListCardKey)}
                 onBlur={() => setFocusedCardId(null)}
+                onContextMenu={(event) => handleOpenCardContextMenu(event, {
+                  displayName: s.name,
+                  playlistItem: buildPlaylistItemFromSeriesCard(s, selectedCategory),
+                })}
                 onClick={() => {
                   setSelected(null);
                   setBuffering(false);
@@ -2281,6 +2844,10 @@ export default function IptvModule({ onBack }) {
                   onMouseLeave={() => setHoveredCardId(null)}
                   onFocus={() => setFocusedCardId(episodeItemKey)}
                   onBlur={() => setFocusedCardId(null)}
+                  onContextMenu={(event) => handleOpenCardContextMenu(event, {
+                    displayName: ep.name,
+                    playlistItem: buildPlaylistItemFromChannel(ep),
+                  })}
                   onClick={() => playChannel(ep, false)} // false means don't open modal, just set selected
                   {...getKeyboardButtonProps(`Reproduzir episódio ${ep.episodeNum}`, () => playChannel(ep, false))}
                   style={{ 
@@ -2293,7 +2860,15 @@ export default function IptvModule({ onBack }) {
                     ...getCardInteractiveStyle(episodeItemKey),
                   }}
                 >
-                  <div style={{ fontWeight: "bold", fontSize: 13 }}>{ep.episodeNum}. {ep.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                    <div style={{ fontWeight: "bold", fontSize: 13 }}>{ep.episodeNum}. {ep.name}</div>
+                    {isEpisodeWatched(ep) && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, borderRadius: 999, border: "1px solid #16a34a", color: "#86efac", padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
+                        <FaCheck size={10} />
+                        Assistido
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
               })}
@@ -2545,6 +3120,10 @@ export default function IptvModule({ onBack }) {
                 }}
                 onFocus={() => setFocusedCardId(movieCardKey)}
                 onBlur={() => setFocusedCardId(null)}
+                onContextMenu={(event) => handleOpenCardContextMenu(event, {
+                  displayName: channel.name,
+                  playlistItem: buildPlaylistItemFromChannel(channel),
+                })}
                 onClick={() => playChannel(channel, true)}
                 {...getKeyboardButtonProps(`Reproduzir ${channel.name}`, () => playChannel(channel, true))}
                 style={{
@@ -2806,6 +3385,10 @@ export default function IptvModule({ onBack }) {
                   }}
                   onFocus={() => setFocusedCardId(liveCardKey)}
                   onBlur={() => setFocusedCardId(null)}
+                  onContextMenu={(event) => handleOpenCardContextMenu(event, {
+                    displayName: channel.name,
+                    playlistItem: buildPlaylistItemFromChannel(channel),
+                  })}
                   onClick={() => playChannel(channel, true)}
                   {...getKeyboardButtonProps(`Reproduzir ${channel.name}`, () => playChannel(channel, true))}
                   style={{
@@ -3048,7 +3631,9 @@ export default function IptvModule({ onBack }) {
 
             <nav style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
               {NAV_ITEMS.map((item) => {
-                const active = activeNav === item.key;
+                const active = item.key === "playlists"
+                  ? activeNav === "home" && homeTab === "playlists"
+                  : activeNav === item.key;
                 return (
                   <button
                     key={item.key}
@@ -3122,6 +3707,9 @@ export default function IptvModule({ onBack }) {
               <button type="button" style={baseButtonStyle} onClick={handleConfigureTmdbKey}>
                 Configurar chave TMDB
               </button>
+              <button type="button" style={baseButtonStyle} onClick={handleOpenCreatePlaylistModal}>
+                Criar Playlist
+              </button>
               <button type="button" style={baseButtonStyle} onClick={handleRefresh}>
                 {loadingChannels ? "Recarregando conteúdo..." : "Recarregar Conteúdo"}
               </button>
@@ -3131,6 +3719,134 @@ export default function IptvModule({ onBack }) {
               <button type="button" style={baseButtonStyle} onClick={handleExitApp}>
                 Sair
               </button>
+            </div>
+          )}
+
+          {contextMenuState && (
+            <div
+              ref={contextMenuRef}
+              style={{
+                position: "fixed",
+                top: Math.max(8, Math.min(contextMenuState.y, window.innerHeight - 340)),
+                left: Math.max(8, Math.min(contextMenuState.x, window.innerWidth - 300)),
+                zIndex: 120,
+                width: 280,
+                maxHeight: 320,
+                overflowY: "auto",
+                border: "1px solid #ff000066",
+                borderRadius: 12,
+                background: "rgba(10,10,10,0.98)",
+                boxShadow: "0 14px 30px rgba(0,0,0,0.55)",
+                padding: 10,
+                display: "grid",
+                gap: 8,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: 12, color: "#ddd", marginBottom: 2 }}>
+                Adicionar: {contextMenuState.item?.displayName || "Item"}
+              </div>
+              <button
+                type="button"
+                style={{ ...baseButtonStyle, background: "#2c0000" }}
+                onClick={async () => {
+                  setContextMenuState(null);
+                  handleOpenCreatePlaylistModal();
+                }}
+              >
+                + Criar playlist
+              </button>
+              {customPlaylists.length > 0 ? (
+                customPlaylists.map((playlist) => (
+                  <button
+                    key={playlist.id}
+                    type="button"
+                    style={{ ...baseButtonStyle, textAlign: "left" }}
+                    onClick={() => handleAddItemToPlaylist(playlist.id, contextMenuState.item?.playlistItem)}
+                  >
+                    {playlist.name}
+                  </button>
+                ))
+              ) : (
+                <div style={{ color: "#bbb", fontSize: 12 }}>Crie uma playlist para adicionar itens.</div>
+              )}
+            </div>
+          )}
+
+          {createPlaylistModalOpen && (
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 121, background: "rgba(0,0,0,0.78)", display: "grid", placeItems: "center", padding: 20 }}
+              onClick={() => setCreatePlaylistModalOpen(false)}
+            >
+              <div
+                style={{ width: "min(520px, 92vw)", border: "1px solid #ff000066", borderRadius: 14, background: "#0f0f0f", padding: 16, boxShadow: "0 18px 34px rgba(0,0,0,0.5)", display: "grid", gap: 12 }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <FolderTitle style={{ textAlign: "left", fontSize: "1.15em", margin: 0 }}>Criar playlist</FolderTitle>
+                  <button type="button" style={{ ...baseButtonStyle, padding: "6px 10px" }} onClick={() => setCreatePlaylistModalOpen(false)}>
+                    <FaTimes />
+                  </button>
+                </div>
+                <ModalInput
+                  value={createPlaylistNameInput}
+                  onChange={(event) => setCreatePlaylistNameInput(event.target.value)}
+                  placeholder="Nome da playlist"
+                  autoFocus
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      handleCreatePlaylist(createPlaylistNameInput);
+                    }
+                  }}
+                />
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <button type="button" style={baseButtonStyle} onClick={() => setCreatePlaylistModalOpen(false)}>
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }}
+                    onClick={() => handleCreatePlaylist(createPlaylistNameInput)}
+                  >
+                    Criar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {playlistDeleteModalState && (
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 122, background: "rgba(0,0,0,0.8)", display: "grid", placeItems: "center", padding: 20 }}
+              onClick={handleCancelRemovePlaylist}
+            >
+              <div
+                style={{ width: "min(560px, 92vw)", border: "1px solid #ff000066", borderRadius: 14, background: "#0f0f0f", padding: 16, boxShadow: "0 18px 34px rgba(0,0,0,0.5)", display: "grid", gap: 12 }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <FolderTitle style={{ textAlign: "left", fontSize: "1.15em", margin: 0 }}>Excluir playlist</FolderTitle>
+                  <button type="button" style={{ ...baseButtonStyle, padding: "6px 10px" }} onClick={handleCancelRemovePlaylist}>
+                    <FaTimes />
+                  </button>
+                </div>
+                <div style={{ color: "#f5d7d7", fontSize: 14, lineHeight: 1.5 }}>
+                  Você está prestes a excluir <b>{playlistDeleteModalState.name}</b>.
+                  <br />
+                  Todos os itens dentro dela também serão apagados.
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  <button type="button" style={baseButtonStyle} onClick={handleCancelRemovePlaylist}>
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }}
+                    onClick={handleConfirmRemovePlaylist}
+                  >
+                    Excluir playlist
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

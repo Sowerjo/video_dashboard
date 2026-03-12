@@ -1,0 +1,35 @@
+{
+  "NOVELAS::caminho das índias": {
+    "seriesKey": "NOVELAS::caminho das índias",
+    "seriesName": "Caminho das Índias",
+    "group": "NOVELAS",
+    "channelId": "44261",
+    "episodeName": "Caminho das Índias S01 E02",
+    "season": 1,
+    "episode": 2,
+    "kind": "series",
+    "updatedAt": "2026-03-12T20:30:34.400Z"
+  },
+  "NOVELAS::o sétimo guardião": {
+    "seriesKey": "NOVELAS::o sétimo guardião",
+    "seriesName": "O Sétimo Guardião",
+    "group": "NOVELAS",
+    "channelId": "32889",
+    "episodeName": "O Sétimo Guardião S01 E10",
+    "season": 1,
+    "episode": 10,
+    "kind": "series",
+    "updatedAt": "2026-03-12T20:34:01.779Z"
+  },
+  "NOVELAS::avenida brasil": {
+    "seriesKey": "NOVELAS::avenida brasil",
+    "seriesName": "Avenida Brasil",
+    "group": "NOVELAS",
+    "channelId": "36214",
+    "episodeName": "Avenida Brasil S01 E06",
+    "season": 1,
+    "episode": 6,
+    "kind": "series",
+    "updatedAt": "2026-03-12T21:08:59.973Z"
+  }
+}
