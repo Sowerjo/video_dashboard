@@ -44053,14 +44053,14 @@ function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread n
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
+function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
+function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == _typeof(i) ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != _typeof(i)) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
-function _regeneratorRuntime() { "use strict"; /*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */ _regeneratorRuntime = function _regeneratorRuntime() { return r; }; var t, r = {}, e = Object.prototype, n = e.hasOwnProperty, o = "function" == typeof Symbol ? Symbol : {}, i = o.iterator || "@@iterator", a = o.asyncIterator || "@@asyncIterator", u = o.toStringTag || "@@toStringTag"; function c(t, r, e, n) { return Object.defineProperty(t, r, { value: e, enumerable: !n, configurable: !n, writable: !n }); } try { c({}, ""); } catch (t) { c = function c(t, r, e) { return t[r] = e; }; } function h(r, e, n, o) { var i = e && e.prototype instanceof Generator ? e : Generator, a = Object.create(i.prototype); return c(a, "_invoke", function (r, e, n) { var o = 1; return function (i, a) { if (3 === o) throw Error("Generator is already running"); if (4 === o) { if ("throw" === i) throw a; return { value: t, done: !0 }; } for (n.method = i, n.arg = a;;) { var u = n.delegate; if (u) { var c = d(u, n); if (c) { if (c === f) continue; return c; } } if ("next" === n.method) n.sent = n._sent = n.arg;else if ("throw" === n.method) { if (1 === o) throw o = 4, n.arg; n.dispatchException(n.arg); } else "return" === n.method && n.abrupt("return", n.arg); o = 3; var h = s(r, e, n); if ("normal" === h.type) { if (o = n.done ? 4 : 2, h.arg === f) continue; return { value: h.arg, done: n.done }; } "throw" === h.type && (o = 4, n.method = "throw", n.arg = h.arg); } }; }(r, n, new Context(o || [])), !0), a; } function s(t, r, e) { try { return { type: "normal", arg: t.call(r, e) }; } catch (t) { return { type: "throw", arg: t }; } } r.wrap = h; var f = {}; function Generator() {} function GeneratorFunction() {} function GeneratorFunctionPrototype() {} var l = {}; c(l, i, function () { return this; }); var p = Object.getPrototypeOf, y = p && p(p(x([]))); y && y !== e && n.call(y, i) && (l = y); var v = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(l); function g(t) { ["next", "throw", "return"].forEach(function (r) { c(t, r, function (t) { return this._invoke(r, t); }); }); } function AsyncIterator(t, r) { function e(o, i, a, u) { var c = s(t[o], t, i); if ("throw" !== c.type) { var h = c.arg, f = h.value; return f && "object" == _typeof(f) && n.call(f, "__await") ? r.resolve(f.__await).then(function (t) { e("next", t, a, u); }, function (t) { e("throw", t, a, u); }) : r.resolve(f).then(function (t) { h.value = t, a(h); }, function (t) { return e("throw", t, a, u); }); } u(c.arg); } var o; c(this, "_invoke", function (t, n) { function i() { return new r(function (r, o) { e(t, n, r, o); }); } return o = o ? o.then(i, i) : i(); }, !0); } function d(r, e) { var n = e.method, o = r.i[n]; if (o === t) return e.delegate = null, "throw" === n && r.i["return"] && (e.method = "return", e.arg = t, d(r, e), "throw" === e.method) || "return" !== n && (e.method = "throw", e.arg = new TypeError("The iterator does not provide a '" + n + "' method")), f; var i = s(o, r.i, e.arg); if ("throw" === i.type) return e.method = "throw", e.arg = i.arg, e.delegate = null, f; var a = i.arg; return a ? a.done ? (e[r.r] = a.value, e.next = r.n, "return" !== e.method && (e.method = "next", e.arg = t), e.delegate = null, f) : a : (e.method = "throw", e.arg = new TypeError("iterator result is not an object"), e.delegate = null, f); } function w(t) { this.tryEntries.push(t); } function m(r) { var e = r[4] || {}; e.type = "normal", e.arg = t, r[4] = e; } function Context(t) { this.tryEntries = [[-1]], t.forEach(w, this), this.reset(!0); } function x(r) { if (null != r) { var e = r[i]; if (e) return e.call(r); if ("function" == typeof r.next) return r; if (!isNaN(r.length)) { var o = -1, a = function e() { for (; ++o < r.length;) if (n.call(r, o)) return e.value = r[o], e.done = !1, e; return e.value = t, e.done = !0, e; }; return a.next = a; } } throw new TypeError(_typeof(r) + " is not iterable"); } return GeneratorFunction.prototype = GeneratorFunctionPrototype, c(v, "constructor", GeneratorFunctionPrototype), c(GeneratorFunctionPrototype, "constructor", GeneratorFunction), GeneratorFunction.displayName = c(GeneratorFunctionPrototype, u, "GeneratorFunction"), r.isGeneratorFunction = function (t) { var r = "function" == typeof t && t.constructor; return !!r && (r === GeneratorFunction || "GeneratorFunction" === (r.displayName || r.name)); }, r.mark = function (t) { return Object.setPrototypeOf ? Object.setPrototypeOf(t, GeneratorFunctionPrototype) : (t.__proto__ = GeneratorFunctionPrototype, c(t, u, "GeneratorFunction")), t.prototype = Object.create(v), t; }, r.awrap = function (t) { return { __await: t }; }, g(AsyncIterator.prototype), c(AsyncIterator.prototype, a, function () { return this; }), r.AsyncIterator = AsyncIterator, r.async = function (t, e, n, o, i) { void 0 === i && (i = Promise); var a = new AsyncIterator(h(t, e, n, o), i); return r.isGeneratorFunction(e) ? a : a.next().then(function (t) { return t.done ? t.value : a.next(); }); }, g(v), c(v, u, "Generator"), c(v, i, function () { return this; }), c(v, "toString", function () { return "[object Generator]"; }), r.keys = function (t) { var r = Object(t), e = []; for (var n in r) e.unshift(n); return function t() { for (; e.length;) if ((n = e.pop()) in r) return t.value = n, t.done = !1, t; return t.done = !0, t; }; }, r.values = x, Context.prototype = { constructor: Context, reset: function reset(r) { if (this.prev = this.next = 0, this.sent = this._sent = t, this.done = !1, this.delegate = null, this.method = "next", this.arg = t, this.tryEntries.forEach(m), !r) for (var e in this) "t" === e.charAt(0) && n.call(this, e) && !isNaN(+e.slice(1)) && (this[e] = t); }, stop: function stop() { this.done = !0; var t = this.tryEntries[0][4]; if ("throw" === t.type) throw t.arg; return this.rval; }, dispatchException: function dispatchException(r) { if (this.done) throw r; var e = this; function n(t) { a.type = "throw", a.arg = r, e.next = t; } for (var o = e.tryEntries.length - 1; o >= 0; --o) { var i = this.tryEntries[o], a = i[4], u = this.prev, c = i[1], h = i[2]; if (-1 === i[0]) return n("end"), !1; if (!c && !h) throw Error("try statement without catch or finally"); if (null != i[0] && i[0] <= u) { if (u < c) return this.method = "next", this.arg = t, n(c), !0; if (u < h) return n(h), !1; } } }, abrupt: function abrupt(t, r) { for (var e = this.tryEntries.length - 1; e >= 0; --e) { var n = this.tryEntries[e]; if (n[0] > -1 && n[0] <= this.prev && this.prev < n[2]) { var o = n; break; } } o && ("break" === t || "continue" === t) && o[0] <= r && r <= o[2] && (o = null); var i = o ? o[4] : {}; return i.type = t, i.arg = r, o ? (this.method = "next", this.next = o[2], f) : this.complete(i); }, complete: function complete(t, r) { if ("throw" === t.type) throw t.arg; return "break" === t.type || "continue" === t.type ? this.next = t.arg : "return" === t.type ? (this.rval = this.arg = t.arg, this.method = "return", this.next = "end") : "normal" === t.type && r && (this.next = r), f; }, finish: function finish(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[2] === t) return this.complete(e[4], e[3]), m(e), f; } }, "catch": function _catch(t) { for (var r = this.tryEntries.length - 1; r >= 0; --r) { var e = this.tryEntries[r]; if (e[0] === t) { var n = e[4]; if ("throw" === n.type) { var o = n.arg; m(e); } return o; } } throw Error("illegal catch attempt"); }, delegateYield: function delegateYield(r, e, n) { return this.delegate = { i: x(r), r: e, n: n }, "next" === this.method && (this.arg = t), f; } }, r; }
-function asyncGeneratorStep(n, t, e, r, o, a, c) { try { var i = n[a](c), u = i.value; } catch (n) { return void e(n); } i.done ? t(u) : Promise.resolve(u).then(r, o); }
-function _asyncToGenerator(n) { return function () { var t = this, e = arguments; return new Promise(function (r, o) { var a = n.apply(t, e); function _next(n) { asyncGeneratorStep(a, r, o, _next, _throw, "next", n); } function _throw(n) { asyncGeneratorStep(a, r, o, _next, _throw, "throw", n); } _next(void 0); }); }; }
 function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
 function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
@@ -44147,7 +44147,7 @@ function isLikelyLiveStreamChannel(channel) {
   if (String(channel.kind || "").toLowerCase() === "live") return true;
   return isLikelyXtreamLiveUrlWithoutExtension(channel.url);
 }
-function buildPlayableSources(rawUrl) {
+function buildPlayableSources(rawUrl, altUrl) {
   var value = String(rawUrl || "").trim();
   if (!value) return [];
   var sources = [];
@@ -44159,17 +44159,28 @@ function buildPlayableSources(rawUrl) {
   if (/\.ts(\?|#|$)/i.test(value)) {
     pushUnique(value);
     pushUnique(appendExtensionToUrl(value.replace(/\.ts(\?|#|$)/i, "$1"), "m3u8"));
-    return sources;
-  }
-  if (isLikelyXtreamLiveUrlWithoutExtension(value)) {
+  } else if (isLikelyXtreamLiveUrlWithoutExtension(value)) {
     pushUnique(buildXtreamLiveUrl(value, "m3u8"));
     pushUnique(buildXtreamLiveUrl(value, "ts"));
     pushUnique(value);
     pushUnique(appendExtensionToUrl(value, "ts"));
     pushUnique(appendExtensionToUrl(value, "m3u8"));
-    return sources;
+  } else {
+    pushUnique(value);
   }
-  pushUnique(value);
+  var alt = String(altUrl || "").trim();
+  if (alt) {
+    if (/\.ts(\?|#|$)/i.test(alt)) {
+      pushUnique(alt);
+      pushUnique(appendExtensionToUrl(alt.replace(/\.ts(\?|#|$)/i, "$1"), "m3u8"));
+    } else if (isLikelyXtreamLiveUrlWithoutExtension(alt)) {
+      pushUnique(buildXtreamLiveUrl(alt, "m3u8"));
+      pushUnique(buildXtreamLiveUrl(alt, "ts"));
+      pushUnique(alt);
+    } else {
+      pushUnique(alt);
+    }
+  }
   return sources;
 }
 function mediaTypeFromUrl(url) {
@@ -44301,10 +44312,11 @@ function normalizePlayerVolume(value) {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
 }
 function arePlayerPropsEqual(prevProps, nextProps) {
-  return prevProps.src === nextProps.src && prevProps.type === nextProps.type && normalizePlayerVolume(prevProps.volume) === normalizePlayerVolume(nextProps.volume) && normalizePlayerVolume(prevProps.fallbackUserVolume, -1) === normalizePlayerVolume(nextProps.fallbackUserVolume, -1) && prevProps.userHasSetVolume === nextProps.userHasSetVolume;
+  return prevProps.src === nextProps.src && prevProps.altSrc === nextProps.altSrc && prevProps.type === nextProps.type && normalizePlayerVolume(prevProps.volume) === normalizePlayerVolume(nextProps.volume) && normalizePlayerVolume(prevProps.fallbackUserVolume, -1) === normalizePlayerVolume(nextProps.fallbackUserVolume, -1) && prevProps.userHasSetVolume === nextProps.userHasSetVolume;
 }
 var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().memo(function (_ref) {
   var src = _ref.src,
+    altSrc = _ref.altSrc,
     type = _ref.type,
     onBufferingChange = _ref.onBufferingChange,
     _onError = _ref.onError,
@@ -44317,12 +44329,33 @@ var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().m
     _ref$fallbackUserVolu = _ref.fallbackUserVolume,
     fallbackUserVolume = _ref$fallbackUserVolu === void 0 ? null : _ref$fallbackUserVolu;
   var playableSources = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
-    return buildPlayableSources(src);
-  }, [src]);
+    return buildPlayableSources(src, altSrc);
+  }, [src, altSrc]);
   var _useState = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
     _useState2 = _slicedToArray(_useState, 2),
     sourceIndex = _useState2[0],
     setSourceIndex = _useState2[1];
+  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("connecting"),
+    _useState4 = _slicedToArray(_useState3, 2),
+    loadingState = _useState4[0],
+    setLoadingState = _useState4[1]; // connecting, metadata, buffering, playing, error
+  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    _useState6 = _slicedToArray(_useState5, 2),
+    elapsedSeconds = _useState6[0],
+    setElapsedSeconds = _useState6[1];
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(true),
+    _useState8 = _slicedToArray(_useState7, 2),
+    isBuffering = _useState8[0],
+    setIsBuffering = _useState8[1];
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    _useState0 = _slicedToArray(_useState9, 2),
+    downloadSpeed = _useState0[0],
+    setDownloadSpeed = _useState0[1]; // bytes/s
+  var loadStartRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(Date.now());
+  var lastBufferedRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)({
+    time: 0,
+    bytes: 0
+  });
   var playerSource = playableSources[sourceIndex] || "";
   var isHlsSource = (0,react__WEBPACK_IMPORTED_MODULE_0__.useMemo)(function () {
     return /\.m3u8(\?|#|$)/i.test(playerSource || "");
@@ -44331,10 +44364,81 @@ var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().m
   var applyingVolumeRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(false);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     setSourceIndex(0);
+    setLoadingState("connecting");
+    setElapsedSeconds(0);
+    setIsBuffering(true);
+    setDownloadSpeed(0);
+    loadStartRef.current = Date.now();
+    lastBufferedRef.current = {
+      time: 0,
+      bytes: 0
+    };
   }, [src]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    setLoadingState("connecting");
+    setElapsedSeconds(0);
+    setDownloadSpeed(0);
+    loadStartRef.current = Date.now();
+    lastBufferedRef.current = {
+      time: 0,
+      bytes: 0
+    };
+  }, [sourceIndex]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    if (!isBuffering) return;
+    var interval = setInterval(function () {
+      setElapsedSeconds(Math.floor((Date.now() - loadStartRef.current) / 1000));
+
+      // Tentar pegar velocidade do HLS.js
+      try {
+        var _playerRef$current, _playerRef$current$ge;
+        var hls = (_playerRef$current = playerRef.current) === null || _playerRef$current === void 0 || (_playerRef$current$ge = _playerRef$current.getInternalPlayer) === null || _playerRef$current$ge === void 0 ? void 0 : _playerRef$current$ge.call(_playerRef$current, 'hls');
+        if (hls && hls.bandwidthEstimate) {
+          setDownloadSpeed(Math.round(hls.bandwidthEstimate / 8)); // bits/s -> bytes/s
+          return;
+        }
+      } catch (_unused3) {}
+
+      // Fallback: estimar via buffered do video element
+      try {
+        var _playerRef$current2, _playerRef$current2$g;
+        var video = (_playerRef$current2 = playerRef.current) === null || _playerRef$current2 === void 0 || (_playerRef$current2$g = _playerRef$current2.getInternalPlayer) === null || _playerRef$current2$g === void 0 ? void 0 : _playerRef$current2$g.call(_playerRef$current2);
+        if (video && video.buffered && video.buffered.length > 0) {
+          var bufferedEnd = video.buffered.end(video.buffered.length - 1);
+          var now = Date.now();
+          var prev = lastBufferedRef.current;
+          if (prev.time > 0 && bufferedEnd > prev.bytes) {
+            var deltaTime = (now - prev.time) / 1000;
+            var deltaBuffered = bufferedEnd - prev.bytes;
+            // Estimativa: ~500kbps por segundo de vídeo buffered (bitrate médio)
+            var estimatedBytesPerSec = deltaBuffered / deltaTime * 500000;
+            setDownloadSpeed(Math.round(estimatedBytesPerSec));
+          }
+          lastBufferedRef.current = {
+            time: now,
+            bytes: bufferedEnd
+          };
+        }
+      } catch (_unused4) {}
+    }, 1000);
+    return function () {
+      return clearInterval(interval);
+    };
+  }, [isBuffering]);
+  var getSourceLabel = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (source) {
+    try {
+      var _source$match;
+      var url = new URL(source);
+      var ext = ((_source$match = source.match(/\.(m3u8|ts|mp4|mkv)(\?|#|$)/i)) === null || _source$match === void 0 || (_source$match = _source$match[1]) === null || _source$match === void 0 ? void 0 : _source$match.toUpperCase()) || "STREAM";
+      var isAlt = altSrc && source.includes(new URL(altSrc).hostname);
+      return "".concat(ext).concat(isAlt ? " (alt)" : "", " \u2014 ").concat(url.hostname);
+    } catch (_unused5) {
+      return source.substring(0, 40);
+    }
+  }, [altSrc]);
   var getMediaElement = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function () {
-    var _playerRef$current, _playerRef$current$ge;
-    var internalPlayer = (_playerRef$current = playerRef.current) === null || _playerRef$current === void 0 || (_playerRef$current$ge = _playerRef$current.getInternalPlayer) === null || _playerRef$current$ge === void 0 ? void 0 : _playerRef$current$ge.call(_playerRef$current);
+    var _playerRef$current3, _playerRef$current3$g;
+    var internalPlayer = (_playerRef$current3 = playerRef.current) === null || _playerRef$current3 === void 0 || (_playerRef$current3$g = _playerRef$current3.getInternalPlayer) === null || _playerRef$current3$g === void 0 ? void 0 : _playerRef$current3$g.call(_playerRef$current3);
     if (!internalPlayer) return null;
     if (typeof internalPlayer.volume === "number") return internalPlayer;
     if (internalPlayer !== null && internalPlayer !== void 0 && internalPlayer.player && typeof internalPlayer.player.volume === "number") return internalPlayer.player;
@@ -44365,49 +44469,39 @@ var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().m
     return true;
   }, [fallbackUserVolume, getMediaElement, userHasSetVolume, volume]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    var _playerRef$current2, _playerRef$current2$p;
+    var _playerRef$current4, _playerRef$current4$p;
     if (!playerSource) return;
-    var p = (_playerRef$current2 = playerRef.current) === null || _playerRef$current2 === void 0 || (_playerRef$current2$p = _playerRef$current2.play) === null || _playerRef$current2$p === void 0 ? void 0 : _playerRef$current2$p.call(_playerRef$current2);
+    var p = (_playerRef$current4 = playerRef.current) === null || _playerRef$current4 === void 0 || (_playerRef$current4$p = _playerRef$current4.play) === null || _playerRef$current4$p === void 0 ? void 0 : _playerRef$current4$p.call(_playerRef$current4);
     if (p && typeof p["catch"] === "function") {
       p["catch"](function () {});
     }
+  }, [playerSource]);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    return function () {
+      try {
+        var _playerRef$current5, _playerRef$current5$g;
+        var hls = (_playerRef$current5 = playerRef.current) === null || _playerRef$current5 === void 0 || (_playerRef$current5$g = _playerRef$current5.getInternalPlayer) === null || _playerRef$current5$g === void 0 ? void 0 : _playerRef$current5$g.call(_playerRef$current5, 'hls');
+        if (hls && typeof hls.destroy === 'function') {
+          hls.destroy();
+        }
+      } catch (_unused6) {}
+    };
   }, [playerSource]);
 
   // Proteger volume quando o player for inicializado
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     if (!playerSource) return;
-
-    // Capturar valores das refs fora da função assíncrona
-    var userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
-    var volSetByUser = !!userHasSetVolume;
-    var protectVolume = function protectVolume() {
-      if (volSetByUser && userVol > 0.001) {
-        // Se o usuário já definiu um volume, garantir que seja usado
-        setTimeout(function () {
-          var mediaElement = getMediaElement();
-          if (mediaElement) {
-            if (mediaElement.volume <= 0.001) {
-              mediaElement.volume = userVol;
-              mediaElement.muted = false;
-            }
-          }
-        }, 200);
-      }
-    };
-    protectVolume();
-  }, [playerSource, getMediaElement, userHasSetVolume, fallbackUserVolume]);
+    syncVolumeToMediaElement();
+  }, [playerSource, syncVolumeToMediaElement]);
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     if (!playerSource) return;
     var cancelled = false;
     var timeoutId = null;
     var attempts = 0;
-
-    // Capturar valores das refs fora da função assíncrona
     var volSetByUser = !!userHasSetVolume;
     var userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
     var _scheduleSync = function scheduleSync() {
       if (cancelled) return;
-      // Proteger volume do usuário ao trocar de source
       if (volSetByUser && userVol > 0.001) {
         var mediaElement = getMediaElement();
         if (mediaElement && mediaElement.volume <= 0.001) {
@@ -44418,8 +44512,8 @@ var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().m
       }
       syncVolumeToMediaElement();
       attempts += 1;
-      if (attempts < 20) {
-        timeoutId = window.setTimeout(_scheduleSync, 120);
+      if (attempts < 5) {
+        timeoutId = window.setTimeout(_scheduleSync, 150);
       }
     };
     _scheduleSync();
@@ -44461,7 +44555,14 @@ var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().m
     }
   }, function () {
     var effectiveVolume = userHasSetVolume && typeof fallbackUserVolume === "number" ? fallbackUserVolume : volume;
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_player__WEBPACK_IMPORTED_MODULE_2__["default"], {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      style: {
+        width: "100%",
+        height: "100%",
+        opacity: isBuffering ? 0 : 1,
+        transition: "opacity 0.3s"
+      }
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_player__WEBPACK_IMPORTED_MODULE_2__["default"], {
       ref: playerRef,
       key: playerSource || "empty-player",
       src: playerSource,
@@ -44475,26 +44576,48 @@ var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().m
       },
       volume: effectiveVolume,
       muted: effectiveVolume <= 0.001,
+      onReady: function onReady() {
+        setLoadingState("metadata");
+        syncVolumeToMediaElement();
+      },
+      onStart: function onStart() {
+        setLoadingState("playing");
+        setIsBuffering(false);
+        syncVolumeToMediaElement();
+      },
       onPlaying: function onPlaying() {
+        setLoadingState("playing");
+        setIsBuffering(false);
         onBufferingChange && onBufferingChange(false);
         syncVolumeToMediaElement();
-        setTimeout(function () {
-          syncVolumeToMediaElement();
-        }, 50);
       },
       config: {
         file: {
           forceHLS: isHlsSource,
+          forceVideo: true,
+          hlsOptions: {
+            enableWorker: true,
+            lowLatencyMode: true,
+            liveSyncDurationCount: 3,
+            liveMaxLatencyDurationCount: 10,
+            xhrSetup: function xhrSetup(xhr) {
+              xhr.setRequestHeader('Accept', '*/*');
+            }
+          },
           attributes: {
             crossOrigin: "anonymous"
           }
         }
       },
       onCanPlay: function onCanPlay() {
-        return onBufferingChange && onBufferingChange(false);
+        setLoadingState("playing");
+        setIsBuffering(false);
+        onBufferingChange && onBufferingChange(false);
       },
       onWaiting: function onWaiting() {
-        return onBufferingChange && onBufferingChange(true);
+        setLoadingState("buffering");
+        setIsBuffering(true);
+        onBufferingChange && onBufferingChange(true);
       },
       onPause: function onPause() {
         return onBufferingChange && onBufferingChange(false);
@@ -44503,17 +44626,78 @@ var ReactUrlPlayer = /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().m
         return _onEnded && _onEnded();
       },
       onError: function onError(error) {
-        onBufferingChange && onBufferingChange(false);
         if (sourceIndex < playableSources.length - 1) {
           setSourceIndex(function (current) {
             return Math.min(current + 1, playableSources.length - 1);
           });
+          setLoadingState("connecting");
+          setIsBuffering(true);
+          onBufferingChange && onBufferingChange(true);
           return;
         }
+        setLoadingState("error");
+        setIsBuffering(false);
+        onBufferingChange && onBufferingChange(false);
         _onError && _onError(error);
       }
-    });
-  }(), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    }));
+  }(), isBuffering && playerSource && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "absolute",
+      inset: 0,
+      zIndex: 20,
+      background: "rgba(0,0,0,0.75)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 10,
+      pointerEvents: "none"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: 36,
+      height: 36,
+      border: "3px solid #ff000033",
+      borderTop: "3px solid #ff0000",
+      borderRadius: "50%",
+      animation: "spin 0.8s linear infinite"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: 600
+    }
+  }, loadingState === "connecting" && "Conectando ao servidor...", loadingState === "metadata" && "Recebendo metadados...", loadingState === "buffering" && "Buffering..."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      color: "#aaa",
+      fontSize: 11,
+      textAlign: "center",
+      maxWidth: 280
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", null, "Fonte ", sourceIndex + 1, " de ", playableSources.length, ": ", getSourceLabel(playerSource)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      marginTop: 4
+    }
+  }, elapsedSeconds, "s decorridos", downloadSpeed > 0 && " \u2022 ".concat(downloadSpeed >= 1048576 ? "".concat((downloadSpeed / 1048576).toFixed(1), " MB/s") : downloadSpeed >= 1024 ? "".concat(Math.round(downloadSpeed / 1024), " KB/s") : "".concat(downloadSpeed, " B/s")))), playableSources.length > 1 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      marginTop: 4,
+      width: 120,
+      height: 3,
+      background: "#333",
+      borderRadius: 2,
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      height: "100%",
+      background: "#ff0000",
+      borderRadius: 2,
+      width: "".concat((sourceIndex + 1) / playableSources.length * 100, "%"),
+      transition: "width 0.3s"
+    }
+  }))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     style: {
       position: "absolute",
       top: "-2px",
@@ -44531,20 +44715,20 @@ var CachedLogoImage = function CachedLogoImage(_ref2) {
     alt = _ref2.alt,
     style = _ref2.style;
   var imageRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
-  var _useState3 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState4 = _slicedToArray(_useState3, 2),
-    shouldLoad = _useState4[0],
-    setShouldLoad = _useState4[1];
-  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
+  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState10 = _slicedToArray(_useState1, 2),
+    shouldLoad = _useState10[0],
+    setShouldLoad = _useState10[1];
+  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
       var source = String(src || "").trim();
       if (!source) return "";
       if (!/^https?:\/\//i.test(source)) return source;
       var existing = cachedLogoByUrl.get(source);
       return existing || TRANSPARENT_PIXEL;
     }),
-    _useState6 = _slicedToArray(_useState5, 2),
-    resolvedSrc = _useState6[0],
-    setResolvedSrc = _useState6[1];
+    _useState12 = _slicedToArray(_useState11, 2),
+    resolvedSrc = _useState12[0],
+    setResolvedSrc = _useState12[1];
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var source = String(src || "").trim();
     if (!source) {
@@ -44634,252 +44818,373 @@ var CachedLogoImage = function CachedLogoImage(_ref2) {
     loading: "lazy"
   });
 };
-function IptvModule(_ref3) {
+var FadeTransition = function FadeTransition(_ref3) {
+  var transitionKey = _ref3.transitionKey,
+    _ref3$duration = _ref3.duration,
+    duration = _ref3$duration === void 0 ? 250 : _ref3$duration,
+    children = _ref3.children,
+    extraStyle = _ref3.style;
+  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    _useState14 = _slicedToArray(_useState13, 2),
+    opacity = _useState14[0],
+    setOpacity = _useState14[1];
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    setOpacity(0);
+    var frame = requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        return setOpacity(1);
+      });
+    });
+    return function () {
+      return cancelAnimationFrame(frame);
+    };
+  }, [transitionKey]);
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: _objectSpread({
+      opacity: opacity,
+      transition: "opacity ".concat(duration, "ms ease"),
+      minHeight: 0
+    }, extraStyle)
+  }, children);
+};
+var HorizontalRow = function HorizontalRow(_ref4) {
+  var children = _ref4.children;
+  var scrollRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
+  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState16 = _slicedToArray(_useState15, 2),
+    showLeft = _useState16[0],
+    setShowLeft = _useState16[1];
+  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState18 = _slicedToArray(_useState17, 2),
+    showRight = _useState18[0],
+    setShowRight = _useState18[1];
+  var updateArrows = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function () {
+    var el = scrollRef.current;
+    if (!el) return;
+    setShowLeft(el.scrollLeft > 20);
+    setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 20);
+  }, []);
+  (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
+    updateArrows();
+    var el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateArrows, {
+      passive: true
+    });
+    var ro = new ResizeObserver(updateArrows);
+    ro.observe(el);
+    return function () {
+      el.removeEventListener("scroll", updateArrows);
+      ro.disconnect();
+    };
+  }, [updateArrows, children]);
+  var scroll = function scroll(direction) {
+    var el = scrollRef.current;
+    if (!el) return;
+    var amount = el.clientWidth * 0.75;
+    el.scrollBy({
+      left: direction === "right" ? amount : -amount,
+      behavior: "smooth"
+    });
+  };
+  var arrowStyle = {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 44,
+    display: "grid",
+    placeItems: "center",
+    cursor: "pointer",
+    zIndex: 10,
+    border: "none",
+    color: "#fff",
+    fontSize: 20,
+    opacity: 0.8,
+    transition: "opacity 0.2s"
+  };
+  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "relative"
+    }
+  }, showLeft && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    onClick: function onClick() {
+      return scroll("left");
+    },
+    "aria-label": "Rolar para esquerda",
+    style: _objectSpread(_objectSpread({}, arrowStyle), {}, {
+      left: 0,
+      background: "linear-gradient(to right, rgba(0,0,0,0.85) 60%, transparent)"
+    })
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaChevronLeft, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    ref: scrollRef,
+    className: "hide-scrollbar",
+    style: {
+      display: "flex",
+      gap: 12,
+      overflowX: "auto",
+      scrollbarWidth: "none",
+      msOverflowStyle: "none",
+      paddingBottom: 4
+    }
+  }, children), showRight && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
+    type: "button",
+    onClick: function onClick() {
+      return scroll("right");
+    },
+    "aria-label": "Rolar para direita",
+    style: _objectSpread(_objectSpread({}, arrowStyle), {}, {
+      right: 0,
+      background: "linear-gradient(to left, rgba(0,0,0,0.85) 60%, transparent)"
+    })
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaChevronRight, null)));
+};
+function IptvModule(_ref5) {
   var _contextMenuState$ite;
-  var onBack = _ref3.onBack;
-  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+  var onBack = _ref5.onBack;
+  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
       url: ""
     }),
-    _useState8 = _slicedToArray(_useState7, 2),
-    form = _useState8[0],
-    setForm = _useState8[1];
-  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
-    _useState0 = _slicedToArray(_useState9, 2),
-    session = _useState0[0],
-    setSession = _useState0[1];
-  var _useState1 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("Informe a URL da lista M3U."),
-    _useState10 = _slicedToArray(_useState1, 2),
-    status = _useState10[0],
-    setStatus = _useState10[1];
-  var _useState11 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState12 = _slicedToArray(_useState11, 2),
-    loadingLogin = _useState12[0],
-    setLoadingLogin = _useState12[1];
-  var _useState13 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState14 = _slicedToArray(_useState13, 2),
-    loadingChannels = _useState14[0],
-    setLoadingChannels = _useState14[1];
+    _useState20 = _slicedToArray(_useState19, 2),
+    form = _useState20[0],
+    setForm = _useState20[1];
+  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState22 = _slicedToArray(_useState21, 2),
+    session = _useState22[0],
+    setSession = _useState22[1];
+  var _useState23 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("Informe a URL da lista M3U."),
+    _useState24 = _slicedToArray(_useState23, 2),
+    status = _useState24[0],
+    setStatus = _useState24[1];
+  var _useState25 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState26 = _slicedToArray(_useState25, 2),
+    loadingLogin = _useState26[0],
+    setLoadingLogin = _useState26[1];
+  var _useState27 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState28 = _slicedToArray(_useState27, 2),
+    loadingChannels = _useState28[0],
+    setLoadingChannels = _useState28[1];
 
   // 'home', 'live', 'movies', 'series', 'playlists'
-  var _useState15 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("home"),
-    _useState16 = _slicedToArray(_useState15, 2),
-    activeNav = _useState16[0],
-    setActiveNav = _useState16[1];
+  var _useState29 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("home"),
+    _useState30 = _slicedToArray(_useState29, 2),
+    activeNav = _useState30[0],
+    setActiveNav = _useState30[1];
 
   // Used for data fetching
   var kind = "all";
-  var _useState17 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
-    _useState18 = _slicedToArray(_useState17, 2),
-    search = _useState18[0],
-    setSearch = _useState18[1];
-  var _useState19 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
-    _useState20 = _slicedToArray(_useState19, 2),
-    group = _useState20[0],
-    setGroup = _useState20[1];
-  var _useState21 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
-    _useState22 = _slicedToArray(_useState21, 2),
-    channels = _useState22[0],
-    setChannels = _useState22[1];
-  var _useState23 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
-    _useState24 = _slicedToArray(_useState23, 2),
-    groups = _useState24[0],
-    setGroups = _useState24[1];
-  var _useState25 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
-    _useState26 = _slicedToArray(_useState25, 2),
-    selected = _useState26[0],
-    setSelected = _useState26[1];
-  var _useState27 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState28 = _slicedToArray(_useState27, 2),
-    showPlayer = _useState28[0],
-    setShowPlayer = _useState28[1];
-  var _useState29 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState30 = _slicedToArray(_useState29, 2),
-    buffering = _useState30[0],
-    setBuffering = _useState30[1];
-
-  // For Series Navigation
-  var _useState31 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("categories"),
+  var _useState31 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState32 = _slicedToArray(_useState31, 2),
-    viewState = _useState32[0],
-    setViewState = _useState32[1]; // categories, series_list, seasons, episodes
-  var _useState33 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    search = _useState32[0],
+    setSearch = _useState32[1];
+  var _useState33 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState34 = _slicedToArray(_useState33, 2),
-    selectedCategory = _useState34[0],
-    setSelectedCategory = _useState34[1];
-  var _useState35 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    group = _useState34[0],
+    setGroup = _useState34[1];
+  var _useState35 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState36 = _slicedToArray(_useState35, 2),
-    selectedSeries = _useState36[0],
-    setSelectedSeries = _useState36[1];
-  var _useState37 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    channels = _useState36[0],
+    setChannels = _useState36[1];
+  var _useState37 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState38 = _slicedToArray(_useState37, 2),
-    selectedSeason = _useState38[0],
-    setSelectedSeason = _useState38[1];
+    groups = _useState38[0],
+    setGroups = _useState38[1];
   var _useState39 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState40 = _slicedToArray(_useState39, 2),
-    hoveredCardId = _useState40[0],
-    setHoveredCardId = _useState40[1];
-  var _useState41 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    selected = _useState40[0],
+    setSelected = _useState40[1];
+  var _useState41 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState42 = _slicedToArray(_useState41, 2),
-    focusedCardId = _useState42[0],
-    setFocusedCardId = _useState42[1];
+    showPlayer = _useState42[0],
+    setShowPlayer = _useState42[1];
   var _useState43 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState44 = _slicedToArray(_useState43, 2),
-    headerSolid = _useState44[0],
-    setHeaderSolid = _useState44[1];
-  var _useState45 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    buffering = _useState44[0],
+    setBuffering = _useState44[1];
+
+  // For Series Navigation
+  var _useState45 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("categories"),
     _useState46 = _slicedToArray(_useState45, 2),
-    menuOpen = _useState46[0],
-    setMenuOpen = _useState46[1];
-  var _useState47 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    viewState = _useState46[0],
+    setViewState = _useState46[1]; // categories, series_list, seasons, episodes
+  var _useState47 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState48 = _slicedToArray(_useState47, 2),
-    isFullscreen = _useState48[0],
-    setIsFullscreen = _useState48[1];
+    selectedCategory = _useState48[0],
+    setSelectedCategory = _useState48[1];
   var _useState49 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState50 = _slicedToArray(_useState49, 2),
-    infoChannel = _useState50[0],
-    setInfoChannel = _useState50[1];
-  var _useState51 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    selectedSeries = _useState50[0],
+    setSelectedSeries = _useState50[1];
+  var _useState51 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState52 = _slicedToArray(_useState51, 2),
-    userInteracting = _useState52[0],
-    setUserInteracting = _useState52[1];
-  var _useState53 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    selectedSeason = _useState52[0],
+    setSelectedSeason = _useState52[1];
+  var _useState53 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState54 = _slicedToArray(_useState53, 2),
-    newM3uModalOpen = _useState54[0],
-    setNewM3uModalOpen = _useState54[1];
-  var _useState55 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    hoveredCardId = _useState54[0],
+    setHoveredCardId = _useState54[1];
+  var _useState55 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState56 = _slicedToArray(_useState55, 2),
-    newM3uUrlInput = _useState56[0],
-    setNewM3uUrlInput = _useState56[1];
-  var _useState57 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    focusedCardId = _useState56[0],
+    setFocusedCardId = _useState56[1];
+  var _useState57 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState58 = _slicedToArray(_useState57, 2),
-    newM3uProgress = _useState58[0],
-    setNewM3uProgress = _useState58[1];
-  var _useState59 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    headerSolid = _useState58[0],
+    setHeaderSolid = _useState58[1];
+  var _useState59 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState60 = _slicedToArray(_useState59, 2),
-    newM3uStage = _useState60[0],
-    setNewM3uStage = _useState60[1];
-  var _useState61 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    menuOpen = _useState60[0],
+    setMenuOpen = _useState60[1];
+  var _useState61 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState62 = _slicedToArray(_useState61, 2),
-    newM3uError = _useState62[0],
-    setNewM3uError = _useState62[1];
-  var _useState63 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    isFullscreen = _useState62[0],
+    setIsFullscreen = _useState62[1];
+  var _useState63 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
     _useState64 = _slicedToArray(_useState63, 2),
-    newM3uDone = _useState64[0],
-    setNewM3uDone = _useState64[1];
+    infoChannel = _useState64[0],
+    setInfoChannel = _useState64[1];
   var _useState65 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState66 = _slicedToArray(_useState65, 2),
-    createPlaylistModalOpen = _useState66[0],
-    setCreatePlaylistModalOpen = _useState66[1];
-  var _useState67 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    userInteracting = _useState66[0],
+    setUserInteracting = _useState66[1];
+  var _useState67 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState68 = _slicedToArray(_useState67, 2),
-    createPlaylistNameInput = _useState68[0],
-    setCreatePlaylistNameInput = _useState68[1];
-  var _useState69 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    newM3uModalOpen = _useState68[0],
+    setNewM3uModalOpen = _useState68[1];
+  var _useState69 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState70 = _slicedToArray(_useState69, 2),
-    contentLoadProgress = _useState70[0],
-    setContentLoadProgress = _useState70[1];
-  var _useState71 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    newM3uUrlInput = _useState70[0],
+    setNewM3uUrlInput = _useState70[1];
+  var _useState71 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
     _useState72 = _slicedToArray(_useState71, 2),
-    contentLoadStage = _useState72[0],
-    setContentLoadStage = _useState72[1];
-  var _useState73 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+    newM3uProgress = _useState72[0],
+    setNewM3uProgress = _useState72[1];
+  var _useState73 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState74 = _slicedToArray(_useState73, 2),
+    newM3uStage = _useState74[0],
+    setNewM3uStage = _useState74[1];
+  var _useState75 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState76 = _slicedToArray(_useState75, 2),
+    newM3uError = _useState76[0],
+    setNewM3uError = _useState76[1];
+  var _useState77 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState78 = _slicedToArray(_useState77, 2),
+    newM3uDone = _useState78[0],
+    setNewM3uDone = _useState78[1];
+  var _useState79 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState80 = _slicedToArray(_useState79, 2),
+    createPlaylistModalOpen = _useState80[0],
+    setCreatePlaylistModalOpen = _useState80[1];
+  var _useState81 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState82 = _slicedToArray(_useState81, 2),
+    createPlaylistNameInput = _useState82[0],
+    setCreatePlaylistNameInput = _useState82[1];
+  var _useState83 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    _useState84 = _slicedToArray(_useState83, 2),
+    contentLoadProgress = _useState84[0],
+    setContentLoadProgress = _useState84[1];
+  var _useState85 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState86 = _slicedToArray(_useState85, 2),
+    contentLoadStage = _useState86[0],
+    setContentLoadStage = _useState86[1];
+  var _useState87 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
       receivedBytes: 0,
       totalBytes: 0,
       speedBps: 0
     }),
-    _useState74 = _slicedToArray(_useState73, 2),
-    downloadMetrics = _useState74[0],
-    setDownloadMetrics = _useState74[1];
-  var _useState75 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState76 = _slicedToArray(_useState75, 2),
-    tmdbModalOpen = _useState76[0],
-    setTmdbModalOpen = _useState76[1];
-  var _useState77 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
-    _useState78 = _slicedToArray(_useState77, 2),
-    tmdbApiKeyInput = _useState78[0],
-    setTmdbApiKeyInput = _useState78[1];
-  var _useState79 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState80 = _slicedToArray(_useState79, 2),
-    savingTmdbApiKey = _useState80[0],
-    setSavingTmdbApiKey = _useState80[1];
-  var _useState81 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
-    _useState82 = _slicedToArray(_useState81, 2),
-    favoriteIds = _useState82[0],
-    setFavoriteIds = _useState82[1];
-  var _useState83 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
-    _useState84 = _slicedToArray(_useState83, 2),
-    likedIds = _useState84[0],
-    setLikedIds = _useState84[1];
-  var _useState85 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
-    _useState86 = _slicedToArray(_useState85, 2),
-    recentlyPlayedIds = _useState86[0],
-    setRecentlyPlayedIds = _useState86[1];
-  var _useState87 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState88 = _slicedToArray(_useState87, 2),
-    customPlaylists = _useState88[0],
-    setCustomPlaylists = _useState88[1];
+    downloadMetrics = _useState88[0],
+    setDownloadMetrics = _useState88[1];
   var _useState89 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState90 = _slicedToArray(_useState89, 2),
-    hasLoadedCustomPlaylists = _useState90[0],
-    setHasLoadedCustomPlaylists = _useState90[1];
-  var _useState91 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    tmdbModalOpen = _useState90[0],
+    setTmdbModalOpen = _useState90[1];
+  var _useState91 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
     _useState92 = _slicedToArray(_useState91, 2),
-    pinnedPlaylistIds = _useState92[0],
-    setPinnedPlaylistIds = _useState92[1];
-  var _useState93 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    tmdbApiKeyInput = _useState92[0],
+    setTmdbApiKeyInput = _useState92[1];
+  var _useState93 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState94 = _slicedToArray(_useState93, 2),
-    playlistDeleteModalState = _useState94[0],
-    setPlaylistDeleteModalState = _useState94[1];
-  var _useState95 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
+    savingTmdbApiKey = _useState94[0],
+    setSavingTmdbApiKey = _useState94[1];
+  var _useState95 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState96 = _slicedToArray(_useState95, 2),
-    lastEpisodesBySeries = _useState96[0],
-    setLastEpisodesBySeries = _useState96[1];
-  var _useState97 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("inicio"),
+    favoriteIds = _useState96[0],
+    setFavoriteIds = _useState96[1];
+  var _useState97 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState98 = _slicedToArray(_useState97, 2),
-    homeTab = _useState98[0],
-    setHomeTab = _useState98[1];
-  var _useState99 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    likedIds = _useState98[0],
+    setLikedIds = _useState98[1];
+  var _useState99 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState100 = _slicedToArray(_useState99, 2),
-    contextMenuState = _useState100[0],
-    setContextMenuState = _useState100[1];
-  var _useState101 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    recentlyPlayedIds = _useState100[0],
+    setRecentlyPlayedIds = _useState100[1];
+  var _useState101 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
     _useState102 = _slicedToArray(_useState101, 2),
-    adultMoviesUnlocked = _useState102[0],
-    setAdultMoviesUnlocked = _useState102[1];
-  var _useState103 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    customPlaylists = _useState102[0],
+    setCustomPlaylists = _useState102[1];
+  var _useState103 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
     _useState104 = _slicedToArray(_useState103, 2),
-    selectedSynopsis = _useState104[0],
-    setSelectedSynopsis = _useState104[1];
-  var _useState105 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
+    hasLoadedCustomPlaylists = _useState104[0],
+    setHasLoadedCustomPlaylists = _useState104[1];
+  var _useState105 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)([]),
+    _useState106 = _slicedToArray(_useState105, 2),
+    pinnedPlaylistIds = _useState106[0],
+    setPinnedPlaylistIds = _useState106[1];
+  var _useState107 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState108 = _slicedToArray(_useState107, 2),
+    playlistDeleteModalState = _useState108[0],
+    setPlaylistDeleteModalState = _useState108[1];
+  var _useState109 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({}),
+    _useState110 = _slicedToArray(_useState109, 2),
+    lastEpisodesBySeries = _useState110[0],
+    setLastEpisodesBySeries = _useState110[1];
+  var _useState111 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("inicio"),
+    _useState112 = _slicedToArray(_useState111, 2),
+    homeTab = _useState112[0],
+    setHomeTab = _useState112[1];
+  var _useState113 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState114 = _slicedToArray(_useState113, 2),
+    contextMenuState = _useState114[0],
+    setContextMenuState = _useState114[1];
+  var _useState115 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState116 = _slicedToArray(_useState115, 2),
+    adultMoviesUnlocked = _useState116[0],
+    setAdultMoviesUnlocked = _useState116[1];
+  var _useState117 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState118 = _slicedToArray(_useState117, 2),
+    selectedSynopsis = _useState118[0],
+    setSelectedSynopsis = _useState118[1];
+  var _useState119 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)({
       year: "",
       rating: null,
       posterUrl: ""
     }),
-    _useState106 = _slicedToArray(_useState105, 2),
-    selectedSynopsisMeta = _useState106[0],
-    setSelectedSynopsisMeta = _useState106[1];
-  var _useState107 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
-    _useState108 = _slicedToArray(_useState107, 2),
-    synopsisHint = _useState108[0],
-    setSynopsisHint = _useState108[1];
-  var _useState109 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
-    _useState110 = _slicedToArray(_useState109, 2),
-    loadingSynopsis = _useState110[0],
-    setLoadingSynopsis = _useState110[1];
-  var _useState111 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
-    _useState112 = _slicedToArray(_useState111, 2),
-    synopsisRefreshTick = _useState112[0],
-    setSynopsisRefreshTick = _useState112[1];
-  var _useState113 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
+    _useState120 = _slicedToArray(_useState119, 2),
+    selectedSynopsisMeta = _useState120[0],
+    setSelectedSynopsisMeta = _useState120[1];
+  var _useState121 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(""),
+    _useState122 = _slicedToArray(_useState121, 2),
+    synopsisHint = _useState122[0],
+    setSynopsisHint = _useState122[1];
+  var _useState123 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState124 = _slicedToArray(_useState123, 2),
+    loadingSynopsis = _useState124[0],
+    setLoadingSynopsis = _useState124[1];
+  var _useState125 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(0),
+    _useState126 = _slicedToArray(_useState125, 2),
+    synopsisRefreshTick = _useState126[0],
+    setSynopsisRefreshTick = _useState126[1];
+  var _useState127 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(function () {
       var parsed = Number(sessionStorage.getItem(PLAYER_VOLUME_STORAGE_KEY));
       if (!Number.isFinite(parsed)) return 0.8;
       var volume = Math.max(0, Math.min(1, parsed));
       // Garantir que não comece mutado (volume muito baixo)
       return volume < 0.1 ? 0.8 : volume;
     }),
-    _useState114 = _slicedToArray(_useState113, 2),
-    playerVolume = _useState114[0],
-    setPlayerVolume = _useState114[1];
+    _useState128 = _slicedToArray(_useState127, 2),
+    playerVolume = _useState128[0],
+    setPlayerVolume = _useState128[1];
   var rowRefs = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)({});
   var contentRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
   var menuRef = (0,react__WEBPACK_IMPORTED_MODULE_0__.useRef)(null);
@@ -44917,7 +45222,7 @@ function IptvModule(_ref3) {
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var cancelled = false;
     var syncFullscreenState = /*#__PURE__*/function () {
-      var _ref4 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+      var _ref6 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
         var response;
         return _regeneratorRuntime().wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
@@ -44948,7 +45253,7 @@ function IptvModule(_ref3) {
         }, _callee, null, [[0, 9]]);
       }));
       return function syncFullscreenState() {
-        return _ref4.apply(this, arguments);
+        return _ref6.apply(this, arguments);
       };
     }();
     syncFullscreenState();
@@ -44969,7 +45274,7 @@ function IptvModule(_ref3) {
     });
     var cancelled = false;
     var bootstrapFromLocalCache = /*#__PURE__*/function () {
-      var _ref5 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+      var _ref7 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
         var savedUrl, result;
         return _regeneratorRuntime().wrap(function _callee2$(_context2) {
           while (1) switch (_context2.prev = _context2.next) {
@@ -45015,7 +45320,7 @@ function IptvModule(_ref3) {
         }, _callee2, null, [[3, 13]]);
       }));
       return function bootstrapFromLocalCache() {
-        return _ref5.apply(this, arguments);
+        return _ref7.apply(this, arguments);
       };
     }();
     bootstrapFromLocalCache();
@@ -45030,7 +45335,7 @@ function IptvModule(_ref3) {
       setLikedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_likes") || "[]")));
       setRecentlyPlayedIds(normalizeStorageIds(JSON.parse(localStorage.getItem("iptv_recent") || "[]")));
       setPinnedPlaylistIds(normalizeStorageIds(JSON.parse(localStorage.getItem(HOME_PINNED_PLAYLISTS_STORAGE_KEY) || "[]")));
-    } catch (_unused5) {
+    } catch (_unused9) {
       setFavoriteIds([]);
       setLikedIds([]);
       setRecentlyPlayedIds([]);
@@ -45043,7 +45348,7 @@ function IptvModule(_ref3) {
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     var cancelled = false;
     var loadPersistentIptvState = /*#__PURE__*/function () {
-      var _ref6 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+      var _ref8 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
         var _yield$Promise$all, _yield$Promise$all2, playlistsResponse, lastEpisodesResponse;
         return _regeneratorRuntime().wrap(function _callee3$(_context3) {
           while (1) switch (_context3.prev = _context3.next) {
@@ -45081,7 +45386,7 @@ function IptvModule(_ref3) {
         }, _callee3, null, [[0, 13]]);
       }));
       return function loadPersistentIptvState() {
-        return _ref6.apply(this, arguments);
+        return _ref8.apply(this, arguments);
       };
     }();
     loadPersistentIptvState();
@@ -45137,8 +45442,8 @@ function IptvModule(_ref3) {
       }, 100);
     }
   }, [playerVolume]);
-  var handlePlayerVolumeStateChange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (_ref7) {
-    var volume = _ref7.volume;
+  var handlePlayerVolumeStateChange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (_ref9) {
+    var volume = _ref9.volume;
     var nextVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8;
     if (nextVolume > 0.001) {
       volumeSetByUserRef.current = true;
@@ -45387,10 +45692,10 @@ function IptvModule(_ref3) {
     var orderedCategories = _toConsumableArray(byCategory.entries()).sort(function (a, b) {
       return b[1].length - a[1].length;
     }).slice(0, 10);
-    orderedCategories.forEach(function (_ref8, idx) {
-      var _ref9 = _slicedToArray(_ref8, 2),
-        category = _ref9[0],
-        items = _ref9[1];
+    orderedCategories.forEach(function (_ref0, idx) {
+      var _ref1 = _slicedToArray(_ref0, 2),
+        category = _ref1[0],
+        items = _ref1[1];
       list.push({
         key: "cat-".concat(idx, "-").concat(category),
         title: category,
@@ -45546,7 +45851,7 @@ function IptvModule(_ref3) {
     }
   }, [activeNav, viewState, seriesData, selectedCategory]);
   var loadChannels = /*#__PURE__*/function () {
-    var _ref0 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+    var _ref10 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
       var force,
         sourceOverride,
         onProgress,
@@ -45668,7 +45973,7 @@ function IptvModule(_ref3) {
       }, _callee4);
     }));
     return function loadChannels() {
-      return _ref0.apply(this, arguments);
+      return _ref10.apply(this, arguments);
     };
   }();
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
@@ -45686,9 +45991,9 @@ function IptvModule(_ref3) {
     });
     setContentLoadProgress(8);
     setContentLoadStage(fromLocalCache ? "Processando Conteúdo..." : "Carregando conteúdo...");
-    loadChannels(false, null, function (_ref1) {
-      var stage = _ref1.stage,
-        percent = _ref1.percent;
+    loadChannels(false, null, function (_ref11) {
+      var stage = _ref11.stage,
+        percent = _ref11.percent;
       if (Number.isFinite(percent)) {
         setContentLoadProgress(percent);
       }
@@ -45709,7 +46014,7 @@ function IptvModule(_ref3) {
     });
   }, [session]);
   var handleLogin = /*#__PURE__*/function () {
-    var _ref10 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(event) {
+    var _ref12 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee5(event) {
       var normalizedUrl, response, nextSession, rawMessage, friendly;
       return _regeneratorRuntime().wrap(function _callee5$(_context5) {
         while (1) switch (_context5.prev = _context5.next) {
@@ -45758,9 +46063,9 @@ function IptvModule(_ref3) {
               userInfo: response.userInfo
             };
             _context5.next = 26;
-            return loadChannels(true, normalizedUrl, function (_ref11) {
-              var stage = _ref11.stage,
-                percent = _ref11.percent;
+            return loadChannels(true, normalizedUrl, function (_ref13) {
+              var stage = _ref13.stage,
+                percent = _ref13.percent;
               if (stage) setNewM3uStage(stage);
               if (Number.isFinite(percent)) setNewM3uProgress(percent);
             }, {
@@ -45808,7 +46113,7 @@ function IptvModule(_ref3) {
       }, _callee5, null, [[13, 36, 44, 48]]);
     }));
     return function handleLogin(_x) {
-      return _ref10.apply(this, arguments);
+      return _ref12.apply(this, arguments);
     };
   }();
   var handleLogout = function handleLogout() {
@@ -45822,7 +46127,7 @@ function IptvModule(_ref3) {
     setShowPlayer(false);
   };
   var handleClearCache = /*#__PURE__*/function () {
-    var _ref12 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
+    var _ref14 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee6() {
       var response;
       return _regeneratorRuntime().wrap(function _callee6$(_context6) {
         while (1) switch (_context6.prev = _context6.next) {
@@ -45848,11 +46153,11 @@ function IptvModule(_ref3) {
       }, _callee6);
     }));
     return function handleClearCache() {
-      return _ref12.apply(this, arguments);
+      return _ref14.apply(this, arguments);
     };
   }();
   var handleToggleFullscreen = /*#__PURE__*/function () {
-    var _ref13 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
+    var _ref15 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee7() {
       var target, response;
       return _regeneratorRuntime().wrap(function _callee7$(_context7) {
         while (1) switch (_context7.prev = _context7.next) {
@@ -45881,11 +46186,11 @@ function IptvModule(_ref3) {
       }, _callee7);
     }));
     return function handleToggleFullscreen() {
-      return _ref13.apply(this, arguments);
+      return _ref15.apply(this, arguments);
     };
   }();
   var handleSetNewM3uUrl = /*#__PURE__*/function () {
-    var _ref14 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
+    var _ref16 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee8() {
       var currentUrl;
       return _regeneratorRuntime().wrap(function _callee8$(_context8) {
         while (1) switch (_context8.prev = _context8.next) {
@@ -45910,11 +46215,11 @@ function IptvModule(_ref3) {
       }, _callee8);
     }));
     return function handleSetNewM3uUrl() {
-      return _ref14.apply(this, arguments);
+      return _ref16.apply(this, arguments);
     };
   }();
   var handleConfigureTmdbKey = /*#__PURE__*/function () {
-    var _ref15 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
+    var _ref17 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee9() {
       return _regeneratorRuntime().wrap(function _callee9$(_context9) {
         while (1) switch (_context9.prev = _context9.next) {
           case 0:
@@ -45928,11 +46233,11 @@ function IptvModule(_ref3) {
       }, _callee9);
     }));
     return function handleConfigureTmdbKey() {
-      return _ref15.apply(this, arguments);
+      return _ref17.apply(this, arguments);
     };
   }();
   var handleConfirmTmdbKey = /*#__PURE__*/function () {
-    var _ref16 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee0() {
+    var _ref18 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee0() {
       var apiKey, saveResponse, detail;
       return _regeneratorRuntime().wrap(function _callee0$(_context0) {
         while (1) switch (_context0.prev = _context0.next) {
@@ -45991,11 +46296,11 @@ function IptvModule(_ref3) {
       }, _callee0, null, [[5, 18, 25, 28]]);
     }));
     return function handleConfirmTmdbKey() {
-      return _ref16.apply(this, arguments);
+      return _ref18.apply(this, arguments);
     };
   }();
   var handleConfirmNewM3uUrl = /*#__PURE__*/function () {
-    var _ref17 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee1() {
+    var _ref19 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee1() {
       var normalizedUrl, deleteResponse, response, nextSession, rawMessage, friendly;
       return _regeneratorRuntime().wrap(function _callee1$(_context1) {
         while (1) switch (_context1.prev = _context1.next) {
@@ -46053,9 +46358,9 @@ function IptvModule(_ref3) {
               userInfo: response.userInfo
             };
             _context1.next = 30;
-            return loadChannels(true, normalizedUrl, function (_ref18) {
-              var stage = _ref18.stage,
-                percent = _ref18.percent;
+            return loadChannels(true, normalizedUrl, function (_ref20) {
+              var stage = _ref20.stage,
+                percent = _ref20.percent;
               if (stage) setNewM3uStage(stage);
               if (Number.isFinite(percent)) setNewM3uProgress(percent);
             }, {
@@ -46104,11 +46409,11 @@ function IptvModule(_ref3) {
       }, _callee1, null, [[12, 41, 49, 53]]);
     }));
     return function handleConfirmNewM3uUrl() {
-      return _ref17.apply(this, arguments);
+      return _ref19.apply(this, arguments);
     };
   }();
   var handleRefresh = /*#__PURE__*/function () {
-    var _ref19 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
+    var _ref21 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
       return _regeneratorRuntime().wrap(function _callee10$(_context10) {
         while (1) switch (_context10.prev = _context10.next) {
           case 0:
@@ -46128,9 +46433,9 @@ function IptvModule(_ref3) {
             setContentLoadStage("Reprocessando playlist...");
             _context10.prev = 6;
             _context10.next = 9;
-            return loadChannels(true, null, function (_ref20) {
-              var stage = _ref20.stage,
-                percent = _ref20.percent;
+            return loadChannels(true, null, function (_ref22) {
+              var stage = _ref22.stage,
+                percent = _ref22.percent;
               if (Number.isFinite(percent)) {
                 setContentLoadProgress(percent);
               }
@@ -46159,11 +46464,11 @@ function IptvModule(_ref3) {
       }, _callee10, null, [[6, 11, 15, 20]]);
     }));
     return function handleRefresh() {
-      return _ref19.apply(this, arguments);
+      return _ref21.apply(this, arguments);
     };
   }();
   var handleClearAllApp = /*#__PURE__*/function () {
-    var _ref21 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee11() {
+    var _ref23 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee11() {
       var response;
       return _regeneratorRuntime().wrap(function _callee11$(_context11) {
         while (1) switch (_context11.prev = _context11.next) {
@@ -46204,11 +46509,11 @@ function IptvModule(_ref3) {
       }, _callee11);
     }));
     return function handleClearAllApp() {
-      return _ref21.apply(this, arguments);
+      return _ref23.apply(this, arguments);
     };
   }();
   var handleExitApp = /*#__PURE__*/function () {
-    var _ref22 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee12() {
+    var _ref24 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee12() {
       return _regeneratorRuntime().wrap(function _callee12$(_context12) {
         while (1) switch (_context12.prev = _context12.next) {
           case 0:
@@ -46222,7 +46527,7 @@ function IptvModule(_ref3) {
       }, _callee12);
     }));
     return function handleExitApp() {
-      return _ref22.apply(this, arguments);
+      return _ref24.apply(this, arguments);
     };
   }();
   var handleNavClick = function handleNavClick(navKey) {
@@ -46246,7 +46551,7 @@ function IptvModule(_ref3) {
     }
   };
   var persistLastEpisode = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(/*#__PURE__*/function () {
-    var _ref23 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee13(payload) {
+    var _ref25 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee13(payload) {
       var response;
       return _regeneratorRuntime().wrap(function _callee13$(_context13) {
         while (1) switch (_context13.prev = _context13.next) {
@@ -46268,7 +46573,7 @@ function IptvModule(_ref3) {
       }, _callee13, null, [[0, 7]]);
     }));
     return function (_x2) {
-      return _ref23.apply(this, arguments);
+      return _ref25.apply(this, arguments);
     };
   }(), []);
   var buildPlaylistItemFromChannel = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (channel) {
@@ -46326,7 +46631,7 @@ function IptvModule(_ref3) {
     setCreatePlaylistModalOpen(true);
   }, []);
   var handleCreatePlaylist = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(/*#__PURE__*/function () {
-    var _ref24 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee14(rawName) {
+    var _ref26 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee14(rawName) {
       var name, response;
       return _regeneratorRuntime().wrap(function _callee14$(_context14) {
         while (1) switch (_context14.prev = _context14.next) {
@@ -46365,11 +46670,11 @@ function IptvModule(_ref3) {
       }, _callee14);
     }));
     return function (_x3) {
-      return _ref24.apply(this, arguments);
+      return _ref26.apply(this, arguments);
     };
   }(), []);
   var handleAddItemToPlaylist = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(/*#__PURE__*/function () {
-    var _ref25 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee15(playlistId, item) {
+    var _ref27 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee15(playlistId, item) {
       var response;
       return _regeneratorRuntime().wrap(function _callee15$(_context15) {
         while (1) switch (_context15.prev = _context15.next) {
@@ -46404,7 +46709,7 @@ function IptvModule(_ref3) {
       }, _callee15);
     }));
     return function (_x4, _x5) {
-      return _ref25.apply(this, arguments);
+      return _ref27.apply(this, arguments);
     };
   }(), []);
   var handleRequestRemovePlaylist = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (playlist) {
@@ -46458,7 +46763,7 @@ function IptvModule(_ref3) {
     }, _callee16);
   })), [playlistDeleteModalState]);
   var handleRemovePlaylistItem = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(/*#__PURE__*/function () {
-    var _ref27 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee17(playlistId, item) {
+    var _ref29 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee17(playlistId, item) {
       var itemId, response;
       return _regeneratorRuntime().wrap(function _callee17$(_context17) {
         while (1) switch (_context17.prev = _context17.next) {
@@ -46494,7 +46799,7 @@ function IptvModule(_ref3) {
       }, _callee17);
     }));
     return function (_x6, _x7) {
-      return _ref27.apply(this, arguments);
+      return _ref29.apply(this, arguments);
     };
   }(), []);
   var togglePinnedPlaylist = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (playlistId) {
@@ -46595,8 +46900,8 @@ function IptvModule(_ref3) {
     setStatus("Reprodu\xE7\xE3o selecionada: ".concat(channel.name));
   };
   var handlePlayerError = /*#__PURE__*/function () {
-    var _ref28 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee18(channel) {
-      var playableChannel, fallbackKey, externalPlayableSources, externalUrl, response;
+    var _ref30 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee18(channel) {
+      var playableChannel, fallbackKey, externalPlayableSources, externalUrl, forced, response;
       return _regeneratorRuntime().wrap(function _callee18$(_context18) {
         while (1) switch (_context18.prev = _context18.next) {
           case 0:
@@ -46608,48 +46913,46 @@ function IptvModule(_ref3) {
             }
             return _context18.abrupt("return");
           case 4:
-            if (isLikelyLiveStreamChannel(playableChannel)) {
-              _context18.next = 6;
-              break;
-            }
-            return _context18.abrupt("return");
-          case 6:
             fallbackKey = "".concat(String(playableChannel.id || ""), "::").concat(String(playableChannel.url || ""));
             if (!(!fallbackKey || nativeFallbackKeyRef.current === fallbackKey)) {
-              _context18.next = 9;
+              _context18.next = 7;
               break;
             }
             return _context18.abrupt("return");
-          case 9:
+          case 7:
             nativeFallbackKeyRef.current = fallbackKey;
-            setStatus("Stream n\xE3o suportado no player web. Abrindo player nativo: ".concat(playableChannel.name));
-            externalPlayableSources = buildPlayableSources(playableChannel.url);
+            setStatus("Abrindo player nativo: ".concat(playableChannel.name));
+            externalPlayableSources = buildPlayableSources(playableChannel.url, playableChannel.altUrl);
             externalUrl = externalPlayableSources.find(function (candidate) {
-              return /\.ts(\?|#|$)/i.test(candidate);
+              return /\.(ts|m3u8|mp4|mkv)(\?|#|$)/i.test(candidate);
             }) || externalPlayableSources[0] || playableChannel.url;
-            _context18.next = 15;
+            if (isLikelyXtreamLiveUrlWithoutExtension(externalUrl)) {
+              forced = buildXtreamLiveUrl(externalUrl, "ts");
+              if (forced) externalUrl = forced;
+            }
+            _context18.next = 14;
             return ipcRenderer.invoke("iptv-open-external-player", {
               url: externalUrl,
               name: playableChannel.name
             });
-          case 15:
+          case 14:
             response = _context18.sent;
             if (!(response !== null && response !== void 0 && response.ok)) {
-              _context18.next = 19;
+              _context18.next = 18;
               break;
             }
             setStatus("Reprodu\xE7\xE3o aberta no player nativo: ".concat(playableChannel.name));
             return _context18.abrupt("return");
-          case 19:
+          case 18:
             setStatus((response === null || response === void 0 ? void 0 : response.error) || "Falha ao abrir stream no player nativo.");
-          case 20:
+          case 19:
           case "end":
             return _context18.stop();
         }
       }, _callee18);
     }));
     return function handlePlayerError(_x8) {
-      return _ref28.apply(this, arguments);
+      return _ref30.apply(this, arguments);
     };
   }();
   var toggleFavorite = function toggleFavorite(channelId) {
@@ -46962,14 +47265,7 @@ function IptvModule(_ref3) {
           fontSize: "1.2em",
           marginBottom: 12
         }
-      }, row.title), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          display: "flex",
-          gap: 12,
-          overflowX: "auto",
-          paddingBottom: 8
-        }
-      }, row.items.map(function (channel) {
+      }, row.title), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(HorizontalRow, null, row.items.map(function (channel) {
         var homeCardKey = "home-".concat(channel.id, "-").concat(row.key);
         var hasProgress = row.key === "continuar" && String(channel.kind || "").toLowerCase() === "series";
         var progress = hasProgress ? getLastEpisodeForSeries(channel) : null;
@@ -47091,14 +47387,7 @@ function IptvModule(_ref3) {
           fontSize: "1.2em",
           marginBottom: 12
         }
-      }, playlist.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          display: "flex",
-          gap: 12,
-          overflowX: "auto",
-          paddingBottom: 8
-        }
-      }, playlist.items.slice(0, 30).map(function (item, index) {
+      }, playlist.name), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(HorizontalRow, null, playlist.items.slice(0, 30).map(function (item, index) {
         var homePlaylistCardKey = "home-pinned-".concat(playlist.id, "-").concat(item.id || index);
         return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", _extends({
           key: "home-pinned-item-".concat(playlist.id, "-").concat(item.id || index),
@@ -47796,7 +48085,10 @@ function IptvModule(_ref3) {
         return ep.id === currentEpisode.id;
       }) : -1;
       var handleEpisodeEnded = function handleEpisodeEnded() {
-        var nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] : null;
+        var currentIdx = episodes.findIndex(function (ep) {
+          return ep.id === (selected === null || selected === void 0 ? void 0 : selected.id);
+        });
+        var nextEpisode = currentIdx >= 0 ? episodes[currentIdx + 1] : null;
         if (!nextEpisode) {
           setBuffering(false);
           return;
@@ -47841,32 +48133,9 @@ function IptvModule(_ref3) {
           position: "relative",
           flex: "0 0 auto"
         }
-      }, buffering && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          position: "absolute",
-          inset: 0,
-          zIndex: 20,
-          background: "rgba(0,0,0,0.6)",
-          display: "grid",
-          placeItems: "center",
-          color: "#ff0000"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          textAlign: "center"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          fontSize: "3em",
-          animation: "spin 1s linear infinite"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          marginTop: 10,
-          fontWeight: "bold"
-        }
-      }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
         src: toPlayableUrl(currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.url),
+        altSrc: (currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.altUrl) || "",
         type: mediaTypeFromUrl(toPlayableUrl(currentEpisode === null || currentEpisode === void 0 ? void 0 : currentEpisode.url)),
         onBufferingChange: setBuffering,
         onError: function onError() {
@@ -48064,7 +48333,9 @@ function IptvModule(_ref3) {
     var canShowCategoryContent = Boolean(selectedMovieCategory) && (!selectedIsAdult || adultMoviesUnlocked);
     var movieItems = canShowCategoryContent ? filteredChannels : [];
     if (showPlayer && selected && canShowCategoryContent) {
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(FadeTransition, {
+        transitionKey: "movie-player-".concat((selected === null || selected === void 0 ? void 0 : selected.id) || '')
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
           padding: "0 20px",
           height: "calc(100vh - 140px)",
@@ -48120,44 +48391,28 @@ function IptvModule(_ref3) {
           flex: "0 0 auto",
           position: "relative"
         }
-      }, buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          position: "absolute",
-          inset: 0,
-          zIndex: 20,
-          background: "rgba(0,0,0,0.6)",
-          display: "grid",
-          placeItems: "center",
-          color: "#ff0000"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          textAlign: "center"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          fontSize: "3em",
-          animation: "spin 1s linear infinite"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          marginTop: 10,
-          fontWeight: "bold"
-        }
-      }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
         src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
+        altSrc: (selected === null || selected === void 0 ? void 0 : selected.altUrl) || "",
         type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
         onBufferingChange: setBuffering,
         onError: function onError() {
           return handlePlayerError(selected);
         },
+        onEnded: function onEnded() {
+          setShowPlayer(false);
+          setBuffering(false);
+          setStatus("Filme finalizado.");
+        },
         volume: playerVolume,
         onVolumeStateChange: handlePlayerVolumeStateChange,
         userHasSetVolume: volumeSetByUserRef.current,
         fallbackUserVolume: userVolumeRef.current
-      }))), renderSelectedSynopsis());
+      }))), renderSelectedSynopsis()));
     }
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(FadeTransition, {
+      transitionKey: "movie-list-".concat(group)
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         padding: "0 20px",
         display: "grid",
@@ -48264,36 +48519,18 @@ function IptvModule(_ref3) {
       "aria-label": "Fechar reprodu\xE7\xE3o"
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, {
       size: 14
-    })), buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        position: "absolute",
-        inset: 0,
-        zIndex: 20,
-        background: "rgba(0,0,0,0.6)",
-        display: "grid",
-        placeItems: "center",
-        color: "#ff0000"
-      }
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        textAlign: "center"
-      }
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        fontSize: "3em",
-        animation: "spin 1s linear infinite"
-      }
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        marginTop: 10,
-        fontWeight: "bold"
-      }
-    }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
       src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
+      altSrc: (selected === null || selected === void 0 ? void 0 : selected.altUrl) || "",
       type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
       onBufferingChange: setBuffering,
       onError: function onError() {
         return handlePlayerError(selected);
+      },
+      onEnded: function onEnded() {
+        setShowPlayer(false);
+        setBuffering(false);
+        setStatus("Filme finalizado.");
       },
       volume: playerVolume,
       onVolumeStateChange: handlePlayerVolumeStateChange,
@@ -48426,7 +48663,7 @@ function IptvModule(_ref3) {
         marginTop: 16,
         color: "#ddd"
       }
-    }, selectedIsAdult ? "Confirme o acesso para exibir conteúdos da categoria Adultos." : "Selecione uma categoria para ver os filmes."))));
+    }, selectedIsAdult ? "Confirme o acesso para exibir conteúdos da categoria Adultos." : "Selecione uma categoria para ver os filmes.")))));
   };
   var renderLiveView = function renderLiveView() {
     var selectedLiveCategory = liveCategories.find(function (category) {
@@ -48434,7 +48671,9 @@ function IptvModule(_ref3) {
     }) || null;
     var liveItems = selectedLiveCategory ? filteredChannels : [];
     if (showPlayer && selected && selectedLiveCategory) {
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(FadeTransition, {
+        transitionKey: "live-player-".concat((selected === null || selected === void 0 ? void 0 : selected.id) || '')
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
         style: {
           padding: "0 20px",
           height: "calc(100vh - 140px)",
@@ -48490,32 +48729,9 @@ function IptvModule(_ref3) {
           flex: "0 0 auto",
           position: "relative"
         }
-      }, buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          position: "absolute",
-          inset: 0,
-          zIndex: 20,
-          background: "rgba(0,0,0,0.6)",
-          display: "grid",
-          placeItems: "center",
-          color: "#ff0000"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          textAlign: "center"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          fontSize: "3em",
-          animation: "spin 1s linear infinite"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          marginTop: 10,
-          fontWeight: "bold"
-        }
-      }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
         src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
+        altSrc: (selected === null || selected === void 0 ? void 0 : selected.altUrl) || "",
         type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
         onBufferingChange: setBuffering,
         onError: function onError() {
@@ -48525,9 +48741,11 @@ function IptvModule(_ref3) {
         onVolumeStateChange: handlePlayerVolumeStateChange,
         userHasSetVolume: volumeSetByUserRef.current,
         fallbackUserVolume: userVolumeRef.current
-      }))), renderSelectedSynopsis());
+      }))), renderSelectedSynopsis()));
     }
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(FadeTransition, {
+      transitionKey: "live-list-".concat(group)
+    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       style: {
         padding: "0 20px",
         display: "grid",
@@ -48635,31 +48853,7 @@ function IptvModule(_ref3) {
       "aria-label": "Fechar reprodu\xE7\xE3o"
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaTimes, {
       size: 14
-    })), buffering && selected && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        position: "absolute",
-        inset: 0,
-        zIndex: 20,
-        background: "rgba(0,0,0,0.6)",
-        display: "grid",
-        placeItems: "center",
-        color: "#ff0000"
-      }
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        textAlign: "center"
-      }
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        fontSize: "3em",
-        animation: "spin 1s linear infinite"
-      }
-    }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_icons_fa__WEBPACK_IMPORTED_MODULE_3__.FaSearch, null)), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-      style: {
-        marginTop: 10,
-        fontWeight: "bold"
-      }
-    }, "Carregando..."))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
+    })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(ReactUrlPlayer, {
       src: toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url),
       type: mediaTypeFromUrl(toPlayableUrl(selected === null || selected === void 0 ? void 0 : selected.url)),
       onBufferingChange: setBuffering,
@@ -48798,75 +48992,19 @@ function IptvModule(_ref3) {
         marginTop: 16,
         color: "#ddd"
       }
-    }, "Selecione uma categoria para ver os canais ao vivo."))));
+    }, "Selecione uma categoria para ver os canais ao vivo.")))));
   };
   var downloadText = downloadMetrics.totalBytes > 0 ? "".concat(formatMegabytes(downloadMetrics.receivedBytes), " / ").concat(formatMegabytes(downloadMetrics.totalBytes)) : "".concat(formatMegabytes(downloadMetrics.receivedBytes));
   var renderContent = function renderContent() {
     if (loadingChannels) {
-      return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          padding: "0 20px"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          textAlign: "center",
-          marginBottom: 16,
-          color: "#ff0000"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.FolderTitle, {
-        style: {
-          fontSize: "1.5em",
-          marginBottom: 10
-        }
-      }, "Carregando conte\xFAdo..."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          color: "#aaa",
-          marginBottom: 12
-        }
-      }, contentLoadStage || "Isso pode levar alguns segundos."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          width: "min(560px, 72vw)",
-          margin: "0 auto",
-          display: "grid",
-          gap: 8
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          width: "100%",
-          height: 12,
-          borderRadius: 999,
-          background: "rgba(255,255,255,0.12)",
-          overflow: "hidden",
-          border: "1px solid #ff000044"
-        }
-      }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          width: "".concat(Math.max(0, Math.min(100, contentLoadProgress)), "%"),
-          height: "100%",
-          background: "linear-gradient(90deg, #ff0000, #ff6b6b)",
-          transition: "width 0.25s ease"
-        }
-      })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          color: "#ddd",
-          fontSize: 13
-        }
-      }, Math.round(contentLoadProgress), "%"), (downloadMetrics.receivedBytes > 0 || downloadMetrics.totalBytes > 0) && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          color: "#cfcfcf",
-          fontSize: 12
-        }
-      }, "Baixado: ".concat(downloadText, " \u2022 Velocidade: ").concat(formatSpeed(downloadMetrics.speedBps))))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
-        style: {
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-          gap: 12
-        }
-      }, getSkeletonCards(12)));
+      return null;
     }
     var content = null;
     if (activeNav === 'home') content = renderHome();else if (activeNav === 'series') content = renderSeriesView();else if (activeNav === 'movies') content = renderMoviesView();else if (activeNav === 'live') content = renderLiveView();else content = renderHome();
-    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, content, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("footer", {
+    var transitionKey = activeNav === 'series' ? "series-".concat(viewState, "-").concat(selectedCategory || '', "-").concat(selectedSeries || '', "-").concat(selectedSeason || '') : activeNav;
+    return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(FadeTransition, {
+      transitionKey: transitionKey
+    }, content), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("footer", {
       style: {
         margin: "22px 20px 0",
         borderTop: "1px solid #ff000033",
@@ -49018,7 +49156,68 @@ function IptvModule(_ref3) {
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.BackgroundLayer, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.VignetteOverlay, null), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.LogoOverlay, {
     src: "topo.png",
     alt: "Logo"
-  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.AppContainer, {
+  }), loadingChannels && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      position: "fixed",
+      inset: 0,
+      zIndex: 9999,
+      background: "rgba(0,0,0,0.85)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 16
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: 48,
+      height: 48,
+      border: "3px solid #ff000033",
+      borderTop: "3px solid #ff0000",
+      borderRadius: "50%",
+      animation: "spin 0.8s linear infinite"
+    }
+  }), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      color: "#fff",
+      fontSize: 18,
+      fontWeight: 600
+    }
+  }, "Carregando conte\xFAdo..."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      color: "#aaa",
+      fontSize: 13
+    }
+  }, contentLoadStage || "Preparando a lista de canais..."), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "min(400px, 70vw)",
+      marginTop: 8
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "100%",
+      height: 8,
+      borderRadius: 999,
+      background: "rgba(255,255,255,0.1)",
+      overflow: "hidden"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      width: "".concat(Math.max(0, Math.min(100, contentLoadProgress)), "%"),
+      height: "100%",
+      background: "linear-gradient(90deg, #ff0000, #ff6b6b)",
+      transition: "width 0.3s ease",
+      borderRadius: 999
+    }
+  })), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "space-between",
+      marginTop: 6,
+      fontSize: 12,
+      color: "#ccc"
+    }
+  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", null, Math.round(contentLoadProgress), "%"), downloadMetrics.receivedBytes > 0 && /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", null, downloadText, " \u2022 ", formatSpeed(downloadMetrics.speedBps))))), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_styles__WEBPACK_IMPORTED_MODULE_1__.AppContainer, {
     style: {
       padding: 0
     }

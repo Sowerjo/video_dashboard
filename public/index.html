@@ -8,6 +8,12 @@
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+        scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+      }
+
+      *:hover {
+        scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
       }
 
       html, body {
@@ -27,17 +33,55 @@
         color: #fff;
       }
 
+      .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+
       ::-webkit-scrollbar {
-        width: 8px;
+        width: 6px;
+        background: transparent;
       }
 
       ::-webkit-scrollbar-thumb {
-        background: #ff0000aa;
-        border-radius: 4px;
+        background: transparent;
+        border-radius: 3px;
+        transition: background 0.3s;
+      }
+
+      *:hover::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      *:hover::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
       }
 
       ::-webkit-scrollbar-track {
-        background: #111;
+        background: transparent;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(14px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      video {
+        background: #000 !important;
+      }
+
+      video::-internal-media-controls-loading-panel {
+        display: none !important;
+        opacity: 0 !important;
+      }
+
+      video::-webkit-media-controls-loading-panel {
+        display: none !important;
+        opacity: 0 !important;
       }
 
       @keyframes neonGlow {

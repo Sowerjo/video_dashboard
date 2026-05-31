@@ -103,7 +103,7 @@ function isLikelyLiveStreamChannel(channel) {
   return isLikelyXtreamLiveUrlWithoutExtension(channel.url);
 }
 
-function buildPlayableSources(rawUrl) {
+function buildPlayableSources(rawUrl, altUrl) {
   const value = String(rawUrl || "").trim();
   if (!value) return [];
   const sources = [];
@@ -116,19 +116,30 @@ function buildPlayableSources(rawUrl) {
   if (/\.ts(\?|#|$)/i.test(value)) {
     pushUnique(value);
     pushUnique(appendExtensionToUrl(value.replace(/\.ts(\?|#|$)/i, "$1"), "m3u8"));
-    return sources;
-  }
-
-  if (isLikelyXtreamLiveUrlWithoutExtension(value)) {
+  } else if (isLikelyXtreamLiveUrlWithoutExtension(value)) {
     pushUnique(buildXtreamLiveUrl(value, "m3u8"));
     pushUnique(buildXtreamLiveUrl(value, "ts"));
     pushUnique(value);
     pushUnique(appendExtensionToUrl(value, "ts"));
     pushUnique(appendExtensionToUrl(value, "m3u8"));
-    return sources;
+  } else {
+    pushUnique(value);
   }
 
-  pushUnique(value);
+  const alt = String(altUrl || "").trim();
+  if (alt) {
+    if (/\.ts(\?|#|$)/i.test(alt)) {
+      pushUnique(alt);
+      pushUnique(appendExtensionToUrl(alt.replace(/\.ts(\?|#|$)/i, "$1"), "m3u8"));
+    } else if (isLikelyXtreamLiveUrlWithoutExtension(alt)) {
+      pushUnique(buildXtreamLiveUrl(alt, "m3u8"));
+      pushUnique(buildXtreamLiveUrl(alt, "ts"));
+      pushUnique(alt);
+    } else {
+      pushUnique(alt);
+    }
+  }
+
   return sources;
 }
 
@@ -292,6 +303,7 @@ function normalizePlayerVolume(value, fallback = 0.8) {
 
 function arePlayerPropsEqual(prevProps, nextProps) {
   return prevProps.src === nextProps.src
+    && prevProps.altSrc === nextProps.altSrc
     && prevProps.type === nextProps.type
     && normalizePlayerVolume(prevProps.volume) === normalizePlayerVolume(nextProps.volume)
     && normalizePlayerVolume(prevProps.fallbackUserVolume, -1) === normalizePlayerVolume(nextProps.fallbackUserVolume, -1)
@@ -300,6 +312,7 @@ function arePlayerPropsEqual(prevProps, nextProps) {
 
 const ReactUrlPlayer = React.memo(({
   src,
+  altSrc,
   type,
   onBufferingChange,
   onError,
@@ -309,8 +322,14 @@ const ReactUrlPlayer = React.memo(({
   userHasSetVolume = false,
   fallbackUserVolume = null,
 }) => {
-  const playableSources = useMemo(() => buildPlayableSources(src), [src]);
+  const playableSources = useMemo(() => buildPlayableSources(src, altSrc), [src, altSrc]);
   const [sourceIndex, setSourceIndex] = useState(0);
+  const [loadingState, setLoadingState] = useState("connecting"); // connecting, metadata, buffering, playing, error
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(true);
+  const [downloadSpeed, setDownloadSpeed] = useState(0); // bytes/s
+  const loadStartRef = useRef(Date.now());
+  const lastBufferedRef = useRef({ time: 0, bytes: 0 });
   const playerSource = playableSources[sourceIndex] || "";
   const isHlsSource = useMemo(() => /\.m3u8(\?|#|$)/i.test(playerSource || ""), [playerSource]);
   const playerRef = useRef(null);
@@ -318,7 +337,65 @@ const ReactUrlPlayer = React.memo(({
 
   useEffect(() => {
     setSourceIndex(0);
+    setLoadingState("connecting");
+    setElapsedSeconds(0);
+    setIsBuffering(true);
+    setDownloadSpeed(0);
+    loadStartRef.current = Date.now();
+    lastBufferedRef.current = { time: 0, bytes: 0 };
   }, [src]);
+
+  useEffect(() => {
+    setLoadingState("connecting");
+    setElapsedSeconds(0);
+    setDownloadSpeed(0);
+    loadStartRef.current = Date.now();
+    lastBufferedRef.current = { time: 0, bytes: 0 };
+  }, [sourceIndex]);
+
+  useEffect(() => {
+    if (!isBuffering) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - loadStartRef.current) / 1000));
+
+      // Tentar pegar velocidade do HLS.js
+      try {
+        const hls = playerRef.current?.getInternalPlayer?.('hls');
+        if (hls && hls.bandwidthEstimate) {
+          setDownloadSpeed(Math.round(hls.bandwidthEstimate / 8)); // bits/s -> bytes/s
+          return;
+        }
+      } catch {}
+
+      // Fallback: estimar via buffered do video element
+      try {
+        const video = playerRef.current?.getInternalPlayer?.();
+        if (video && video.buffered && video.buffered.length > 0) {
+          const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+          const now = Date.now();
+          const prev = lastBufferedRef.current;
+          if (prev.time > 0 && bufferedEnd > prev.bytes) {
+            const deltaTime = (now - prev.time) / 1000;
+            const deltaBuffered = bufferedEnd - prev.bytes;
+            // Estimativa: ~500kbps por segundo de vídeo buffered (bitrate médio)
+            const estimatedBytesPerSec = (deltaBuffered / deltaTime) * 500000;
+            setDownloadSpeed(Math.round(estimatedBytesPerSec));
+          }
+          lastBufferedRef.current = { time: now, bytes: bufferedEnd };
+        }
+      } catch {}
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isBuffering]);
+
+  const getSourceLabel = useCallback((source) => {
+    try {
+      const url = new URL(source);
+      const ext = source.match(/\.(m3u8|ts|mp4|mkv)(\?|#|$)/i)?.[1]?.toUpperCase() || "STREAM";
+      const isAlt = altSrc && source.includes(new URL(altSrc).hostname);
+      return `${ext}${isAlt ? " (alt)" : ""} — ${url.hostname}`;
+    } catch { return source.substring(0, 40); }
+  }, [altSrc]);
 
   const getMediaElement = useCallback(() => {
     const internalPlayer = playerRef.current?.getInternalPlayer?.();
@@ -361,31 +438,22 @@ const ReactUrlPlayer = React.memo(({
     }
   }, [playerSource]);
 
+  useEffect(() => {
+    return () => {
+      try {
+        const hls = playerRef.current?.getInternalPlayer?.('hls');
+        if (hls && typeof hls.destroy === 'function') {
+          hls.destroy();
+        }
+      } catch {}
+    };
+  }, [playerSource]);
+
   // Proteger volume quando o player for inicializado
   useEffect(() => {
     if (!playerSource) return;
-    
-    // Capturar valores das refs fora da função assíncrona
-    const userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
-    const volSetByUser = !!userHasSetVolume;
-    
-    const protectVolume = () => {
-      if (volSetByUser && userVol > 0.001) {
-        // Se o usuário já definiu um volume, garantir que seja usado
-        setTimeout(() => {
-          const mediaElement = getMediaElement();
-          if (mediaElement) {
-            if (mediaElement.volume <= 0.001) {
-              mediaElement.volume = userVol;
-              mediaElement.muted = false;
-            }
-          }
-        }, 200);
-      }
-    };
-    
-    protectVolume();
-  }, [playerSource, getMediaElement, userHasSetVolume, fallbackUserVolume]);
+    syncVolumeToMediaElement();
+  }, [playerSource, syncVolumeToMediaElement]);
 
   useEffect(() => {
     if (!playerSource) return;
@@ -393,14 +461,12 @@ const ReactUrlPlayer = React.memo(({
     let cancelled = false;
     let timeoutId = null;
     let attempts = 0;
-    
-    // Capturar valores das refs fora da função assíncrona
+
     const volSetByUser = !!userHasSetVolume;
     const userVol = typeof fallbackUserVolume === "number" ? fallbackUserVolume : null;
 
     const scheduleSync = () => {
       if (cancelled) return;
-      // Proteger volume do usuário ao trocar de source
       if (volSetByUser && userVol > 0.001) {
         const mediaElement = getMediaElement();
         if (mediaElement && mediaElement.volume <= 0.001) {
@@ -411,8 +477,8 @@ const ReactUrlPlayer = React.memo(({
       }
       syncVolumeToMediaElement();
       attempts += 1;
-      if (attempts < 20) {
-        timeoutId = window.setTimeout(scheduleSync, 120);
+      if (attempts < 5) {
+        timeoutId = window.setTimeout(scheduleSync, 150);
       }
     };
 
@@ -460,6 +526,7 @@ const ReactUrlPlayer = React.memo(({
       {(() => {
         const effectiveVolume = (userHasSetVolume && typeof fallbackUserVolume === "number") ? fallbackUserVolume : volume;
         return (
+      <div style={{ width: "100%", height: "100%", opacity: isBuffering ? 0 : 1, transition: "opacity 0.3s" }}>
       <ReactPlayer
         ref={playerRef}
         key={playerSource || "empty-player"}
@@ -472,37 +539,102 @@ const ReactUrlPlayer = React.memo(({
         style={{ background: "#000" }}
         volume={effectiveVolume}
         muted={effectiveVolume <= 0.001}
+        onReady={() => {
+          setLoadingState("metadata");
+          syncVolumeToMediaElement();
+        }}
+        onStart={() => {
+          setLoadingState("playing");
+          setIsBuffering(false);
+          syncVolumeToMediaElement();
+        }}
         onPlaying={() => {
+          setLoadingState("playing");
+          setIsBuffering(false);
           onBufferingChange && onBufferingChange(false);
           syncVolumeToMediaElement();
-          setTimeout(() => {
-            syncVolumeToMediaElement();
-          }, 50);
         }}
         config={{
           file: {
             forceHLS: isHlsSource,
+            forceVideo: true,
+            hlsOptions: {
+              enableWorker: true,
+              lowLatencyMode: true,
+              liveSyncDurationCount: 3,
+              liveMaxLatencyDurationCount: 10,
+              xhrSetup: (xhr) => {
+                xhr.setRequestHeader('Accept', '*/*');
+              },
+            },
             attributes: {
               crossOrigin: "anonymous",
             },
           },
         }}
-        onCanPlay={() => onBufferingChange && onBufferingChange(false)}
-        onWaiting={() => onBufferingChange && onBufferingChange(true)}
+        onCanPlay={() => {
+          setLoadingState("playing");
+          setIsBuffering(false);
+          onBufferingChange && onBufferingChange(false);
+        }}
+        onWaiting={() => {
+          setLoadingState("buffering");
+          setIsBuffering(true);
+          onBufferingChange && onBufferingChange(true);
+        }}
         onPause={() => onBufferingChange && onBufferingChange(false)}
         onEnded={() => onEnded && onEnded()}
         onError={(error) => {
-          onBufferingChange && onBufferingChange(false);
           if (sourceIndex < playableSources.length - 1) {
             setSourceIndex((current) => Math.min(current + 1, playableSources.length - 1));
+            setLoadingState("connecting");
+            setIsBuffering(true);
+            onBufferingChange && onBufferingChange(true);
             return;
           }
+          setLoadingState("error");
+          setIsBuffering(false);
+          onBufferingChange && onBufferingChange(false);
           onError && onError(error);
         }}
-      />);
+      /></div>);
       })()}
-      
-      <div 
+
+      {isBuffering && playerSource && (
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 20,
+          background: "rgba(0,0,0,0.75)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          pointerEvents: "none",
+        }}>
+          <div style={{ width: 36, height: 36, border: "3px solid #ff000033", borderTop: "3px solid #ff0000", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>
+            {loadingState === "connecting" && "Conectando ao servidor..."}
+            {loadingState === "metadata" && "Recebendo metadados..."}
+            {loadingState === "buffering" && "Buffering..."}
+          </div>
+          <div style={{ color: "#aaa", fontSize: 11, textAlign: "center", maxWidth: 280 }}>
+            <div>Fonte {sourceIndex + 1} de {playableSources.length}: {getSourceLabel(playerSource)}</div>
+            <div style={{ marginTop: 4 }}>
+              {elapsedSeconds}s decorridos
+              {downloadSpeed > 0 && ` • ${downloadSpeed >= 1048576 ? `${(downloadSpeed / 1048576).toFixed(1)} MB/s` : downloadSpeed >= 1024 ? `${Math.round(downloadSpeed / 1024)} KB/s` : `${downloadSpeed} B/s`}`}
+            </div>
+          </div>
+          {playableSources.length > 1 && (
+            <div style={{ marginTop: 4, width: 120, height: 3, background: "#333", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: "#ff0000", borderRadius: 2, width: `${((sourceIndex + 1) / playableSources.length) * 100}%`, transition: "width 0.3s" }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div
         style={{
           position: "absolute",
           top: "-2px",
@@ -622,6 +754,141 @@ const CachedLogoImage = ({ src, alt, style }) => {
 
   if (!resolvedSrc) return null;
   return <img ref={imageRef} src={resolvedSrc} alt={alt} style={style} loading="lazy" />;
+};
+
+const FadeTransition = ({ transitionKey, duration = 400, children, style: extraStyle }) => {
+  const [opacity, setOpacity] = useState(0);
+
+  useEffect(() => {
+    setOpacity(0);
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setOpacity(1));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [transitionKey]);
+
+  return (
+    <div style={{ opacity, transition: `opacity ${duration}ms ease`, minHeight: 0, ...extraStyle }}>
+      {children}
+    </div>
+  );
+};
+
+const StaggeredItem = ({ index, delay = 60, children }) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), index * delay);
+    return () => clearTimeout(timer);
+  }, [index, delay]);
+
+  return (
+    <div style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(12px)",
+      transition: "opacity 0.4s ease, transform 0.4s ease",
+    }}>
+      {children}
+    </div>
+  );
+};
+
+const CARDS_PER_ROW = 5;
+function getCardStaggerStyle(index) {
+  const row = Math.floor(index / CARDS_PER_ROW);
+  const delayMs = Math.min(row * 50, 400);
+  return {
+    opacity: 0,
+    animation: `fadeSlideIn 0.4s ease ${delayMs}ms forwards`,
+  };
+}
+
+const HorizontalRow = ({ children }) => {
+  const scrollRef = useRef(null);
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
+
+  const updateArrows = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setShowLeft(el.scrollLeft > 20);
+    setShowRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 20);
+  }, []);
+
+  useEffect(() => {
+    updateArrows();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    const ro = new ResizeObserver(updateArrows);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      ro.disconnect();
+    };
+  }, [updateArrows, children]);
+
+  const scroll = (direction) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.75;
+    el.scrollBy({ left: direction === "right" ? amount : -amount, behavior: "smooth" });
+  };
+
+  const arrowStyle = {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 44,
+    display: "grid",
+    placeItems: "center",
+    cursor: "pointer",
+    zIndex: 10,
+    border: "none",
+    color: "#fff",
+    fontSize: 20,
+    opacity: 0.8,
+    transition: "opacity 0.2s",
+  };
+
+  return (
+    <div style={{ position: "relative" }}>
+      {showLeft && (
+        <button
+          type="button"
+          onClick={() => scroll("left")}
+          aria-label="Rolar para esquerda"
+          style={{ ...arrowStyle, left: 0, background: "linear-gradient(to right, rgba(0,0,0,0.85) 60%, transparent)" }}
+        >
+          <FaChevronLeft />
+        </button>
+      )}
+      <div
+        ref={scrollRef}
+        className="hide-scrollbar"
+        style={{
+          display: "flex",
+          gap: 12,
+          overflowX: "auto",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          paddingBottom: 4,
+        }}
+      >
+        {children}
+      </div>
+      {showRight && (
+        <button
+          type="button"
+          onClick={() => scroll("right")}
+          aria-label="Rolar para direita"
+          style={{ ...arrowStyle, right: 0, background: "linear-gradient(to left, rgba(0,0,0,0.85) 60%, transparent)" }}
+        >
+          <FaChevronRight />
+        </button>
+      )}
+    </div>
+  );
 };
 
 export default function IptvModule({ onBack }) {
@@ -2004,18 +2271,23 @@ export default function IptvModule({ onBack }) {
 
     const playableChannel = channel || selected;
     if (!playableChannel) return;
-    if (!isLikelyLiveStreamChannel(playableChannel)) return;
 
     const fallbackKey = `${String(playableChannel.id || "")}::${String(playableChannel.url || "")}`;
     if (!fallbackKey || nativeFallbackKeyRef.current === fallbackKey) return;
     nativeFallbackKeyRef.current = fallbackKey;
 
-    setStatus(`Stream não suportado no player web. Abrindo player nativo: ${playableChannel.name}`);
-    const externalPlayableSources = buildPlayableSources(playableChannel.url);
-    const externalUrl =
-      externalPlayableSources.find((candidate) => /\.ts(\?|#|$)/i.test(candidate)) ||
+    setStatus(`Abrindo player nativo: ${playableChannel.name}`);
+    const externalPlayableSources = buildPlayableSources(playableChannel.url, playableChannel.altUrl);
+    let externalUrl =
+      externalPlayableSources.find((candidate) => /\.(ts|m3u8|mp4|mkv)(\?|#|$)/i.test(candidate)) ||
       externalPlayableSources[0] ||
       playableChannel.url;
+
+    if (isLikelyXtreamLiveUrlWithoutExtension(externalUrl)) {
+      const forced = buildXtreamLiveUrl(externalUrl, "ts");
+      if (forced) externalUrl = forced;
+    }
+
     const response = await ipcRenderer.invoke("iptv-open-external-player", {
       url: externalUrl,
       name: playableChannel.name,
@@ -2259,10 +2531,11 @@ export default function IptvModule({ onBack }) {
 
         {homeTab === "inicio" && (
           <>
-            {featuredRows.map((row) => (
-            <div key={row.key} style={{ marginBottom: 20 }}>
+            {featuredRows.map((row, rowIdx) => (
+            <StaggeredItem key={row.key} index={rowIdx} delay={80}>
+            <div style={{ marginBottom: 20 }}>
               <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>{row.title}</FolderTitle>
-              <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+              <HorizontalRow>
                 {row.items.map((channel) => {
                   const homeCardKey = `home-${channel.id}-${row.key}`;
                   const hasProgress = row.key === "continuar" && String(channel.kind || "").toLowerCase() === "series";
@@ -2351,14 +2624,16 @@ export default function IptvModule({ onBack }) {
                     </div>
                   );
                 })}
-              </div>
+              </HorizontalRow>
             </div>
+            </StaggeredItem>
             ))}
-            {pinnedHomePlaylists.map((playlist) => (
+            {pinnedHomePlaylists.map((playlist, pIdx) => (
               Array.isArray(playlist.items) && playlist.items.length > 0 ? (
-                <div key={`home-pinned-${playlist.id}`} style={{ marginBottom: 20 }}>
+                <StaggeredItem key={`home-pinned-${playlist.id}`} index={featuredRows.length + pIdx} delay={80}>
+                <div style={{ marginBottom: 20 }}>
                   <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>{playlist.name}</FolderTitle>
-                  <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+                  <HorizontalRow>
                     {playlist.items.slice(0, 30).map((item, index) => {
                       const homePlaylistCardKey = `home-pinned-${playlist.id}-${item.id || index}`;
                       return (
@@ -2400,8 +2675,9 @@ export default function IptvModule({ onBack }) {
                         </div>
                       );
                     })}
-                  </div>
+                  </HorizontalRow>
                 </div>
+                </StaggeredItem>
               ) : null
             ))}
           </>
@@ -2573,11 +2849,12 @@ export default function IptvModule({ onBack }) {
               {activeCategory || "Selecione uma categoria"}
             </FolderTitle>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-              {seriesList.map((s) => {
+              {seriesList.map((s, sIdx) => {
                 const seriesCardKey = `series-${activeCategory}-${s.name}`;
                 return (
                 <div
                   key={s.name}
+                  style={{ ...getCardStaggerStyle(sIdx) }}
                   onMouseEnter={() => setHoveredCardId(seriesCardKey)}
                   onMouseLeave={() => setHoveredCardId(null)}
                   onFocus={() => setFocusedCardId(seriesCardKey)}
@@ -2644,11 +2921,12 @@ export default function IptvModule({ onBack }) {
           <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
           <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-            {seriesList.map((s) => {
+            {seriesList.map((s, sIdx) => {
               const seriesListCardKey = `series-list-${selectedCategory}-${s.name}`;
               return (
-              <div 
+              <div
                 key={s.name}
+                style={{ ...getCardStaggerStyle(sIdx) }}
                 onMouseEnter={() => setHoveredCardId(seriesListCardKey)}
                 onMouseLeave={() => setHoveredCardId(null)}
                 onFocus={() => setFocusedCardId(seriesListCardKey)}
@@ -2781,7 +3059,8 @@ export default function IptvModule({ onBack }) {
       const currentEpisodeIndex = currentEpisode ? episodes.findIndex((ep) => ep.id === currentEpisode.id) : -1;
 
       const handleEpisodeEnded = () => {
-        const nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] : null;
+        const currentIdx = episodes.findIndex((ep) => ep.id === selected?.id);
+        const nextEpisode = currentIdx >= 0 ? episodes[currentIdx + 1] : null;
         if (!nextEpisode) {
           setBuffering(false);
           return;
@@ -2795,26 +3074,9 @@ export default function IptvModule({ onBack }) {
            <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
              <button style={{ ...baseButtonStyle, width: "fit-content", marginBottom: 10 }} onClick={() => setViewState('seasons')}>Voltar</button>
              <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", border: "1px solid #ff000044", aspectRatio: "16 / 9", width: "100%", maxHeight: "68vh", minHeight: 320, position: "relative", flex: "0 0 auto" }}>
-                {buffering && (
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 20,
-                    background: "rgba(0,0,0,0.6)",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "#ff0000"
-                  }}>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
-                        <FaSearch />
-                      </div>
-                      <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
-                    </div>
-                  </div>
-                )}
-                <ReactUrlPlayer 
-                  src={toPlayableUrl(currentEpisode?.url)} 
+                <ReactUrlPlayer
+                  src={toPlayableUrl(currentEpisode?.url)}
+                  altSrc={currentEpisode?.altUrl || ""}
                   type={mediaTypeFromUrl(toPlayableUrl(currentEpisode?.url))}
                   onBufferingChange={setBuffering}
                   onError={() => handlePlayerError(currentEpisode)}
@@ -2945,6 +3207,7 @@ export default function IptvModule({ onBack }) {
 
     if (showPlayer && selected && canShowCategoryContent) {
       return (
+        <FadeTransition transitionKey={`movie-player-${selected?.id || ''}`}>
         <div style={{ padding: "0 20px", height: "calc(100vh - 140px)", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
           <button
             type="button"
@@ -2964,31 +3227,17 @@ export default function IptvModule({ onBack }) {
               </FolderTitle>
             </div>
             <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
-              {buffering && selected && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 20,
-                    background: "rgba(0,0,0,0.6)",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "#ff0000",
-                  }}
-                >
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
-                      <FaSearch />
-                    </div>
-                    <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
-                  </div>
-                </div>
-              )}
               <ReactUrlPlayer
                 src={toPlayableUrl(selected?.url)}
+                altSrc={selected?.altUrl || ""}
                 type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
                 onBufferingChange={setBuffering}
                 onError={() => handlePlayerError(selected)}
+                onEnded={() => {
+                  setShowPlayer(false);
+                  setBuffering(false);
+                  setStatus("Filme finalizado.");
+                }}
                 volume={playerVolume}
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
@@ -2998,10 +3247,12 @@ export default function IptvModule({ onBack }) {
           </div>
           {renderSelectedSynopsis()}
         </div>
+        </FadeTransition>
       );
     }
 
     return (
+    <FadeTransition transitionKey={`movie-list-${group}`}>
     <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
       <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
         <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
@@ -3065,31 +3316,17 @@ export default function IptvModule({ onBack }) {
               >
                 <FaTimes size={14} />
               </button>
-              {buffering && selected && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 20,
-                    background: "rgba(0,0,0,0.6)",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "#ff0000",
-                  }}
-                >
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
-                      <FaSearch />
-                    </div>
-                    <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
-                  </div>
-                </div>
-              )}
               <ReactUrlPlayer
                 src={toPlayableUrl(selected?.url)}
+                altSrc={selected?.altUrl || ""}
                 type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
                 onBufferingChange={setBuffering}
                 onError={() => handlePlayerError(selected)}
+                onEnded={() => {
+                  setShowPlayer(false);
+                  setBuffering(false);
+                  setStatus("Filme finalizado.");
+                }}
                 volume={playerVolume}
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
@@ -3198,6 +3435,7 @@ export default function IptvModule({ onBack }) {
         </div>
       </div>
     </div>
+    </FadeTransition>
   );
   };
 
@@ -3207,6 +3445,7 @@ export default function IptvModule({ onBack }) {
 
     if (showPlayer && selected && selectedLiveCategory) {
       return (
+        <FadeTransition transitionKey={`live-player-${selected?.id || ''}`}>
         <div style={{ padding: "0 20px", height: "calc(100vh - 140px)", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
           <button
             type="button"
@@ -3226,28 +3465,9 @@ export default function IptvModule({ onBack }) {
               </FolderTitle>
             </div>
             <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
-              {buffering && selected && (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 20,
-                    background: "rgba(0,0,0,0.6)",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "#ff0000",
-                  }}
-                >
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
-                      <FaSearch />
-                    </div>
-                    <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
-                  </div>
-                </div>
-              )}
               <ReactUrlPlayer
                 src={toPlayableUrl(selected?.url)}
+                altSrc={selected?.altUrl || ""}
                 type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
                 onBufferingChange={setBuffering}
                 onError={() => handlePlayerError(selected)}
@@ -3260,10 +3480,12 @@ export default function IptvModule({ onBack }) {
           </div>
           {renderSelectedSynopsis()}
         </div>
+        </FadeTransition>
       );
     }
 
     return (
+      <FadeTransition transitionKey={`live-list-${group}`}>
       <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
         <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
           <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
@@ -3330,26 +3552,6 @@ export default function IptvModule({ onBack }) {
                 >
                   <FaTimes size={14} />
                 </button>
-                {buffering && selected && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      zIndex: 20,
-                      background: "rgba(0,0,0,0.6)",
-                      display: "grid",
-                      placeItems: "center",
-                      color: "#ff0000",
-                    }}
-                  >
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "3em", animation: "spin 1s linear infinite" }}>
-                        <FaSearch />
-                      </div>
-                      <div style={{ marginTop: 10, fontWeight: "bold" }}>Carregando...</div>
-                    </div>
-                  </div>
-                )}
                 <ReactUrlPlayer
                   src={toPlayableUrl(selected?.url)}
                   type={mediaTypeFromUrl(toPlayableUrl(selected?.url))}
@@ -3461,6 +3663,7 @@ export default function IptvModule({ onBack }) {
           </div>
         </div>
       </div>
+      </FadeTransition>
     );
   };
 
@@ -3470,37 +3673,7 @@ export default function IptvModule({ onBack }) {
 
   const renderContent = () => {
     if (loadingChannels) {
-      return (
-        <div style={{ padding: "0 20px" }}>
-          <div style={{ textAlign: "center", marginBottom: 16, color: "#ff0000" }}>
-            <FolderTitle style={{ fontSize: "1.5em", marginBottom: 10 }}>Carregando conteúdo...</FolderTitle>
-            <div style={{ color: "#aaa", marginBottom: 12 }}>{contentLoadStage || "Isso pode levar alguns segundos."}</div>
-            <div style={{ width: "min(560px, 72vw)", margin: "0 auto", display: "grid", gap: 8 }}>
-              <div style={{ width: "100%", height: 12, borderRadius: 999, background: "rgba(255,255,255,0.12)", overflow: "hidden", border: "1px solid #ff000044" }}>
-                <div
-                  style={{
-                    width: `${Math.max(0, Math.min(100, contentLoadProgress))}%`,
-                    height: "100%",
-                    background: "linear-gradient(90deg, #ff0000, #ff6b6b)",
-                    transition: "width 0.25s ease",
-                  }}
-                />
-              </div>
-              <div style={{ color: "#ddd", fontSize: 13 }}>
-                {Math.round(contentLoadProgress)}%
-              </div>
-              {(downloadMetrics.receivedBytes > 0 || downloadMetrics.totalBytes > 0) && (
-                <div style={{ color: "#cfcfcf", fontSize: 12 }}>
-                  {`Baixado: ${downloadText} • Velocidade: ${formatSpeed(downloadMetrics.speedBps)}`}
-                </div>
-              )}
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
-            {getSkeletonCards(12)}
-          </div>
-        </div>
-      );
+      return null;
     }
 
     let content = null;
@@ -3510,9 +3683,15 @@ export default function IptvModule({ onBack }) {
     else if (activeNav === 'live') content = renderLiveView();
     else content = renderHome();
 
+    const transitionKey = activeNav === 'series'
+      ? `series-${viewState}-${selectedCategory || ''}-${selectedSeries || ''}-${selectedSeason || ''}`
+      : activeNav;
+
     return (
         <>
-            {content}
+            <FadeTransition transitionKey={transitionKey}>
+              {content}
+            </FadeTransition>
             <footer style={{ margin: "22px 20px 0", borderTop: "1px solid #ff000033", padding: "14px 0 24px", color: "#d1d1d1", fontSize: 12, display: "grid", gap: 8 }}>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                 <a href="#" style={{ color: "#ff0000" }}>Termos</a>
@@ -3604,6 +3783,35 @@ export default function IptvModule({ onBack }) {
       <BackgroundLayer />
       <VignetteOverlay />
       <LogoOverlay src={"topo.png"} alt="Logo" />
+
+      {loadingChannels && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          background: "rgba(0,0,0,0.85)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 16,
+        }}>
+          <div style={{ width: 48, height: 48, border: "3px solid #ff000033", borderTop: "3px solid #ff0000", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ color: "#fff", fontSize: 18, fontWeight: 600 }}>Carregando conteúdo...</div>
+          <div style={{ color: "#aaa", fontSize: 13 }}>{contentLoadStage || "Preparando a lista de canais..."}</div>
+          <div style={{ width: "min(400px, 70vw)", marginTop: 8 }}>
+            <div style={{ width: "100%", height: 8, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+              <div style={{ width: `${Math.max(0, Math.min(100, contentLoadProgress))}%`, height: "100%", background: "linear-gradient(90deg, #ff0000, #ff6b6b)", transition: "width 0.3s ease", borderRadius: 999 }} />
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: "#ccc" }}>
+              <span>{Math.round(contentLoadProgress)}%</span>
+              {downloadMetrics.receivedBytes > 0 && (
+                <span>{downloadText} • {formatSpeed(downloadMetrics.speedBps)}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <AppContainer style={{ padding: 0 }}>
         <div style={{ height: "100vh", overflow: "hidden", position: "relative" }}>

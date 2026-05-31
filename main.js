@@ -21,6 +21,8 @@ let cachedTmdbApiKey = '';
 let customPlaylistsCache = [];
 let lastEpisodesCache = {};
 
+const IPTV_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
+
 const PROJECT_CACHE_DIR = path.join(__dirname, 'cache');
 const PLAYLIST_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'playlist');
 const LOCAL_PLAYLIST_PATH = path.join(PLAYLIST_CACHE_DIR, 'playlist.m3u');
@@ -83,6 +85,8 @@ function createWindow() {
       allowRunningInsecureContent: true,
     },
   });
+
+  win.webContents.setUserAgent(IPTV_USER_AGENT);
 
   const indexPath = path.join(app.getAppPath(), 'public', 'index.html');
   win.loadFile(indexPath).catch((err) => {
@@ -417,7 +421,7 @@ async function fetchLogoBuffer(urlValue, timeoutMs = 20000) {
       method: 'GET',
       redirect: 'follow',
       signal: controller.signal,
-      headers: { 'User-Agent': 'MindFlix-IPTV/1.0' },
+      headers: { 'User-Agent': IPTV_USER_AGENT, 'Accept': '*/*' },
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -630,10 +634,49 @@ function detectKind(group, streamUrl) {
   return 'other';
 }
 
-function parseM3u(text) {
+function normalizeIptvUrl(rawUrl) {
+  return String(rawUrl || '').trim();
+}
+
+function getAlternativeIptvUrl(rawUrl, sourceHost, sourcePort, sourceProtocol) {
+  if (!sourceHost) return '';
+  try {
+    const url = new URL(rawUrl);
+    const effectiveSourcePort = sourcePort || '';
+    const effectiveUrlPort = url.port || '';
+    const normalizePort = (port, protocol) => {
+      if (!port) return '';
+      if (port === '80' && protocol === 'http:') return '';
+      if (port === '443' && protocol === 'https:') return '';
+      return port;
+    };
+    const srcPortNorm = normalizePort(effectiveSourcePort, sourceProtocol || 'http:');
+    const urlPortNorm = normalizePort(effectiveUrlPort, url.protocol);
+    if (url.hostname === sourceHost && urlPortNorm === srcPortNorm && url.protocol === (sourceProtocol || 'http:')) {
+      return '';
+    }
+    url.hostname = sourceHost;
+    url.port = effectiveSourcePort;
+    url.protocol = sourceProtocol || 'http:';
+    return url.toString();
+  } catch {}
+  return '';
+}
+
+function parseM3u(text, sourceUrl) {
   const lines = String(text || '').split(/\r?\n/).map((line) => line.trim());
   const channels = [];
   let pending = null;
+
+  let sourceHost = '';
+  let sourcePort = '';
+  let sourceProtocol = 'http:';
+  try {
+    const parsed = new URL(sourceUrl || '');
+    sourceHost = parsed.hostname;
+    sourcePort = parsed.port;
+    sourceProtocol = parsed.protocol;
+  } catch {}
 
   for (const line of lines) {
     if (!line) continue;
@@ -677,9 +720,10 @@ function parseM3u(text) {
     channels.push({
       id: channels.length + 1,
       name: pending.name || pending.tvgName || pending.tvgId || `Canal ${channels.length + 1}`,
-      group: group, // Now cleaned
+      group: group,
       logo: pending.logo || '',
-      url: line,
+      url: normalizeIptvUrl(line),
+      altUrl: getAlternativeIptvUrl(line, sourceHost, sourcePort, sourceProtocol),
       tvgId: pending.tvgId || '',
       kind: kind,
     });
@@ -900,7 +944,8 @@ async function fetchTextWithTimeout(url, timeoutMs = 120000, onProgress = null) 
       redirect: 'follow',
       signal: controller.signal,
       headers: {
-        'User-Agent': 'MindFlix-IPTV/1.0',
+        'User-Agent': IPTV_USER_AGENT,
+        'Accept': '*/*',
       },
     });
 
@@ -983,7 +1028,7 @@ async function validateIptvLogin(payload) {
 
   // Simple validation by fetching the header
   try {
-    const response = await fetch(sourceUrl, { method: 'HEAD', headers: { 'User-Agent': 'MindFlix-IPTV/1.0' } });
+    const response = await fetch(sourceUrl, { method: 'HEAD', headers: { 'User-Agent': IPTV_USER_AGENT, 'Accept': '*/*' } });
     if (!response.ok && response.status !== 405) { // Some servers block HEAD
        // try GET with range if HEAD fails
     }
@@ -1030,7 +1075,7 @@ async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false, onPro
         done: true,
       });
       const localText = fs.readFileSync(LOCAL_PLAYLIST_PATH, 'utf8');
-      const localChannels = parseM3u(localText);
+      const localChannels = parseM3u(localText, sourceUrl);
       if (localChannels.length) {
         const localPayload = {
           sourceUrl: sourceUrl,
@@ -1094,7 +1139,7 @@ async function getParsedPlaylistForSource(sourceUrl, forceRefresh = false, onPro
     }
   }
 
-  const channels = parseM3u(playlistText);
+  const channels = parseM3u(playlistText, sourceUrl);
 
   if (!channels.length) {
     throw new Error('A playlist foi carregada, mas nenhum canal foi identificado.');
