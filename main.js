@@ -12,6 +12,16 @@ const Bonjour = require('bonjour-service').Bonjour;
 
 const store = new Store();
 
+// Prevent castv2-client unhandled errors from crashing the app
+process.on('uncaughtException', (err) => {
+  const msg = String(err?.message || '');
+  if (msg.includes('Cannot read properties of undefined') || msg.includes('castv2') || msg.includes('media')) {
+    console.error('[Chromecast] Suppressed error:', msg);
+    return;
+  }
+  console.error('Uncaught exception:', err);
+});
+
 const IPTV_CACHE_TTL_MS = 2 * 60 * 1000;
 const IPTV_MAX_LIMIT = 20000;
 const iptvCache = new Map();
@@ -23,6 +33,7 @@ const synopsisPosterInFlight = new Map();
 let cachedTmdbApiKey = '';
 let customPlaylistsCache = [];
 let lastEpisodesCache = {};
+let blockedCategoriesCache = [];
 
 const IPTV_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
 
@@ -40,6 +51,8 @@ const CUSTOM_PLAYLISTS_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'playlists');
 const CUSTOM_PLAYLISTS_CACHE_FILE = path.join(CUSTOM_PLAYLISTS_CACHE_DIR, 'playlists.json');
 const LAST_EPISODES_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'watch');
 const LAST_EPISODES_CACHE_FILE = path.join(LAST_EPISODES_CACHE_DIR, 'last_episodes.json');
+const BLOCKED_CATEGORIES_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'blocked');
+const BLOCKED_CATEGORIES_CACHE_FILE = path.join(BLOCKED_CATEGORIES_CACHE_DIR, 'blocked_categories.json');
 const TMDB_DEFAULT_API_KEY = 'ef7d11984081511de43bb6c523bb1651';
 
 try {
@@ -177,6 +190,7 @@ app.whenReady().then(() => {
   readSynopsisDiskCache();
   readCustomPlaylistsDiskCache();
   readLastEpisodesDiskCache();
+  readBlockedCategoriesDiskCache();
   Menu.setApplicationMenu(null);
   createWindow();
 });
@@ -358,6 +372,33 @@ function writeCustomPlaylistsDiskCache() {
     fs.writeFileSync(CUSTOM_PLAYLISTS_CACHE_FILE, JSON.stringify(payload, null, 2), 'utf8');
   } catch (err) {
     console.warn('Falha ao persistir playlists personalizadas:', err);
+  }
+}
+
+// Blocked categories cache
+function readBlockedCategoriesDiskCache() {
+  try {
+    ensureProjectCacheDirs();
+    if (!fs.existsSync(BLOCKED_CATEGORIES_CACHE_FILE)) {
+      blockedCategoriesCache = [];
+      return;
+    }
+    const raw = fs.readFileSync(BLOCKED_CATEGORIES_CACHE_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    blockedCategoriesCache = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    blockedCategoriesCache = [];
+  }
+}
+
+function writeBlockedCategoriesDiskCache() {
+  try {
+    ensureProjectCacheDirs();
+    const dir = path.dirname(BLOCKED_CATEGORIES_CACHE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(BLOCKED_CATEGORIES_CACHE_FILE, JSON.stringify(blockedCategoriesCache, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Falha ao persistir categorias bloqueadas:', err);
   }
 }
 
@@ -794,7 +835,7 @@ async function searchTmdbOverview(kind, title, year, language) {
   url.searchParams.set('api_key', apiKey);
   url.searchParams.set('query', title);
   url.searchParams.set('language', language);
-  url.searchParams.set('include_adult', 'false');
+  url.searchParams.set('include_adult', 'true');
   if (year) {
     if (endpoint === 'tv') url.searchParams.set('first_air_date_year', String(year));
     else url.searchParams.set('year', String(year));
@@ -1546,6 +1587,37 @@ ipcMain.handle('iptv-remove-item-from-custom-playlist', (_event, payload) => {
   }
 });
 
+// Blocked categories handlers
+ipcMain.handle('iptv-get-blocked-categories', () => {
+  return { ok: true, categories: blockedCategoriesCache };
+});
+
+ipcMain.handle('iptv-block-category', (_event, payload) => {
+  try {
+    const category = String(payload?.category || '').trim();
+    if (!category) return { ok: false, error: 'Categoria inválida.' };
+    if (!blockedCategoriesCache.includes(category)) {
+      blockedCategoriesCache.push(category);
+      writeBlockedCategoriesDiskCache();
+    }
+    return { ok: true, categories: blockedCategoriesCache };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao bloquear categoria.' };
+  }
+});
+
+ipcMain.handle('iptv-unblock-category', (_event, payload) => {
+  try {
+    const category = String(payload?.category || '').trim();
+    if (!category) return { ok: false, error: 'Categoria inválida.' };
+    blockedCategoriesCache = blockedCategoriesCache.filter((c) => c !== category);
+    writeBlockedCategoriesDiskCache();
+    return { ok: true, categories: blockedCategoriesCache };
+  } catch (error) {
+    return { ok: false, error: error?.message || 'Falha ao desbloquear categoria.' };
+  }
+});
+
 ipcMain.handle('iptv-get-last-episodes', () => {
   try {
     const payload = {};
@@ -1725,8 +1797,8 @@ function startCastStatusMonitor() {
     }
     try {
       castPlayer.getStatus((err, status) => {
-        if (err) return;
-        if (status) {
+        try {
+          if (err || !status) return;
           notifyCastStatus({
             playerState: status.playerState,
             currentTime: status.currentTime,
@@ -1734,11 +1806,10 @@ function startCastStatusMonitor() {
             idleReason: status.idleReason,
           });
           // Detect media ended — notify but don't stop monitor
-          // The monitor will restart automatically on next chromecast-cast
           if (status.playerState === 'IDLE' && status.idleReason === 'FINISHED') {
             notifyCastStatus({ playerState: 'ENDED', idleReason: 'FINISHED' });
           }
-        }
+        } catch {}
       });
     } catch {}
   }, 2000);
@@ -1884,16 +1955,24 @@ ipcMain.handle('chromecast-status-request', async () => {
   try {
     if (!castPlayer) return { ok: false, error: 'Nenhum player ativo' };
     return new Promise((resolve) => {
-      castPlayer.getStatus((err, status) => {
-        if (err) return resolve({ ok: false, error: err.message });
-        resolve({
-          ok: true,
-          playerState: status?.playerState,
-          currentTime: status?.currentTime,
-          duration: status?.media?.duration,
-          idleReason: status?.idleReason,
+      try {
+        castPlayer.getStatus((err, status) => {
+          try {
+            if (err) return resolve({ ok: false, error: err.message });
+            resolve({
+              ok: true,
+              playerState: status?.playerState,
+              currentTime: status?.currentTime,
+              duration: status?.media?.duration,
+              idleReason: status?.idleReason,
+            });
+          } catch (e) {
+            resolve({ ok: false, error: e?.message || 'Erro ao ler status' });
+          }
         });
-      });
+      } catch (e) {
+        resolve({ ok: false, error: e?.message || 'Erro ao consultar status' });
+      }
     });
   } catch (err) {
     return { ok: false, error: err?.message };

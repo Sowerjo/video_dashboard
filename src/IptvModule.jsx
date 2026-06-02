@@ -174,7 +174,7 @@ function formatSpeed(value) {
 
 function normalizeCategoryLabel(groupRaw) {
   const cleaned = String(groupRaw || "Sem grupo")
-    .replace(/^[^A-Za-z0-9À-ÿ]+/u, "")
+    .replace(/^[^A-Za-z0-9\u00C0-\uFFFF]+/u, "")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -191,17 +191,20 @@ function normalizeCategoryLabel(groupRaw) {
   return "SEM GRUPO";
 }
 
-function isAdultCategoryLabel(labelRaw) {
-  const normalized = String(labelRaw || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+function normalizeSearchText(text) {
+  return String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
+function isAdultCategoryLabel(labelRaw) {
+  const normalized = normalizeSearchText(labelRaw);
   return /\badulto?s?\b|\badult\b|18\+|\bxxx\b|\bporn\b|\bsexo\b|\bsex\b/.test(normalized);
 }
 
-function normalizeSearchText(text) {
-  return String(text || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+function compareAdultCategoryLast(aLabel, bLabel) {
+  const aAdult = isAdultCategoryLabel(aLabel);
+  const bAdult = isAdultCategoryLabel(bLabel);
+  if (aAdult !== bAdult) return aAdult ? 1 : -1;
+  return 0;
 }
 
 function matchNav(item, activeNav) {
@@ -286,6 +289,13 @@ const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAA
 const PLAYER_VOLUME_STORAGE_KEY = "iptv_player_volume_session";
 const HOME_PINNED_PLAYLISTS_STORAGE_KEY = "iptv_home_pinned_playlists";
 const APP_HEADER_HEIGHT = 96;
+const LOCKED_ICON_SRC = "../cadeado_closed.png";
+const UNLOCKED_ICON_SRC = "../cadeado_aberto.png";
+const BLOCK_MANAGER_KIND_OPTIONS = [
+  { key: "live", label: "TV ao Vivo" },
+  { key: "movie", label: "Filmes" },
+  { key: "series", label: "Series" },
+];
 
 function isKeyboardActivationKey(event) {
   return event.key === "Enter" || event.key === " ";
@@ -1296,7 +1306,19 @@ export default function IptvModule({ onBack }) {
   const [lastEpisodesBySeries, setLastEpisodesBySeries] = useState({});
   const [homeTab, setHomeTab] = useState("inicio");
   const [contextMenuState, setContextMenuState] = useState(null);
-  const [adultMoviesUnlocked, setAdultMoviesUnlocked] = useState(false);
+  const [blockedCategories, setBlockedCategories] = useState([]);
+  const [unlockedCategoryKeys, setUnlockedCategoryKeys] = useState([]);
+  const [categoryAccessInput, setCategoryAccessInput] = useState("");
+  const [categoryAccessError, setCategoryAccessError] = useState("");
+  const [unlockingCategoryKey, setUnlockingCategoryKey] = useState("");
+  const [blockManagerOpen, setBlockManagerOpen] = useState(false);
+  const [blockManagerPasswordInput, setBlockManagerPasswordInput] = useState("");
+  const [blockManagerPasswordError, setBlockManagerPasswordError] = useState("");
+  const [blockManagerAuthed, setBlockManagerAuthed] = useState(false);
+  const [blockManagerSavingKey, setBlockManagerSavingKey] = useState("");
+  const [blockManagerKindFilter, setBlockManagerKindFilter] = useState("movie");
+  const [blockManagerSearch, setBlockManagerSearch] = useState("");
+  const BLOCK_PASSWORD = "4321";
   const [selectedSynopsis, setSelectedSynopsis] = useState("");
   const [selectedSynopsisMeta, setSelectedSynopsisMeta] = useState({ year: "", rating: null, posterUrl: "" });
   const [synopsisHint, setSynopsisHint] = useState("");
@@ -1482,9 +1504,10 @@ export default function IptvModule({ onBack }) {
 
     const loadPersistentIptvState = async () => {
       try {
-        const [playlistsResponse, lastEpisodesResponse] = await Promise.all([
+        const [playlistsResponse, lastEpisodesResponse, blockedResponse] = await Promise.all([
           ipcRenderer.invoke("iptv-get-custom-playlists"),
           ipcRenderer.invoke("iptv-get-last-episodes"),
+          ipcRenderer.invoke("iptv-get-blocked-categories"),
         ]);
         if (cancelled) return;
         if (playlistsResponse?.ok) {
@@ -1493,6 +1516,9 @@ export default function IptvModule({ onBack }) {
         }
         if (lastEpisodesResponse?.ok) {
           setLastEpisodesBySeries(lastEpisodesResponse.data && typeof lastEpisodesResponse.data === "object" ? lastEpisodesResponse.data : {});
+        }
+        if (blockedResponse?.ok) {
+          setBlockedCategories(Array.isArray(blockedResponse.categories) ? blockedResponse.categories : []);
         }
       } catch {
       }
@@ -1783,11 +1809,16 @@ export default function IptvModule({ onBack }) {
   }, [channels, favorites, activeNav, group, search]);
 
   const recommendedItems = useMemo(() => {
-    const pool = channels.filter((c) => c.kind === "movie" || c.kind === "series");
+    const pool = channels.filter((c) => {
+      if (c.kind !== "movie" && c.kind !== "series") return false;
+      // Excluir conteúdos de categorias bloqueadas
+      if (blockedCategories.includes(String(c.group || "")) || blockedCategories.includes(normalizeCategoryLabel(c.group))) return false;
+      return true;
+    });
     if (pool.length === 0) return [];
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 20);
-  }, [channels]);
+  }, [channels, blockedCategories]);
 
   const rows = useMemo(() => {
     const base = filteredChannels;
@@ -1820,7 +1851,7 @@ export default function IptvModule({ onBack }) {
     });
 
     const orderedCategories = [...byCategory.entries()]
-      .sort((a, b) => b[1].length - a[1].length)
+      .sort((a, b) => compareAdultCategoryLast(a[0], b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0], "pt-BR"))
       .slice(0, 10);
 
     orderedCategories.forEach(([category, items], idx) => {
@@ -1891,16 +1922,7 @@ export default function IptvModule({ onBack }) {
       byCategory.get(key).count += 1;
     });
 
-    return [...byCategory.values()].sort((a, b) => {
-      const aAdult = isAdultCategoryLabel(a.label);
-      const bAdult = isAdultCategoryLabel(b.label);
-
-      if (aAdult !== bAdult) {
-        return aAdult ? 1 : -1;
-      }
-
-      return b.count - a.count;
-    });
+    return [...byCategory.values()].sort((a, b) => compareAdultCategoryLast(a.label, b.label) || b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
   }, [channels, activeNav, search]);
 
   const liveCategories = useMemo(() => {
@@ -1926,17 +1948,67 @@ export default function IptvModule({ onBack }) {
       byCategory.get(key).count += 1;
     });
 
-    return [...byCategory.values()].sort((a, b) => {
-      const aAdult = isAdultCategoryLabel(a.label);
-      const bAdult = isAdultCategoryLabel(b.label);
+    return [...byCategory.values()].sort((a, b) => compareAdultCategoryLast(a.label, b.label) || b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
+  }, [channels, activeNav, search]);
 
-      if (aAdult !== bAdult) {
-        return aAdult ? 1 : -1;
+  const blockableCategories = useMemo(() => {
+    const labelsByKind = {
+      live: "TV ao Vivo",
+      movie: "Filmes",
+      series: "Séries",
+    };
+    const orderByKind = { live: 0, movie: 1, series: 2 };
+    const byId = new Map();
+
+    channels.forEach((item) => {
+      const itemKind = String(item.kind || "").toLowerCase();
+      if (!labelsByKind[itemKind]) return;
+
+      const label = normalizeCategoryLabel(item.group);
+      const rawGroup = String(item.group || "");
+      const blockKey = itemKind === "series" ? label : rawGroup;
+      if (!String(blockKey).trim()) return;
+
+      const id = `${itemKind}::${blockKey}`;
+      const current = byId.get(id);
+      if (current) {
+        current.count += 1;
+        return;
       }
 
-      return b.count - a.count;
+      byId.set(id, {
+        id,
+        kind: itemKind,
+        kindLabel: labelsByKind[itemKind],
+        blockKey,
+        label,
+        count: 1,
+      });
     });
-  }, [channels, activeNav, search]);
+
+    return [...byId.values()].sort((a, b) => {
+      const orderDiff = (orderByKind[a.kind] ?? 99) - (orderByKind[b.kind] ?? 99);
+      if (orderDiff !== 0) return orderDiff;
+      const adultDiff = compareAdultCategoryLast(a.label, b.label);
+      if (adultDiff !== 0) return adultDiff;
+      return a.label.localeCompare(b.label, "pt-BR");
+    });
+  }, [channels]);
+
+  const filteredBlockableCategories = useMemo(() => {
+    const searchNorm = normalizeSearchText(blockManagerSearch);
+
+    return blockableCategories.filter((category) => {
+      if (category.kind !== blockManagerKindFilter) return false;
+      if (!searchNorm) return true;
+
+      return (
+        normalizeSearchText(category.label).includes(searchNorm) ||
+        normalizeSearchText(category.kindLabel).includes(searchNorm) ||
+        normalizeSearchText(category.blockKey).includes(searchNorm)
+      );
+    });
+  }, [blockableCategories, blockManagerKindFilter, blockManagerSearch]);
 
   useEffect(() => {
     if (activeNav === "series") {
@@ -1956,25 +2028,10 @@ export default function IptvModule({ onBack }) {
       return;
     }
 
-    const fallbackCategory = movieCategories.find((category) => !isAdultCategoryLabel(category.label));
-    const selectedCategory = movieCategories.find((category) => category.raw === group);
-
-    if (selectedCategory && isAdultCategoryLabel(selectedCategory.label) && !adultMoviesUnlocked) {
-      setGroup(fallbackCategory?.raw || "");
-      setShowPlayer(false);
-      return;
-    }
-
     if (!group || !movieCategories.some((category) => category.raw === group)) {
-      if (fallbackCategory) {
-        setGroup(fallbackCategory.raw);
-      } else if (adultMoviesUnlocked) {
-        setGroup(movieCategories[0].raw);
-      } else {
-        setGroup("");
-      }
+      setGroup(movieCategories[0]?.raw || "");
     }
-  }, [activeNav, movieCategories, group, adultMoviesUnlocked]);
+  }, [activeNav, movieCategories, group]);
 
   useEffect(() => {
     if (activeNav !== "live") return;
@@ -1992,7 +2049,7 @@ export default function IptvModule({ onBack }) {
   useEffect(() => {
     if (activeNav !== "series" || viewState !== "categories") return;
 
-    const categories = Object.keys(seriesData).sort();
+    const categories = Object.keys(seriesData).sort((a, b) => compareAdultCategoryLast(a, b) || a.localeCompare(b, "pt-BR"));
     if (!categories.length) {
       if (selectedCategory) setSelectedCategory(null);
       return;
@@ -2395,7 +2452,6 @@ export default function IptvModule({ onBack }) {
     setCustomPlaylists([]);
     setLastEpisodesBySeries({});
     setHomeTab("inicio");
-    setAdultMoviesUnlocked(false);
     handleLogout();
     setStatus("Dados do aplicativo removidos com sucesso.");
   };
@@ -2475,6 +2531,100 @@ export default function IptvModule({ onBack }) {
       addedAt: new Date().toISOString(),
     };
   }, []);
+
+  const isCategoryBlocked = useCallback((categoryLabel) => {
+    return blockedCategories.includes(String(categoryLabel || ""));
+  }, [blockedCategories]);
+
+  const isCategoryUnlockedForSession = useCallback((categoryLabel) => {
+    return unlockedCategoryKeys.includes(String(categoryLabel || ""));
+  }, [unlockedCategoryKeys]);
+
+  const isCategoryLockedForView = useCallback((categoryLabel) => {
+    const key = String(categoryLabel || "");
+    return isCategoryBlocked(key) && !isCategoryUnlockedForSession(key);
+  }, [isCategoryBlocked, isCategoryUnlockedForSession]);
+
+  const resetCategoryAccessPrompt = useCallback(() => {
+    setCategoryAccessInput("");
+    setCategoryAccessError("");
+    setUnlockingCategoryKey("");
+  }, []);
+
+  const handleUnlockCategoryForSession = useCallback((categoryLabel) => {
+    const key = String(categoryLabel || "").trim();
+    if (!key) return;
+
+    if (categoryAccessInput !== BLOCK_PASSWORD) {
+      setCategoryAccessError("Senha incorreta.");
+      return;
+    }
+
+    setCategoryAccessError("");
+    setUnlockingCategoryKey(key);
+    window.setTimeout(() => {
+      setUnlockedCategoryKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
+      setCategoryAccessInput("");
+      setUnlockingCategoryKey("");
+    }, 520);
+  }, [categoryAccessInput]);
+
+  const handleOpenBlockManager = useCallback(() => {
+    setMenuOpen(false);
+    setBlockManagerOpen(true);
+    setBlockManagerPasswordInput("");
+    setBlockManagerPasswordError("");
+    setBlockManagerAuthed(false);
+    setBlockManagerKindFilter("movie");
+    setBlockManagerSearch("");
+  }, []);
+
+  const handleCloseBlockManager = useCallback(() => {
+    setBlockManagerOpen(false);
+    setBlockManagerPasswordInput("");
+    setBlockManagerPasswordError("");
+    setBlockManagerAuthed(false);
+    setBlockManagerSavingKey("");
+    setBlockManagerSearch("");
+  }, []);
+
+  const handleBlockManagerPasswordSubmit = useCallback(() => {
+    if (blockManagerPasswordInput !== BLOCK_PASSWORD) {
+      setBlockManagerPasswordError("Senha incorreta.");
+      return;
+    }
+    setBlockManagerPasswordError("");
+    setBlockManagerAuthed(true);
+  }, [blockManagerPasswordInput]);
+
+  const handleToggleManagedCategoryBlock = useCallback(async (category) => {
+    if (!category?.blockKey || blockManagerSavingKey) return;
+
+    const alreadyBlocked = isCategoryBlocked(category.blockKey);
+    const channel = alreadyBlocked ? "iptv-unblock-category" : "iptv-block-category";
+    setBlockManagerSavingKey(category.id);
+
+    try {
+      const result = await ipcRenderer.invoke(channel, { category: category.blockKey });
+      if (!result?.ok) {
+        setStatus(result?.error || "Falha ao atualizar bloqueio de categoria.");
+        return;
+      }
+
+      const nextCategories = Array.isArray(result.categories) ? result.categories : [];
+      setBlockedCategories(nextCategories);
+      setUnlockedCategoryKeys((prev) => prev.filter((key) => key !== category.blockKey));
+      setStatus(alreadyBlocked ? "Categoria desbloqueada." : "Categoria bloqueada.");
+    } catch {
+      setStatus("Falha ao atualizar bloqueio de categoria.");
+    } finally {
+      setBlockManagerSavingKey("");
+    }
+  }, [blockManagerSavingKey, isCategoryBlocked]);
+
+  useEffect(() => {
+    resetCategoryAccessPrompt();
+  }, [activeNav, group, selectedCategory, resetCategoryAccessPrompt]);
 
   const handleOpenCardContextMenu = useCallback((event, item) => {
     event.preventDefault();
@@ -3258,9 +3408,10 @@ export default function IptvModule({ onBack }) {
 
   const renderSeriesView = () => {
     if (viewState === 'categories') {
-      const cats = Object.keys(seriesData).sort();
+      const cats = Object.keys(seriesData).sort((a, b) => compareAdultCategoryLast(a, b) || a.localeCompare(b, "pt-BR"));
       const activeCategory = selectedCategory && cats.includes(selectedCategory) ? selectedCategory : (cats[0] || null);
-      const seriesList = activeCategory && seriesData[activeCategory] ? Object.values(seriesData[activeCategory]) : [];
+      const activeCategoryLocked = activeCategory ? isCategoryLockedForView(activeCategory) : false;
+      const seriesList = activeCategory && !activeCategoryLocked && seriesData[activeCategory] ? Object.values(seriesData[activeCategory]) : [];
       
       if (cats.length === 0) {
         return (
@@ -3322,6 +3473,7 @@ export default function IptvModule({ onBack }) {
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
               {activeCategory || "Selecione uma categoria"}
             </FolderTitle>
+            {activeCategoryLocked ? renderBlockedCategoryGate({ label: activeCategory, blockKey: activeCategory }) : (
             <div key={`series-grid-${activeCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
               {seriesList.map((s, sIdx) => {
                 const seriesCardKey = `series-${activeCategory}-${s.name}`;
@@ -3382,12 +3534,22 @@ export default function IptvModule({ onBack }) {
               );
               })}
             </div>
+            )}
           </div>
         </div>
       );
     }
 
     if (viewState === 'series_list') {
+      if (selectedCategory && isCategoryLockedForView(selectedCategory)) {
+        return (
+          <div style={{ padding: "0 20px" }}>
+            <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
+            <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
+            {renderBlockedCategoryGate({ label: selectedCategory, blockKey: selectedCategory })}
+          </div>
+        );
+      }
       const seriesList = seriesData[selectedCategory] ? Object.values(seriesData[selectedCategory]) : [];
       return (
         <div style={{ padding: "0 20px" }}>
@@ -3456,6 +3618,15 @@ export default function IptvModule({ onBack }) {
     }
 
     if (viewState === 'seasons') {
+      if (selectedCategory && isCategoryLockedForView(selectedCategory)) {
+        return (
+          <div style={{ padding: "0 20px" }}>
+            <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
+            <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
+            {renderBlockedCategoryGate({ label: selectedCategory, blockKey: selectedCategory })}
+          </div>
+        );
+      }
       const categoryData = seriesData[selectedCategory];
       const series = categoryData ? categoryData[selectedSeries] : null;
 
@@ -3511,6 +3682,15 @@ export default function IptvModule({ onBack }) {
     }
 
     if (viewState === 'episodes') {
+      if (selectedCategory && isCategoryLockedForView(selectedCategory)) {
+        return (
+          <div style={{ padding: "0 20px" }}>
+            <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
+            <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
+            {renderBlockedCategoryGate({ label: selectedCategory, blockKey: selectedCategory })}
+          </div>
+        );
+      }
       const categoryData = seriesData[selectedCategory];
       const series = categoryData ? categoryData[selectedSeries] : null;
 
@@ -3648,18 +3828,6 @@ export default function IptvModule({ onBack }) {
   };
 
   const handleMovieCategoryClick = (category) => {
-    if (!isAdultCategoryLabel(category.label)) {
-      setShowPlayer(false);
-      setGroup(category.raw);
-      return;
-    }
-
-    if (!adultMoviesUnlocked) {
-      const confirmed = window.confirm("Conteúdo adulto: confirme para acessar esta categoria.");
-      if (!confirmed) return;
-      setAdultMoviesUnlocked(true);
-    }
-
     setShowPlayer(false);
     setGroup(category.raw);
   };
@@ -3706,10 +3874,107 @@ export default function IptvModule({ onBack }) {
     </div>
   );
 
+  const renderBlockedCategoryGate = ({ label, blockKey }) => {
+    const key = String(blockKey || "");
+    const isOpening = unlockingCategoryKey === key;
+
+    return (
+      <div style={{
+        minHeight: 360,
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        color: "#fff",
+      }}>
+        <div style={{
+          width: "min(420px, 92vw)",
+          display: "grid",
+          justifyItems: "center",
+          gap: 14,
+          padding: "28px 22px",
+        }}>
+          <div style={{ width: 148, height: 148, position: "relative", marginBottom: 4 }}>
+            <img
+              src={LOCKED_ICON_SRC}
+              alt="Categoria bloqueada"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                opacity: isOpening ? 0 : 1,
+                transition: "opacity 420ms ease",
+                filter: "drop-shadow(0 0 22px rgba(255,0,0,0.55))",
+              }}
+            />
+            <img
+              src={UNLOCKED_ICON_SRC}
+              alt="Categoria desbloqueada"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                opacity: isOpening ? 1 : 0,
+                transition: "opacity 420ms ease",
+                filter: "drop-shadow(0 0 22px rgba(34,211,238,0.42))",
+              }}
+            />
+          </div>
+          <FolderTitle style={{ fontSize: "1.18em", marginBottom: 2 }}>{label || "Categoria bloqueada"}</FolderTitle>
+          <ContentInfo style={{ maxWidth: 360, lineHeight: 1.45 }}>
+            Esta categoria está bloqueada. Informe a senha para exibir o conteúdo nesta sessão.
+          </ContentInfo>
+          <input
+            type="password"
+            value={categoryAccessInput}
+            onChange={(event) => {
+              setCategoryAccessInput(event.target.value);
+              setCategoryAccessError("");
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") handleUnlockCategoryForSession(key);
+            }}
+            placeholder="Digite a senha"
+            disabled={isOpening}
+            autoFocus
+            style={{
+              width: "100%",
+              maxWidth: 300,
+              background: "rgba(10,10,10,0.9)",
+              border: "1px solid #ff000055",
+              color: "#fff",
+              borderRadius: 8,
+              padding: "11px 12px",
+              outline: "none",
+              textAlign: "center",
+              letterSpacing: 2,
+            }}
+          />
+          {categoryAccessError && (
+            <div style={{ color: "#ff8a8a", fontSize: 12 }}>{categoryAccessError}</div>
+          )}
+          <button
+            type="button"
+            style={{ ...baseButtonStyle, background: isOpening ? "#064e3b" : "#ff0000", color: isOpening ? "#d1fae5" : "#000", minWidth: 160 }}
+            onClick={() => handleUnlockCategoryForSession(key)}
+            disabled={isOpening}
+          >
+            {isOpening ? "Desbloqueando..." : "Desbloquear"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderMoviesView = () => {
     const selectedMovieCategory = movieCategories.find((category) => category.raw === group) || null;
-    const selectedIsAdult = selectedMovieCategory ? isAdultCategoryLabel(selectedMovieCategory.label) : false;
-    const canShowCategoryContent = Boolean(selectedMovieCategory) && (!selectedIsAdult || adultMoviesUnlocked);
+    const selectedIsLocked = selectedMovieCategory ? isCategoryLockedForView(selectedMovieCategory.raw) : false;
+    const canShowCategoryContent = Boolean(selectedMovieCategory) && !selectedIsLocked;
     const movieItems = canShowCategoryContent ? filteredChannels : [];
 
     if (showPlayer && selected && canShowCategoryContent) {
@@ -3872,6 +4137,10 @@ export default function IptvModule({ onBack }) {
             {selectedMovieCategory?.label || "Selecione uma categoria"}
           </FolderTitle>
 
+          {selectedIsLocked ? (
+            renderBlockedCategoryGate({ label: selectedMovieCategory?.label, blockKey: selectedMovieCategory?.raw })
+          ) : (
+          <>
             {movieItems.length === 0 && search.trim() && (
               <div style={{ padding: "40px 20px", textAlign: "center", color: "#aaa" }}>
                 Nenhum resultado para "<span style={{ color: "#ff6666" }}>{search}</span>"
@@ -3964,10 +4233,10 @@ export default function IptvModule({ onBack }) {
 
           {!canShowCategoryContent && (
             <div style={{ marginTop: 16, color: "#ddd" }}>
-              {selectedIsAdult
-                ? "Confirme o acesso para exibir conteúdos da categoria Adultos."
-                : "Selecione uma categoria para ver os filmes."}
+              Selecione uma categoria para ver os filmes.
             </div>
+          )}
+          </>
           )}
         </div>
       </div>
@@ -3978,9 +4247,10 @@ export default function IptvModule({ onBack }) {
 
   const renderLiveView = () => {
     const selectedLiveCategory = liveCategories.find((category) => category.raw === group) || null;
-    const liveItems = selectedLiveCategory ? filteredChannels : [];
+    const selectedIsLocked = selectedLiveCategory ? isCategoryLockedForView(selectedLiveCategory.raw) : false;
+    const liveItems = selectedLiveCategory && !selectedIsLocked ? filteredChannels : [];
 
-    if (showPlayer && selected && selectedLiveCategory) {
+    if (showPlayer && selected && selectedLiveCategory && !selectedIsLocked) {
       return (
         <FadeTransition transitionKey={`live-player-${selected?.id || ''}`}>
         <div style={{ padding: "0 20px", height: "calc(100vh - 140px)", display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
@@ -4068,7 +4338,7 @@ export default function IptvModule({ onBack }) {
         </aside>
 
         <div style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {showPlayer && selected && selectedLiveCategory && (
+          {showPlayer && selected && selectedLiveCategory && !selectedIsLocked && (
             <section style={{ marginBottom: 20, border: "1px solid #ff000055", borderRadius: 14, background: "rgba(0,0,0,0.8)", padding: 12 }}>
               <div style={{ marginBottom: 8 }}>
                 <FolderTitle style={{ textAlign: "left", fontSize: "1.08em" }}>
@@ -4132,6 +4402,10 @@ export default function IptvModule({ onBack }) {
               {selectedLiveCategory?.label || "Selecione uma categoria"}
             </FolderTitle>
 
+            {selectedIsLocked ? (
+              renderBlockedCategoryGate({ label: selectedLiveCategory?.label, blockKey: selectedLiveCategory?.raw })
+            ) : (
+            <>
             {liveItems.length === 0 && search.trim() && (
               <div style={{ padding: "40px 20px", textAlign: "center", color: "#aaa" }}>
                 Nenhum resultado para "<span style={{ color: "#ff6666" }}>{search}</span>"
@@ -4226,6 +4500,8 @@ export default function IptvModule({ onBack }) {
               <div style={{ marginTop: 16, color: "#ddd" }}>
                 Selecione uma categoria para ver os canais ao vivo.
               </div>
+            )}
+            </>
             )}
           </div>
         </div>
@@ -4592,6 +4868,9 @@ export default function IptvModule({ onBack }) {
               <button type="button" style={baseButtonStyle} onClick={handleClearCache}>
                 Limpar cache
               </button>
+              <button type="button" style={baseButtonStyle} onClick={handleOpenBlockManager}>
+                Bloqueio de categorias
+              </button>
               <button type="button" style={baseButtonStyle} onClick={handleSetNewM3uUrl}>
                 Informar nova URL M3U
               </button>
@@ -4660,6 +4939,163 @@ export default function IptvModule({ onBack }) {
               ) : (
                 <div style={{ color: "#bbb", fontSize: 12 }}>Crie uma playlist para adicionar itens.</div>
               )}
+            </div>
+          )}
+
+          {blockManagerOpen && (
+            <div
+              style={{ position: "fixed", inset: 0, zIndex: 130, background: "rgba(0,0,0,0.82)", display: "grid", placeItems: "center", padding: 20 }}
+              onClick={handleCloseBlockManager}
+            >
+              <div
+                style={{ width: "min(760px, 94vw)", maxHeight: "86vh", border: "1px solid #ff000066", borderRadius: 14, background: "#0f0f0f", padding: 18, boxShadow: "0 18px 34px rgba(0,0,0,0.5)", display: "grid", gap: 14, overflow: "hidden" }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                  <FolderTitle style={{ textAlign: "left", fontSize: "1.18em", margin: 0 }}>Bloqueio de categorias</FolderTitle>
+                  <button type="button" style={{ ...baseButtonStyle, padding: "6px 10px" }} onClick={handleCloseBlockManager}>
+                    <FaTimes />
+                  </button>
+                </div>
+
+                {!blockManagerAuthed ? (
+                  <div style={{ display: "grid", gap: 12 }}>
+                    <ContentInfo style={{ textAlign: "left", lineHeight: 1.5 }}>
+                      Informe a senha para gerenciar quais categorias ficam bloqueadas.
+                    </ContentInfo>
+                    <input
+                      type="password"
+                      value={blockManagerPasswordInput}
+                      onChange={(event) => {
+                        setBlockManagerPasswordInput(event.target.value);
+                        setBlockManagerPasswordError("");
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") handleBlockManagerPasswordSubmit();
+                      }}
+                      placeholder="Digite a senha"
+                      autoFocus
+                      style={{ width: "100%", background: "#111", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "10px 12px", outline: "none", fontSize: 14, letterSpacing: 4, textAlign: "center" }}
+                    />
+                    {blockManagerPasswordError && (
+                      <div style={{ fontSize: 12, color: "#ff6666", textAlign: "center" }}>{blockManagerPasswordError}</div>
+                    )}
+                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                      <button type="button" style={baseButtonStyle} onClick={handleCloseBlockManager}>
+                        Cancelar
+                      </button>
+                      <button type="button" style={{ ...baseButtonStyle, background: "#ff0000", color: "#000" }} onClick={handleBlockManagerPasswordSubmit}>
+                        Acessar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 12, minHeight: 0 }}>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {BLOCK_MANAGER_KIND_OPTIONS.map((option) => {
+                          const active = blockManagerKindFilter === option.key;
+                          const optionCount = blockableCategories.filter((category) => category.kind === option.key).length;
+                          return (
+                            <button
+                              key={option.key}
+                              type="button"
+                              onClick={() => {
+                                setBlockManagerKindFilter(option.key);
+                                setBlockManagerSearch("");
+                              }}
+                              style={{
+                                ...baseButtonStyle,
+                                background: active ? "#ff0000" : "#1a0000",
+                                color: active ? "#000" : "#fff",
+                                border: active ? "1px solid #ff6666" : "1px solid #ff000055",
+                                boxShadow: active ? "0 0 14px #ff000066" : "none",
+                              }}
+                            >
+                              {option.label} ({optionCount})
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div style={{ position: "relative" }}>
+                        <FaSearch style={{ position: "absolute", left: 11, top: 11, color: "#ff0000", pointerEvents: "none" }} />
+                        <input
+                          type="text"
+                          value={blockManagerSearch}
+                          onChange={(event) => setBlockManagerSearch(event.target.value)}
+                          placeholder="Buscar categoria"
+                          style={{
+                            width: "100%",
+                            background: "#111",
+                            border: "1px solid #ff000055",
+                            color: "#fff",
+                            borderRadius: 8,
+                            padding: "10px 12px 10px 34px",
+                            outline: "none",
+                            fontSize: 14,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", color: "#ccc", fontSize: 12 }}>
+                      <span>{filteredBlockableCategories.length} de {blockableCategories.filter((category) => category.kind === blockManagerKindFilter).length} categorias.</span>
+                      <span>{blockableCategories.filter((category) => category.kind === blockManagerKindFilter && isCategoryBlocked(category.blockKey)).length} bloqueadas neste tipo.</span>
+                    </div>
+                    <div style={{ overflowY: "auto", maxHeight: "58vh", display: "grid", gap: 8, paddingRight: 4 }}>
+                      {filteredBlockableCategories.length === 0 ? (
+                        <div style={{ color: "#aaa", textAlign: "center", padding: "24px 12px" }}>
+                          Nenhuma categoria encontrada.
+                        </div>
+                      ) : (
+                        filteredBlockableCategories.map((category) => {
+                          const blocked = isCategoryBlocked(category.blockKey);
+                          const saving = blockManagerSavingKey === category.id;
+                          return (
+                            <div
+                              key={category.id}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "1fr auto",
+                                gap: 12,
+                                alignItems: "center",
+                                padding: "10px 12px",
+                                borderRadius: 10,
+                                border: blocked ? "1px solid #ff000077" : "1px solid #333",
+                                background: blocked ? "rgba(80,0,0,0.34)" : "rgba(255,255,255,0.035)",
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ color: "#fff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {category.label}
+                                </div>
+                                <div style={{ color: "#aaa", fontSize: 11, marginTop: 3 }}>
+                                  {category.kindLabel} - {category.count} itens
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                style={{
+                                  ...baseButtonStyle,
+                                  minWidth: 112,
+                                  background: blocked ? "#064e3b" : "#7f1d1d",
+                                  border: blocked ? "1px solid #10b981" : "1px solid #ff0000",
+                                  color: "#fff",
+                                  opacity: blockManagerSavingKey && !saving ? 0.55 : 1,
+                                }}
+                                onClick={() => handleToggleManagedCategoryBlock(category)}
+                                disabled={Boolean(blockManagerSavingKey)}
+                              >
+                                {saving ? "Salvando..." : blocked ? "Desbloquear" : "Bloquear"}
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

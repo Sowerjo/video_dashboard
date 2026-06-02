@@ -48,7 +48,9 @@
       "main.js",
       "package.json",
       "assets/**/*",
-      "icon.ico"
+      "icon.ico",
+      "cadeado_closed.png",
+      "cadeado_aberto.png"
     ],
     "extraFiles": [
       {
