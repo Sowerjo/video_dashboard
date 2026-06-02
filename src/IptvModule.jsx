@@ -20,13 +20,18 @@ import {
   FaInfoCircle,
   FaPlus,
   FaPlay,
+  FaPause,
   FaSearch,
   FaStar,
   FaTimes,
   FaTv,
   FaUserCircle,
   FaVideo,
+  FaChromecast,
+  FaVolumeUp,
+  FaVolumeMute,
 } from "react-icons/fa";
+import { MdSkipNext, MdSkipPrevious, MdReplay10, MdForward10 } from "react-icons/md";
 
 const { ipcRenderer } = window.require("electron");
 
@@ -195,6 +200,10 @@ function isAdultCategoryLabel(labelRaw) {
   return /\badulto?s?\b|\badult\b|18\+|\bxxx\b|\bporn\b|\bsexo\b|\bsex\b/.test(normalized);
 }
 
+function normalizeSearchText(text) {
+  return String(text || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
 function matchNav(item, activeNav) {
   if (activeNav === "home") return true;
   
@@ -307,7 +316,9 @@ function arePlayerPropsEqual(prevProps, nextProps) {
     && prevProps.type === nextProps.type
     && normalizePlayerVolume(prevProps.volume) === normalizePlayerVolume(nextProps.volume)
     && normalizePlayerVolume(prevProps.fallbackUserVolume, -1) === normalizePlayerVolume(nextProps.fallbackUserVolume, -1)
-    && prevProps.userHasSetVolume === nextProps.userHasSetVolume;
+    && prevProps.userHasSetVolume === nextProps.userHasSetVolume
+    && prevProps.globalCastActive === nextProps.globalCastActive
+    && prevProps.globalCastDevice === nextProps.globalCastDevice;
 }
 
 const ReactUrlPlayer = React.memo(({
@@ -321,6 +332,10 @@ const ReactUrlPlayer = React.memo(({
   onVolumeStateChange,
   userHasSetVolume = false,
   fallbackUserVolume = null,
+  onCastStart,
+  onCastStop,
+  globalCastActive: externalCastActive,
+  globalCastDevice: externalCastDevice,
 }) => {
   const playableSources = useMemo(() => buildPlayableSources(src, altSrc), [src, altSrc]);
   const [sourceIndex, setSourceIndex] = useState(0);
@@ -396,6 +411,154 @@ const ReactUrlPlayer = React.memo(({
       return `${ext}${isAlt ? " (alt)" : ""} — ${url.hostname}`;
     } catch { return source.substring(0, 40); }
   }, [altSrc]);
+
+  // Chromecast state
+  const [castDevices, setCastDevices] = useState([]);
+  const [castDiscovering, setCastDiscovering] = useState(false);
+  const [castShowMenu, setCastShowMenu] = useState(false);
+  const castActive = Boolean(externalCastActive);
+  const [castError, setCastError] = useState("");
+
+  const handleCastDiscover = useCallback(async () => {
+    setCastDiscovering(true);
+    setCastError("");
+    setCastShowMenu(true);
+    try {
+      const result = await ipcRenderer.invoke("chromecast-discover");
+      if (result.ok) {
+        setCastDevices(result.devices || []);
+        if ((result.devices || []).length === 0) setCastError("Nenhum Chromecast encontrado na rede.");
+      } else {
+        setCastError(result.error || "Erro ao descobrir dispositivos.");
+      }
+    } catch (e) {
+      setCastError(e.message || "Erro ao descobrir dispositivos.");
+    }
+    setCastDiscovering(false);
+  }, []);
+
+  const handleCastTo = useCallback(async (device) => {
+    setCastShowMenu(false);
+    setCastError("");
+    try {
+      const result = await ipcRenderer.invoke("chromecast-cast", {
+        host: device.host,
+        port: device.port,
+        url: playerSource,
+        title: "MindFlix",
+        contentType: isHlsSource ? "application/x-mpegURL" : "video/mp4",
+      });
+      if (result.ok) {
+        if (typeof onCastStart === "function") onCastStart(device, playerSource);
+      } else {
+        setCastError(result.error || "Falha ao enviar para Chromecast.");
+      }
+    } catch (e) {
+      setCastError(e.message || "Falha ao enviar para Chromecast.");
+    }
+  }, [playerSource, isHlsSource, onCastStart]);
+
+  const handleCastStop = useCallback(async () => {
+    await ipcRenderer.invoke("chromecast-stop");
+    setCastError("");
+    setCastPaused(false);
+    setCastCurrentTime(0);
+    setCastDuration(0);
+    if (typeof onCastStop === "function") onCastStop();
+  }, [onCastStop]);
+
+  // Auto-send to Chromecast when source changes and cast is active
+  const prevSourceRef = useRef(null);
+  useEffect(() => {
+    if (!castActive || !externalCastDevice || !playerSource) return;
+    if (playerSource === prevSourceRef.current) return;
+    prevSourceRef.current = playerSource;
+
+    // Send new source to Chromecast
+    ipcRenderer.invoke("chromecast-cast", {
+      host: externalCastDevice.host,
+      port: externalCastDevice.port,
+      url: playerSource,
+      title: "MindFlix",
+      contentType: /\.m3u8/i.test(playerSource) ? "application/x-mpegURL" : "video/mp4",
+    }).then((result) => {
+      if (result.ok) {
+        setCastPaused(false);
+        setCastCurrentTime(0);
+        setCastDuration(0);
+      }
+    });
+  }); // run on every render to catch new mount + source change
+
+  // Cast remote controls state
+  const [castPaused, setCastPaused] = useState(false);
+  const [castCurrentTime, setCastCurrentTime] = useState(0);
+  const [castDuration, setCastDuration] = useState(0);
+  const [castVolume, setCastVolume] = useState(1);
+  const castEndedFiredRef = useRef(false);
+
+  // Poll cast status for controls + detect end of content
+  useEffect(() => {
+    if (!castActive) {
+      castEndedFiredRef.current = false;
+      return;
+    }
+    castEndedFiredRef.current = false;
+    const poll = setInterval(async () => {
+      try {
+        const status = await ipcRenderer.invoke("chromecast-status-request");
+        if (status.ok) {
+          setCastPaused(status.playerState === "PAUSED");
+          if (status.currentTime != null) setCastCurrentTime(status.currentTime);
+          if (status.duration != null && status.duration > 0) setCastDuration(status.duration);
+
+          // Detect end: IDLE+FINISHED or currentTime near duration
+          const isFinished = status.playerState === "IDLE" && status.idleReason === "FINISHED";
+          const isNearEnd = status.duration > 0 && status.currentTime >= status.duration - 3;
+          if ((isFinished || isNearEnd) && !castEndedFiredRef.current) {
+            castEndedFiredRef.current = true;
+            if (typeof onEnded === "function") onEnded();
+          }
+        }
+      } catch {}
+    }, 2000);
+    return () => clearInterval(poll);
+  }, [castActive, onEnded]);
+
+  const handleCastPauseResume = useCallback(async () => {
+    if (castPaused) {
+      await ipcRenderer.invoke("chromecast-resume");
+      setCastPaused(false);
+    } else {
+      await ipcRenderer.invoke("chromecast-pause");
+      setCastPaused(true);
+    }
+  }, [castPaused]);
+
+  const handleCastSeek = useCallback(async (delta) => {
+    const newTime = Math.max(0, castCurrentTime + delta);
+    await ipcRenderer.invoke("chromecast-seek", { time: newTime });
+    setCastCurrentTime(newTime);
+  }, [castCurrentTime]);
+
+  const handleCastSeekBar = useCallback(async (e) => {
+    const newTime = Number(e.target.value);
+    await ipcRenderer.invoke("chromecast-seek", { time: newTime });
+    setCastCurrentTime(newTime);
+  }, []);
+
+  const handleCastVolume = useCallback(async (e) => {
+    const level = Number(e.target.value);
+    setCastVolume(level);
+    await ipcRenderer.invoke("chromecast-volume", { level });
+  }, []);
+
+  const formatCastTime = (secs) => {
+    if (!secs || isNaN(secs)) return "0:00";
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   const getMediaElement = useCallback(() => {
     const internalPlayer = playerRef.current?.getInternalPlayer?.();
@@ -531,14 +694,14 @@ const ReactUrlPlayer = React.memo(({
         ref={playerRef}
         key={playerSource || "empty-player"}
         src={playerSource}
-        playing={Boolean(playerSource)}
+        playing={Boolean(playerSource) && !castActive}
         controls
         playsInline
         width="100%"
         height="100%"
         style={{ background: "#000" }}
         volume={effectiveVolume}
-        muted={effectiveVolume <= 0.001}
+        muted={effectiveVolume <= 0.001 || castActive}
         onReady={() => {
           setLoadingState("metadata");
           syncVolumeToMediaElement();
@@ -631,6 +794,168 @@ const ReactUrlPlayer = React.memo(({
               <div style={{ height: "100%", background: "#ff0000", borderRadius: 2, width: `${((sourceIndex + 1) / playableSources.length) * 100}%`, transition: "width 0.3s" }} />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Chromecast button */}
+      <button
+        type="button"
+        onClick={castActive ? handleCastStop : handleCastDiscover}
+        title={castActive ? "Parar Chromecast" : "Enviar para Chromecast"}
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 10,
+          zIndex: 30,
+          width: 34,
+          height: 34,
+          borderRadius: "50%",
+          border: castActive ? "2px solid #22d3ee" : "1px solid #ff000066",
+          background: castActive ? "rgba(34,211,238,0.15)" : "rgba(0,0,0,0.7)",
+          color: castActive ? "#22d3ee" : "#fff",
+          display: "grid",
+          placeItems: "center",
+          cursor: "pointer",
+          transition: "all 0.2s",
+        }}
+      >
+        <FaChromecast size={16} />
+      </button>
+
+      {/* Chromecast device menu */}
+      {castShowMenu && (
+        <div style={{
+          position: "absolute",
+          top: 50,
+          right: 10,
+          zIndex: 35,
+          background: "#1a1a1a",
+          border: "1px solid #ff000066",
+          borderRadius: 10,
+          padding: 12,
+          minWidth: 200,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Chromecast</span>
+            <button type="button" onClick={() => setCastShowMenu(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 14 }}>✕</button>
+          </div>
+          {castDiscovering && (
+            <div style={{ color: "#aaa", fontSize: 11, textAlign: "center", padding: 10 }}>
+              Buscando dispositivos...
+            </div>
+          )}
+          {!castDiscovering && castDevices.length === 0 && (
+            <div style={{ color: "#888", fontSize: 11, textAlign: "center", padding: 10 }}>
+              {castError || "Nenhum dispositivo encontrado."}
+            </div>
+          )}
+          {castDevices.map((device, i) => (
+            <button
+              key={`${device.host}-${i}`}
+              type="button"
+              onClick={() => handleCastTo(device)}
+              style={{
+                width: "100%",
+                padding: "8px 10px",
+                marginBottom: 4,
+                background: "#222",
+                border: "1px solid #333",
+                borderRadius: 6,
+                color: "#fff",
+                fontSize: 12,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            >
+              {device.name || device.host}
+            </button>
+          ))}
+          {castError && castDevices.length > 0 && (
+            <div style={{ color: "#ff6666", fontSize: 10, marginTop: 6 }}>{castError}</div>
+          )}
+        </div>
+      )}
+
+      {/* Cast active indicator */}
+      {castActive && (
+        <div style={{
+          position: "absolute",
+          bottom: 8,
+          right: 8,
+          zIndex: 30,
+          background: "rgba(34,211,238,0.15)",
+          border: "1px solid #22d3ee",
+          borderRadius: 6,
+          padding: "4px 10px",
+          color: "#22d3ee",
+          fontSize: 10,
+          fontWeight: 700,
+          pointerEvents: "none",
+        }}>
+          Transmitindo via Chromecast
+        </div>
+      )}
+
+      {/* Cast remote controls */}
+      {castActive && (
+        <div style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 32,
+          background: "rgba(0,0,0,0.92)",
+          borderTop: "1px solid #22d3ee44",
+          padding: "10px 14px 8px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+        }}>
+          {/* Seek bar */}
+          {castDuration > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: "#aaa" }}>
+              <span>{formatCastTime(castCurrentTime)}</span>
+              <input
+                type="range"
+                min={0}
+                max={castDuration}
+                value={castCurrentTime}
+                onChange={handleCastSeekBar}
+                style={{ flex: 1, height: 4, accentColor: "#22d3ee", cursor: "pointer" }}
+              />
+              <span>{formatCastTime(castDuration)}</span>
+            </div>
+          )}
+          {/* Controls row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+            <button type="button" onClick={() => handleCastSeek(-10)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 4 }} title="-10s">
+              <MdReplay10 size={20} />
+            </button>
+            <button type="button" onClick={handleCastPauseResume} style={{ background: "rgba(34,211,238,0.2)", border: "1px solid #22d3ee", borderRadius: "50%", width: 36, height: 36, display: "grid", placeItems: "center", color: "#22d3ee", cursor: "pointer" }} title={castPaused ? "Reproduzir" : "Pausar"}>
+              {castPaused ? <FaPlay size={14} /> : <FaPause size={14} />}
+            </button>
+            <button type="button" onClick={() => handleCastSeek(10)} style={{ background: "none", border: "none", color: "#fff", cursor: "pointer", padding: 4 }} title="+10s">
+              <MdForward10 size={20} />
+            </button>
+            {/* Volume */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 12 }}>
+              {castVolume > 0 ? <FaVolumeUp size={13} style={{ color: "#aaa" }} /> : <FaVolumeMute size={13} style={{ color: "#aaa" }} />}
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={castVolume}
+                onChange={handleCastVolume}
+                style={{ width: 60, height: 3, accentColor: "#22d3ee", cursor: "pointer" }}
+              />
+            </div>
+            {/* Stop cast */}
+            <button type="button" onClick={castActive ? handleCastStop : undefined} style={{ background: "none", border: "none", color: "#ff6666", cursor: "pointer", padding: 4, marginLeft: 8 }} title="Parar Chromecast">
+              <FaTimes size={14} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -916,6 +1241,20 @@ export default function IptvModule({ onBack }) {
   const [showPlayer, setShowPlayer] = useState(false);
   const [buffering, setBuffering] = useState(false);
 
+  // Chromecast global state
+  const [globalCastActive, setGlobalCastActive] = useState(false);
+  const [globalCastDevice, setGlobalCastDevice] = useState(null);
+  const [globalCastTitle, setGlobalCastTitle] = useState("");
+  const [headerCastMenu, setHeaderCastMenu] = useState(false);
+  const [headerCastDevices, setHeaderCastDevices] = useState([]);
+  const [headerCastDiscovering, setHeaderCastDiscovering] = useState(false);
+
+  // Refs for cast state so callbacks always read fresh values
+  const globalCastActiveRef = useRef(false);
+  const globalCastDeviceRef = useRef(null);
+  useEffect(() => { globalCastActiveRef.current = globalCastActive; }, [globalCastActive]);
+  useEffect(() => { globalCastDeviceRef.current = globalCastDevice; }, [globalCastDevice]);
+
   // For Series Navigation
   const [viewState, setViewState] = useState("categories"); // categories, series_list, seasons, episodes
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -1008,6 +1347,55 @@ export default function IptvModule({ onBack }) {
       ipcRenderer.removeListener("iptv-download-progress", onDownloadProgress);
     };
   }, []);
+
+  // Chromecast status listener — usado para próximo episódio automático
+  const castEndedCallbackRef = useRef(null);
+  const castEndedHandledRef = useRef(false);
+  useEffect(() => {
+    const onCastStatus = (_event, status) => {
+      if (status.playerState === 'ENDED') {
+        if (castEndedHandledRef.current) return; // already handled
+        castEndedHandledRef.current = true;
+        if (typeof castEndedCallbackRef.current === 'function') {
+          // Callback (next episode) will re-cast, so keep device active
+          castEndedCallbackRef.current();
+        } else {
+          // No next episode — clean up cast state
+          setGlobalCastActive(false);
+          setGlobalCastDevice(null);
+          setGlobalCastTitle("");
+        }
+      } else if (status.playerState === 'PLAYING' || status.playerState === 'BUFFERING') {
+        // Reset the handled flag when new content starts playing
+        castEndedHandledRef.current = false;
+      }
+    };
+    ipcRenderer.on("chromecast-status", onCastStatus);
+    return () => {
+      ipcRenderer.removeListener("chromecast-status", onCastStatus);
+    };
+  }, []);
+
+  // Auto-send to Chromecast when selected content changes with cast connected
+  const prevCastUrlRef = useRef(null);
+  useEffect(() => {
+    if (!globalCastActive || !globalCastDevice || !selected?.url) return;
+    const url = toPlayableUrl(selected.url);
+    if (url === prevCastUrlRef.current) return;
+    prevCastUrlRef.current = url;
+
+    ipcRenderer.invoke("chromecast-cast", {
+      host: globalCastDevice.host,
+      port: globalCastDevice.port,
+      url: url,
+      title: selected.name || "MindFlix",
+      contentType: /\.m3u8/i.test(url) ? "application/x-mpegURL" : "video/mp4",
+    }).then((result) => {
+      if (result.ok) {
+        setGlobalCastTitle(selected.name || "");
+      }
+    });
+  }, [selected, globalCastActive, globalCastDevice]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1368,7 +1756,7 @@ export default function IptvModule({ onBack }) {
   }, [recentlyPlayedIds, channelById]);
 
   const filteredChannels = useMemo(() => {
-    const searchNorm = search.trim().toLowerCase();
+    const searchNorm = normalizeSearchText(search);
     const source = activeNav === "minha-lista" ? favorites : channels;
 
     return source.filter((item) => {
@@ -1379,12 +1767,27 @@ export default function IptvModule({ onBack }) {
 
       if (!searchNorm) return true;
 
-      return (
-        item.name.toLowerCase().includes(searchNorm) ||
-        item.group.toLowerCase().includes(searchNorm)
-      );
+      if (
+        normalizeSearchText(item.name).includes(searchNorm) ||
+        normalizeSearchText(item.group).includes(searchNorm)
+      ) return true;
+
+      // Para séries, buscar também pelo nome da série extraído
+      if (item.kind === "series") {
+        const info = parseEpisodeInfo(item.name);
+        if (normalizeSearchText(info.seriesName).includes(searchNorm)) return true;
+      }
+
+      return false;
     });
   }, [channels, favorites, activeNav, group, search]);
+
+  const recommendedItems = useMemo(() => {
+    const pool = channels.filter((c) => c.kind === "movie" || c.kind === "series");
+    if (pool.length === 0) return [];
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 20);
+  }, [channels]);
 
   const rows = useMemo(() => {
     const base = filteredChannels;
@@ -1468,15 +1871,15 @@ export default function IptvModule({ onBack }) {
   const movieCategories = useMemo(() => {
     if (activeNav !== "movies") return [];
 
-    const searchNorm = search.trim().toLowerCase();
+    const searchNorm = normalizeSearchText(search);
     const byCategory = new Map();
 
     channels.forEach((item) => {
       if (item.kind !== "movie") return;
       if (
         searchNorm &&
-        !item.name.toLowerCase().includes(searchNorm) &&
-        !item.group.toLowerCase().includes(searchNorm)
+        !normalizeSearchText(item.name).includes(searchNorm) &&
+        !normalizeSearchText(item.group).includes(searchNorm)
       ) {
         return;
       }
@@ -1503,15 +1906,15 @@ export default function IptvModule({ onBack }) {
   const liveCategories = useMemo(() => {
     if (activeNav !== "live") return [];
 
-    const searchNorm = search.trim().toLowerCase();
+    const searchNorm = normalizeSearchText(search);
     const byCategory = new Map();
 
     channels.forEach((item) => {
       if (item.kind !== "live") return;
       if (
         searchNorm &&
-        !item.name.toLowerCase().includes(searchNorm) &&
-        !item.group.toLowerCase().includes(searchNorm)
+        !normalizeSearchText(item.name).includes(searchNorm) &&
+        !normalizeSearchText(item.group).includes(searchNorm)
       ) {
         return;
       }
@@ -2628,9 +3031,71 @@ export default function IptvModule({ onBack }) {
             </div>
             </StaggeredItem>
             ))}
+            {recommendedItems.length > 0 && (
+              <StaggeredItem index={featuredRows.length} delay={80}>
+              <div style={{ marginBottom: 20 }}>
+                <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>Recomendados para você</FolderTitle>
+                <HorizontalRow>
+                  {recommendedItems.map((channel) => {
+                    const recCardKey = `home-rec-${channel.id}`;
+                    const kindLabel = channel.kind === "movie" ? "Filme" : "Série";
+                    return (
+                      <div
+                        key={channel.id}
+                        onMouseEnter={() => setHoveredCardId(recCardKey)}
+                        onMouseLeave={() => setHoveredCardId(null)}
+                        onClick={() => {
+                          if (channel.kind === "movie") {
+                            handleNavClick("movies");
+                            setTimeout(() => playChannel(channel, true), 100);
+                          } else {
+                            const info = parseEpisodeInfo(channel.name);
+                            handleNavClick("series");
+                            setTimeout(() => {
+                              setSelectedCategory(normalizeCategoryLabel(channel.group));
+                              setSelectedSeries(info.seriesName);
+                              setViewState("seasons");
+                            }, 100);
+                          }
+                        }}
+                        {...getKeyboardButtonProps(`Abrir ${channel.name}`, () => {})}
+                        style={{
+                          width: 160,
+                          minWidth: 160,
+                          height: 220,
+                          borderRadius: 12,
+                          border: "1px solid #ff000044",
+                          background: "#110000",
+                          position: "relative",
+                          overflow: "hidden",
+                          cursor: "pointer",
+                          flexShrink: 0,
+                          ...getCardInteractiveStyle(recCardKey),
+                        }}
+                      >
+                        {channel.logo ? (
+                          <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
+                        ) : (
+                          <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ddd", fontWeight: 700, padding: 8, textAlign: "center", fontSize: 12 }}>
+                            {channel.name}
+                          </div>
+                        )}
+                        <div style={{ position: "absolute", top: 8, right: 8, background: channel.kind === "movie" ? "#f97316" : "#a78bfa", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
+                          {kindLabel}
+                        </div>
+                        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.8)", padding: "6px 8px", fontSize: 11, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {channel.kind === "series" ? parseEpisodeInfo(channel.name).seriesName : channel.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </HorizontalRow>
+              </div>
+              </StaggeredItem>
+            )}
             {pinnedHomePlaylists.map((playlist, pIdx) => (
               Array.isArray(playlist.items) && playlist.items.length > 0 ? (
-                <StaggeredItem key={`home-pinned-${playlist.id}`} index={featuredRows.length + pIdx} delay={80}>
+                <StaggeredItem key={`home-pinned-${playlist.id}`} index={featuredRows.length + 1 + pIdx} delay={80}>
                 <div style={{ marginBottom: 20 }}>
                   <FolderTitle style={{ textAlign: "left", fontSize: "1.2em", marginBottom: 12 }}>{playlist.name}</FolderTitle>
                   <HorizontalRow>
@@ -2800,8 +3265,17 @@ export default function IptvModule({ onBack }) {
       if (cats.length === 0) {
         return (
           <div style={{ padding: "40px 20px", textAlign: "center", color: "#ddd" }}>
-            <FolderTitle style={{ marginBottom: 10 }}>Nenhuma série encontrada</FolderTitle>
-            <div>Verifique se sua lista possui grupos identificados como "Series", "Séries", "Novelas", etc.</div>
+            {search.trim() ? (
+              <>
+                <FolderTitle style={{ marginBottom: 10 }}>Nenhum resultado</FolderTitle>
+                <div>Nenhuma série encontrada para "<span style={{ color: "#ff6666" }}>{search}</span>"</div>
+              </>
+            ) : (
+              <>
+                <FolderTitle style={{ marginBottom: 10 }}>Nenhuma série encontrada</FolderTitle>
+                <div>Verifique se sua lista possui grupos identificados como "Series", "Séries", "Novelas", etc.</div>
+              </>
+            )}
             <div style={{ marginTop: 20, fontSize: "0.9em", color: "#aaa" }}>
                Debug: Total de itens carregados: {channels.length} <br/>
                Filtro atual: {kind}
@@ -2848,13 +3322,12 @@ export default function IptvModule({ onBack }) {
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
               {activeCategory || "Selecione uma categoria"}
             </FolderTitle>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+            <div key={`series-grid-${activeCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
               {seriesList.map((s, sIdx) => {
                 const seriesCardKey = `series-${activeCategory}-${s.name}`;
                 return (
                 <div
                   key={s.name}
-                  style={{ ...getCardStaggerStyle(sIdx) }}
                   onMouseEnter={() => setHoveredCardId(seriesCardKey)}
                   onMouseLeave={() => setHoveredCardId(null)}
                   onFocus={() => setFocusedCardId(seriesCardKey)}
@@ -2877,7 +3350,7 @@ export default function IptvModule({ onBack }) {
                     setSelectedSeries(s.name);
                     setViewState("seasons");
                   })}
-                  style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative", ...getCardInteractiveStyle(seriesCardKey) }}
+                  style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative", ...getCardStaggerStyle(sIdx), ...getCardInteractiveStyle(seriesCardKey) }}
                 >
                   <button
                     type="button"
@@ -2920,13 +3393,12 @@ export default function IptvModule({ onBack }) {
         <div style={{ padding: "0 20px" }}>
           <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
           <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+          <div key={`series-list-grid-${selectedCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {seriesList.map((s, sIdx) => {
               const seriesListCardKey = `series-list-${selectedCategory}-${s.name}`;
               return (
               <div
                 key={s.name}
-                style={{ ...getCardStaggerStyle(sIdx) }}
                 onMouseEnter={() => setHoveredCardId(seriesListCardKey)}
                 onMouseLeave={() => setHoveredCardId(null)}
                 onFocus={() => setFocusedCardId(seriesListCardKey)}
@@ -2947,7 +3419,7 @@ export default function IptvModule({ onBack }) {
                   setSelectedSeries(s.name);
                   setViewState("seasons");
                 })}
-                style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative", ...getCardInteractiveStyle(seriesListCardKey) }}
+                style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative", ...getCardStaggerStyle(sIdx), ...getCardInteractiveStyle(seriesListCardKey) }}
               >
                 <button
                   type="button"
@@ -3063,11 +3535,32 @@ export default function IptvModule({ onBack }) {
         const nextEpisode = currentIdx >= 0 ? episodes[currentIdx + 1] : null;
         if (!nextEpisode) {
           setBuffering(false);
+          castEndedCallbackRef.current = null;
           return;
         }
         setBuffering(true);
         playChannel(nextEpisode, false);
+
+        // Se Chromecast ativo, enviar próximo episódio automaticamente
+        if (globalCastActiveRef.current && globalCastDeviceRef.current) {
+          const nextUrl = nextEpisode.url;
+          ipcRenderer.invoke("chromecast-cast", {
+            host: globalCastDeviceRef.current.host,
+            port: globalCastDeviceRef.current.port,
+            url: nextUrl,
+            title: nextEpisode.name || "MindFlix",
+            contentType: /\.m3u8/i.test(nextUrl) ? "application/x-mpegURL" : "video/mp4",
+          }).then((result) => {
+            if (result.ok) {
+              setGlobalCastTitle(nextEpisode.name || "");
+              castEndedHandledRef.current = false; // allow next ENDED detection
+            }
+          });
+        }
       };
+
+      // Registrar callback para quando Chromecast terminar
+      castEndedCallbackRef.current = handleEpisodeEnded;
 
       return (
         <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "1fr 350px", gap: 20, minHeight: "calc(100vh - 140px)", alignItems: "start" }}>
@@ -3085,6 +3578,19 @@ export default function IptvModule({ onBack }) {
                   onVolumeStateChange={handlePlayerVolumeStateChange}
                   userHasSetVolume={volumeSetByUserRef.current}
                   fallbackUserVolume={userVolumeRef.current}
+                  onCastStart={(device, url) => {
+                    setGlobalCastActive(true);
+                    setGlobalCastDevice(device);
+                    setGlobalCastTitle(currentEpisode?.name || "");
+                  }}
+                  onCastStop={() => {
+                    setGlobalCastActive(false);
+                    setGlobalCastDevice(null);
+                    setGlobalCastTitle("");
+                    castEndedCallbackRef.current = null;
+                  }}
+                  globalCastActive={globalCastActive}
+                  globalCastDevice={globalCastDevice}
                 />
              </div>
              <div style={{ marginTop: "auto", paddingTop: 10, display: "grid", gap: 10 }}>
@@ -3097,10 +3603,10 @@ export default function IptvModule({ onBack }) {
            
            <div style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12, border: "1px solid #ff000022", overflowY: "auto", maxHeight: "calc(100vh - 220px)", padding: 10 }} onScroll={handleScrollInteract}>
               <FolderTitle style={{ fontSize: "1.1em", marginBottom: 10 }}>Temporada {selectedSeason}</FolderTitle>
-              {episodes.map((ep) => {
+              {episodes.map((ep, epIdx) => {
                 const episodeItemKey = `episode-${ep.id}`;
                 return (
-                <div 
+                <div
                   key={ep.id}
                   onMouseEnter={() => setHoveredCardId(episodeItemKey)}
                   onMouseLeave={() => setHoveredCardId(null)}
@@ -3110,15 +3616,16 @@ export default function IptvModule({ onBack }) {
                     displayName: ep.name,
                     playlistItem: buildPlaylistItemFromChannel(ep),
                   })}
-                  onClick={() => playChannel(ep, false)} // false means don't open modal, just set selected
+                  onClick={() => playChannel(ep, false)}
                   {...getKeyboardButtonProps(`Reproduzir episódio ${ep.episodeNum}`, () => playChannel(ep, false))}
-                  style={{ 
-                    padding: 10, 
-                    marginBottom: 8, 
-                    background: selected?.id === ep.id ? "#ff000044" : "#1a1a1a", 
-                    borderRadius: 6, 
+                  style={{
+                    padding: 10,
+                    marginBottom: 8,
+                    background: selected?.id === ep.id ? "#ff000044" : "#1a1a1a",
+                    borderRadius: 6,
                     cursor: "pointer",
                     border: selected?.id === ep.id ? "1px solid #ff0000" : "1px solid transparent",
+                    ...getCardStaggerStyle(epIdx),
                     ...getCardInteractiveStyle(episodeItemKey),
                   }}
                 >
@@ -3242,6 +3749,18 @@ export default function IptvModule({ onBack }) {
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
                 fallbackUserVolume={userVolumeRef.current}
+                onCastStart={(device) => {
+                  setGlobalCastActive(true);
+                  setGlobalCastDevice(device);
+                  setGlobalCastTitle(selected?.name || "Filme");
+                }}
+                onCastStop={() => {
+                  setGlobalCastActive(false);
+                  setGlobalCastDevice(null);
+                  setGlobalCastTitle("");
+                }}
+                globalCastActive={globalCastActive}
+                globalCastDevice={globalCastDevice}
               />
             </div>
           </div>
@@ -3331,6 +3850,18 @@ export default function IptvModule({ onBack }) {
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
                 fallbackUserVolume={userVolumeRef.current}
+                onCastStart={(device) => {
+                  setGlobalCastActive(true);
+                  setGlobalCastDevice(device);
+                  setGlobalCastTitle(selected?.name || "Filme");
+                }}
+                onCastStop={() => {
+                  setGlobalCastActive(false);
+                  setGlobalCastDevice(null);
+                  setGlobalCastTitle("");
+                }}
+                globalCastActive={globalCastActive}
+                globalCastDevice={globalCastDevice}
               />
             </div>
           </section>
@@ -3341,8 +3872,13 @@ export default function IptvModule({ onBack }) {
             {selectedMovieCategory?.label || "Selecione uma categoria"}
           </FolderTitle>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
-            {movieItems.map((channel) => {
+            {movieItems.length === 0 && search.trim() && (
+              <div style={{ padding: "40px 20px", textAlign: "center", color: "#aaa" }}>
+                Nenhum resultado para "<span style={{ color: "#ff6666" }}>{search}</span>"
+              </div>
+            )}
+            <div key={`movie-grid-${selectedMovieCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
+            {movieItems.map((channel, mIdx) => {
               const movieCardKey = `movie-${channel.id}`;
               return (
               <div
@@ -3372,6 +3908,7 @@ export default function IptvModule({ onBack }) {
                   position: "relative",
                   overflow: "hidden",
                   cursor: "pointer",
+                  ...getCardStaggerStyle(mIdx),
                   ...getCardInteractiveStyle(movieCardKey),
                 }}
               >
@@ -3475,6 +4012,18 @@ export default function IptvModule({ onBack }) {
                 onVolumeStateChange={handlePlayerVolumeStateChange}
                 userHasSetVolume={volumeSetByUserRef.current}
                 fallbackUserVolume={userVolumeRef.current}
+                onCastStart={(device) => {
+                  setGlobalCastActive(true);
+                  setGlobalCastDevice(device);
+                  setGlobalCastTitle(selected?.name || "TV ao Vivo");
+                }}
+                onCastStop={() => {
+                  setGlobalCastActive(false);
+                  setGlobalCastDevice(null);
+                  setGlobalCastTitle("");
+                }}
+                globalCastActive={globalCastActive}
+                globalCastDevice={globalCastDevice}
               />
             </div>
           </div>
@@ -3561,6 +4110,18 @@ export default function IptvModule({ onBack }) {
                   onVolumeStateChange={handlePlayerVolumeStateChange}
                   userHasSetVolume={volumeSetByUserRef.current}
                   fallbackUserVolume={userVolumeRef.current}
+                  onCastStart={(device) => {
+                    setGlobalCastActive(true);
+                    setGlobalCastDevice(device);
+                    setGlobalCastTitle(selected?.name || "TV ao Vivo");
+                  }}
+                  onCastStop={() => {
+                    setGlobalCastActive(false);
+                    setGlobalCastDevice(null);
+                    setGlobalCastTitle("");
+                  }}
+                  globalCastActive={globalCastActive}
+                  globalCastDevice={globalCastDevice}
                 />
               </div>
             </section>
@@ -3571,8 +4132,13 @@ export default function IptvModule({ onBack }) {
               {selectedLiveCategory?.label || "Selecione uma categoria"}
             </FolderTitle>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
-              {liveItems.map((channel) => {
+            {liveItems.length === 0 && search.trim() && (
+              <div style={{ padding: "40px 20px", textAlign: "center", color: "#aaa" }}>
+                Nenhum resultado para "<span style={{ color: "#ff6666" }}>{search}</span>"
+              </div>
+            )}
+            <div key={`live-grid-${selectedLiveCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
+              {liveItems.map((channel, lIdx) => {
                 const liveCardKey = `live-${channel.id}`;
                 return (
                 <div
@@ -3602,6 +4168,7 @@ export default function IptvModule({ onBack }) {
                     position: "relative",
                     overflow: "hidden",
                     cursor: "pointer",
+                    ...getCardStaggerStyle(lIdx),
                     ...getCardInteractiveStyle(liveCardKey),
                   }}
                 >
@@ -3692,15 +4259,6 @@ export default function IptvModule({ onBack }) {
             <FadeTransition transitionKey={transitionKey}>
               {content}
             </FadeTransition>
-            <footer style={{ margin: "22px 20px 0", borderTop: "1px solid #ff000033", padding: "14px 0 24px", color: "#d1d1d1", fontSize: 12, display: "grid", gap: 8 }}>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                <a href="#" style={{ color: "#ff0000" }}>Termos</a>
-                <a href="#" style={{ color: "#ff0000" }}>Privacidade</a>
-                <a href="#" style={{ color: "#ff0000" }}>Suporte</a>
-                <a href="#" style={{ color: "#ff0000" }}>Redes</a>
-                </div>
-                <div>{status}</div>
-            </footer>
         </>
     );
   };
@@ -3863,14 +4421,139 @@ export default function IptvModule({ onBack }) {
               })}
             </nav>
 
-            <div style={{ position: "relative", minWidth: 220 }}>
-              <FaSearch style={{ position: "absolute", left: 10, top: 10, color: "#ff0000" }} />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar"
-                style={{ width: "100%", background: "rgba(10,10,10,0.85)", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "8px 10px 8px 30px", outline: "none" }}
-              />
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ position: "relative", minWidth: 220 }}>
+                <FaSearch style={{ position: "absolute", left: 10, top: 10, color: "#ff0000" }} />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar"
+                  style={{ width: "100%", background: "rgba(10,10,10,0.85)", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "8px 10px 8px 30px", outline: "none" }}
+                />
+              </div>
+
+              {globalCastActive ? (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: "rgba(34,211,238,0.12)",
+                  border: "1px solid #22d3ee",
+                  borderRadius: 8,
+                  padding: "6px 10px",
+                  color: "#22d3ee",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  maxWidth: 180,
+                  overflow: "hidden",
+                }}>
+                  <FaChromecast size={13} style={{ flexShrink: 0 }} />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", maxWidth: 110 }}>
+                    {globalCastTitle || globalCastDevice?.name || "Chromecast"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await ipcRenderer.invoke("chromecast-stop");
+                      setGlobalCastActive(false);
+                      setGlobalCastDevice(null);
+                      setGlobalCastTitle("");
+                      castEndedCallbackRef.current = null;
+                    }}
+                    style={{ background: "none", border: "none", color: "#22d3ee", cursor: "pointer", padding: 0, marginLeft: 2, display: "flex", alignItems: "center", flexShrink: 0 }}
+                    title="Parar transmissão"
+                  >
+                    <FaTimes size={10} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setHeaderCastMenu((prev) => !prev);
+                      if (!headerCastMenu) {
+                        setHeaderCastDiscovering(true);
+                        setHeaderCastDevices([]);
+                        try {
+                          const result = await ipcRenderer.invoke("chromecast-discover");
+                          if (result.ok) setHeaderCastDevices(result.devices || []);
+                        } catch {}
+                        setHeaderCastDiscovering(false);
+                      }
+                    }}
+                    style={{
+                      background: "none",
+                      border: "1px solid #ff000055",
+                      borderRadius: 8,
+                      padding: "6px 10px",
+                      color: "#aaa",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 12,
+                      transition: "all 0.2s",
+                    }}
+                    title="Conectar Chromecast"
+                  >
+                    <FaChromecast size={14} />
+                  </button>
+                  {headerCastMenu && (
+                    <div style={{
+                      position: "absolute",
+                      top: "100%",
+                      right: 0,
+                      marginTop: 6,
+                      zIndex: 95,
+                      background: "#1a1a1a",
+                      border: "1px solid #ff000066",
+                      borderRadius: 10,
+                      padding: 12,
+                      minWidth: 200,
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <span style={{ color: "#fff", fontSize: 12, fontWeight: 700 }}>Chromecast</span>
+                        <button type="button" onClick={() => setHeaderCastMenu(false)} style={{ background: "none", border: "none", color: "#aaa", cursor: "pointer", fontSize: 14 }}>✕</button>
+                      </div>
+                      {headerCastDiscovering && (
+                        <div style={{ color: "#aaa", fontSize: 11, textAlign: "center", padding: 10 }}>Buscando dispositivos...</div>
+                      )}
+                      {!headerCastDiscovering && headerCastDevices.length === 0 && (
+                        <div style={{ color: "#888", fontSize: 11, textAlign: "center", padding: 10 }}>Nenhum dispositivo encontrado.</div>
+                      )}
+                      {headerCastDevices.map((device, i) => (
+                        <button
+                          key={`${device.host}-${i}`}
+                          type="button"
+                          onClick={() => {
+                            setGlobalCastActive(true);
+                            setGlobalCastDevice(device);
+                            setGlobalCastTitle("");
+                            setHeaderCastMenu(false);
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "8px 10px",
+                            marginBottom: 4,
+                            background: "#222",
+                            border: "1px solid #333",
+                            borderRadius: 6,
+                            color: "#fff",
+                            fontSize: 12,
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                        >
+                          {device.name || device.host}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <button
@@ -4140,11 +4823,35 @@ export default function IptvModule({ onBack }) {
           <div
             ref={contentRef}
             onScroll={handleContentScroll}
-            style={{ height: "100%", overflowY: "auto", paddingTop: APP_HEADER_HEIGHT + 12, paddingBottom: 28 }}
+            style={{ height: "100%", overflowY: "auto", paddingTop: APP_HEADER_HEIGHT + 12, paddingBottom: 56 }}
           >
             {renderContent()}
           </div>
         </div>
+
+        <footer style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          background: "linear-gradient(to top, rgba(0,0,0,0.95) 60%, transparent)",
+          padding: "18px 20px 12px",
+          color: "#d1d1d1",
+          fontSize: 12,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          pointerEvents: "none",
+        }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, pointerEvents: "auto" }}>
+            <a href="#" style={{ color: "#ff0000" }}>Termos</a>
+            <a href="#" style={{ color: "#ff0000" }}>Privacidade</a>
+            <a href="#" style={{ color: "#ff0000" }}>Suporte</a>
+            <a href="#" style={{ color: "#ff0000" }}>Redes</a>
+          </div>
+          <div style={{ color: "#888" }}>{status}</div>
+        </footer>
 
         {infoChannel && (
           <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.78)", display: "grid", placeItems: "center", padding: 20 }} onClick={() => setInfoChannel(null)}>

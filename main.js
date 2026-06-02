@@ -1,11 +1,14 @@
 // main.js
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const { pathToFileURL } = require('url');
 const Store = require('electron-store');
+const Client = require('castv2-client').Client;
+const DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
+const Bonjour = require('bonjour-service').Bonjour;
 
 const store = new Store();
 
@@ -174,6 +177,7 @@ app.whenReady().then(() => {
   readSynopsisDiskCache();
   readCustomPlaylistsDiskCache();
   readLastEpisodesDiskCache();
+  Menu.setApplicationMenu(null);
   createWindow();
 });
 
@@ -1693,4 +1697,205 @@ ipcMain.handle('generate-thumbnails', async (e, folders) => {
   }
 
   return { success: true, total: totalVideos, processed: processedVideos };
+});
+
+// =========================
+// Chromecast
+// =========================
+
+let castClient = null;
+let castPlayer = null;
+let castStatusInterval = null;
+
+function notifyCastStatus(status) {
+  try {
+    const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+    if (win && !win.isDestroyed()) {
+      win.webContents.send('chromecast-status', status);
+    }
+  } catch {}
+}
+
+function startCastStatusMonitor() {
+  stopCastStatusMonitor();
+  castStatusInterval = setInterval(() => {
+    if (!castPlayer) {
+      stopCastStatusMonitor();
+      return;
+    }
+    try {
+      castPlayer.getStatus((err, status) => {
+        if (err) return;
+        if (status) {
+          notifyCastStatus({
+            playerState: status.playerState,
+            currentTime: status.currentTime,
+            duration: status.media?.duration,
+            idleReason: status.idleReason,
+          });
+          // Detect media ended — notify but don't stop monitor
+          // The monitor will restart automatically on next chromecast-cast
+          if (status.playerState === 'IDLE' && status.idleReason === 'FINISHED') {
+            notifyCastStatus({ playerState: 'ENDED', idleReason: 'FINISHED' });
+          }
+        }
+      });
+    } catch {}
+  }, 2000);
+}
+
+function stopCastStatusMonitor() {
+  if (castStatusInterval) {
+    clearInterval(castStatusInterval);
+    castStatusInterval = null;
+  }
+}
+
+ipcMain.handle('chromecast-discover', async () => {
+  return new Promise((resolve) => {
+    const bonjour = new Bonjour();
+    const devices = [];
+    const browser = bonjour.find({ type: 'googlecast' }, (service) => {
+      devices.push({
+        name: service.name,
+        host: service.addresses?.[0] || service.host,
+        port: service.port,
+      });
+    });
+
+    setTimeout(() => {
+      browser.stop();
+      bonjour.destroy();
+      resolve({ ok: true, devices });
+    }, 4000);
+  });
+});
+
+ipcMain.handle('chromecast-cast', async (_event, { host, port, url, title, contentType }) => {
+  return new Promise((resolve) => {
+    try {
+      if (castClient) {
+        try { castClient.close(); } catch {}
+        castClient = null;
+        castPlayer = null;
+      }
+
+      castClient = new Client();
+      castClient.connect({ host, port: port || 8009 }, () => {
+        castClient.launch(DefaultMediaReceiver, (err, player) => {
+          if (err) {
+            resolve({ ok: false, error: err.message });
+            return;
+          }
+          castPlayer = player;
+          const media = {
+            contentId: url,
+            contentType: contentType || 'video/mp4',
+            streamType: 'LIVE',
+            metadata: {
+              type: 0,
+              metadataType: 0,
+              title: title || 'MindFlix',
+            },
+          };
+          player.load(media, { autoplay: true }, (loadErr) => {
+            if (loadErr) {
+              resolve({ ok: false, error: loadErr.message });
+            } else {
+              startCastStatusMonitor();
+              resolve({ ok: true });
+            }
+          });
+        });
+      });
+
+      castClient.on('error', (err) => {
+        resolve({ ok: false, error: err?.message || 'Erro de conexão' });
+      });
+    } catch (err) {
+      resolve({ ok: false, error: err?.message || 'Erro desconhecido' });
+    }
+  });
+});
+
+ipcMain.handle('chromecast-stop', async () => {
+  try {
+    stopCastStatusMonitor();
+    if (castPlayer) {
+      castPlayer.stop(() => {});
+      castPlayer = null;
+    }
+    if (castClient) {
+      castClient.close();
+      castClient = null;
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('chromecast-pause', async () => {
+  try {
+    if (!castPlayer) return { ok: false, error: 'Nenhum player ativo' };
+    return new Promise((resolve) => {
+      castPlayer.pause(() => resolve({ ok: true }));
+    });
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('chromecast-resume', async () => {
+  try {
+    if (!castPlayer) return { ok: false, error: 'Nenhum player ativo' };
+    return new Promise((resolve) => {
+      castPlayer.play(() => resolve({ ok: true }));
+    });
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('chromecast-seek', async (_event, { time }) => {
+  try {
+    if (!castPlayer) return { ok: false, error: 'Nenhum player ativo' };
+    return new Promise((resolve) => {
+      castPlayer.seek(time, () => resolve({ ok: true }));
+    });
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('chromecast-volume', async (_event, { level }) => {
+  try {
+    if (!castPlayer) return { ok: false, error: 'Nenhum player ativo' };
+    return new Promise((resolve) => {
+      castPlayer.media?.setVolume({ level }, () => resolve({ ok: true }));
+      resolve({ ok: true });
+    });
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
+});
+
+ipcMain.handle('chromecast-status-request', async () => {
+  try {
+    if (!castPlayer) return { ok: false, error: 'Nenhum player ativo' };
+    return new Promise((resolve) => {
+      castPlayer.getStatus((err, status) => {
+        if (err) return resolve({ ok: false, error: err.message });
+        resolve({
+          ok: true,
+          playerState: status?.playerState,
+          currentTime: status?.currentTime,
+          duration: status?.media?.duration,
+          idleReason: status?.idleReason,
+        });
+      });
+    });
+  } catch (err) {
+    return { ok: false, error: err?.message };
+  }
 });
