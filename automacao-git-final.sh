@@ -137,7 +137,7 @@ ensure_gh_login() {
     printf 'Ja autenticado com o GitHub.\n'
   fi
 
-  if ! gh auth setup-git >/dev/null 2>&1; then
+  if ! gh auth setup-git --hostname github.com >/dev/null 2>&1; then
     printf 'Nao foi possivel configurar o Git para usar o helper do GitHub CLI.\n'
     return 1
   fi
@@ -338,6 +338,11 @@ iniciar_sem_lfs() {
 atualizar_projeto() {
   clear_screen
   printf 'Atualizando repositorio local...\n'
+
+  if ! ensure_gh || ! ensure_gh_login; then
+    pause_screen
+    return
+  fi
 
   if ! ensure_git_repo; then
     printf 'Este diretorio nao e um repositorio Git valido.\n'
