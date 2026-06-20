@@ -136,6 +136,11 @@ ensure_gh_login() {
   else
     printf 'Ja autenticado com o GitHub.\n'
   fi
+
+  if ! gh auth setup-git >/dev/null 2>&1; then
+    printf 'Nao foi possivel configurar o Git para usar o helper do GitHub CLI.\n'
+    return 1
+  fi
 }
 
 ensure_git_repo() {
