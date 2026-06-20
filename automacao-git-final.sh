@@ -126,7 +126,7 @@ ensure_lfs() {
 ensure_gh_login() {
   if ! gh auth status >/dev/null 2>&1; then
     printf 'Ainda nao autenticado. Iniciando login...\n'
-    gh auth login
+    gh auth login --web --git-protocol https
   else
     printf 'Ja autenticado com o GitHub.\n'
   fi
