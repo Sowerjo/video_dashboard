@@ -1,0 +1,36 @@
+2026-06-20 — IPTV design audit, Phase 1
+
+- Added IPTV design tokens and responsive layout styles.
+- Masked playlist credentials while the login request is processing.
+- Made the authenticated shell, header, navigation, search, catalogs and footer responsive.
+- Moved the footer out of the content overlay.
+- Reduced Home quick-action height so personalized content appears earlier.
+- Added semantic navigation state, status regions and visible keyboard focus.
+- Separated primary media-card actions from Favorite controls.
+- Build and live IPTV validation completed successfully.
+- Phase 2 and Phase 3 remain pending user review.
+
+2026-06-20 — IPTV design audit, Phase 2
+
+- Replaced the authenticated branded backdrop with a neutral catalog canvas.
+- Consolidated typography, surfaces, borders, accent states and metadata colors into tokens.
+- Reduced continuous glow and visual noise in quick actions and primary controls.
+- Standardized movie and series posters at 2:3 and live-channel artwork at 16:9.
+- Added dark artwork placeholders and safe lazy-loading behavior for missing or delayed images.
+- Clarified category hierarchy by separating labels from secondary item counts.
+- Simplified login loading and error feedback to avoid duplicated status messages.
+- Build and live validation of Home, Movies, Series and Live views completed successfully.
+- Phase 3 remains pending user review.
+
+2026-06-20 — IPTV design audit, Phase 3
+
+- Added shared duration, easing, progress, danger and overlay-shadow tokens.
+- Replaced missing animation references with scoped fade, shimmer and spinner keyframes.
+- Added smooth artwork reveal while preserving placeholders until images finish loading.
+- Consolidated playlist, catalog and player loading feedback into consistent visual components.
+- Standardized empty search, playlist and category states with concise guidance.
+- Removed user-facing debug metadata from the empty Series screen.
+- Removed the decorative continuous player glow and strengthened reduced-motion behavior.
+- Added ARIA status and progress semantics to catalog, player and URL-update feedback.
+- Build and visual validation of desktop, compact and error states completed successfully.
+- All approved IPTV design-audit phases are complete.

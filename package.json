@@ -35,7 +35,8 @@
     "build": "webpack",
     "electron": "electron .",
     "build-ico": "node scripts/build-ico.js",
-    "dist": "npm run build-renderer && electron-builder"
+    "dist": "npm run build-renderer && electron-builder",
+    "git-automation": "bash ./automacao-git-final.sh"
   },
   "build": {
     "appId": "com.jogus.videodashboard",

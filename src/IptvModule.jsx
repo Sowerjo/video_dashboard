@@ -32,6 +32,7 @@ import {
   FaVolumeMute,
 } from "react-icons/fa";
 import { MdSkipNext, MdSkipPrevious, MdReplay10, MdForward10 } from "react-icons/md";
+import "./iptv.css";
 
 const { ipcRenderer } = window.require("electron");
 
@@ -271,16 +272,16 @@ function makeSeriesProgressKey(categoryLabel, seriesName) {
 }
 
 const baseButtonStyle = {
-  background: "#1a0000",
-  color: "#fff",
-  border: "1px solid #ff0000",
+  background: "var(--iptv-color-surface-muted)",
+  color: "var(--iptv-color-text)",
+  border: "1px solid var(--iptv-color-border)",
   borderRadius: 8,
   padding: "8px 12px",
   cursor: "pointer",
   fontWeight: 700,
-  boxShadow: "0 0 8px #ff000044",
+  boxShadow: "none",
 };
-const CARD_BASE_TRANSITION = "transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease";
+const CARD_BASE_TRANSITION = "transform var(--iptv-duration-fast) var(--iptv-ease-standard), box-shadow var(--iptv-duration-normal) var(--iptv-ease-standard), border-color var(--iptv-duration-fast) var(--iptv-ease-standard), filter var(--iptv-duration-fast) var(--iptv-ease-standard)";
 const CARD_ACTIVE_TRANSFORM = "translateY(-3px) scale(1.02)";
 
 const cachedLogoByUrl = new Map();
@@ -774,25 +775,14 @@ const ReactUrlPlayer = React.memo(({
       })()}
 
       {isBuffering && playerSource && (
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 20,
-          background: "rgba(0,0,0,0.75)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          pointerEvents: "none",
-        }}>
-          <div style={{ width: 36, height: 36, border: "3px solid #ff000033", borderTop: "3px solid #ff0000", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>
+        <div className="iptv-player-loading" role="status" aria-live="polite">
+          <div className="iptv-spinner" aria-hidden="true" style={{ width: 36, height: 36 }} />
+          <div style={{ color: "var(--iptv-color-text)", fontSize: 13, fontWeight: 700 }}>
             {loadingState === "connecting" && "Conectando ao servidor..."}
             {loadingState === "metadata" && "Recebendo metadados..."}
             {loadingState === "buffering" && "Buffering..."}
           </div>
-          <div style={{ color: "#aaa", fontSize: 11, textAlign: "center", maxWidth: 280 }}>
+          <div style={{ color: "var(--iptv-color-text-muted)", fontSize: 11, textAlign: "center", maxWidth: 280 }}>
             <div>Fonte {sourceIndex + 1} de {playableSources.length}: {getSourceLabel(playerSource)}</div>
             <div style={{ marginTop: 4 }}>
               {elapsedSeconds}s decorridos
@@ -969,18 +959,6 @@ const ReactUrlPlayer = React.memo(({
         </div>
       )}
 
-      <div
-        style={{
-          position: "absolute",
-          top: "-2px",
-          left: "-2px",
-          right: "-2px",
-          bottom: "-2px",
-          borderRadius: "8px",
-          animation: "neonGlow 2s ease-in-out infinite alternate",
-          zIndex: -1
-        }}
-      />
     </div>
   );
 }, arePlayerPropsEqual);
@@ -988,6 +966,8 @@ const ReactUrlPlayer = React.memo(({
 const CachedLogoImage = ({ src, alt, style }) => {
   const imageRef = useRef(null);
   const [shouldLoad, setShouldLoad] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [resolvedSrc, setResolvedSrc] = useState(() => {
     const source = String(src || "").trim();
     if (!source) return "";
@@ -998,6 +978,8 @@ const CachedLogoImage = ({ src, alt, style }) => {
 
   useEffect(() => {
     const source = String(src || "").trim();
+    setFailed(false);
+    setLoaded(false);
     if (!source) {
       setShouldLoad(false);
       return;
@@ -1087,8 +1069,26 @@ const CachedLogoImage = ({ src, alt, style }) => {
     };
   }, [src, shouldLoad]);
 
-  if (!resolvedSrc) return null;
-  return <img ref={imageRef} src={resolvedSrc} alt={alt} style={style} loading="lazy" />;
+  const initial = String(alt || "?").trim().charAt(0).toUpperCase() || "?";
+  return (
+    <div ref={imageRef} className="iptv-artwork">
+      <div className="iptv-artwork-placeholder" aria-hidden="true">{initial}</div>
+      {!failed && resolvedSrc && resolvedSrc !== TRANSPARENT_PIXEL && (
+        <img
+          className={loaded ? "is-loaded" : ""}
+          src={resolvedSrc}
+          alt={alt}
+          style={style}
+          loading="lazy"
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            setLoaded(false);
+            setFailed(true);
+          }}
+        />
+      )}
+    </div>
+  );
 };
 
 const FadeTransition = ({ transitionKey, duration = 400, children, style: extraStyle }) => {
@@ -1103,7 +1103,7 @@ const FadeTransition = ({ transitionKey, duration = 400, children, style: extraS
   }, [transitionKey]);
 
   return (
-    <div style={{ opacity, transition: `opacity ${duration}ms ease`, minHeight: 0, ...extraStyle }}>
+    <div style={{ opacity, transition: `opacity ${duration}ms var(--iptv-ease-standard)`, minHeight: 0, ...extraStyle }}>
       {children}
     </div>
   );
@@ -1121,7 +1121,7 @@ const StaggeredItem = ({ index, delay = 60, children }) => {
     <div style={{
       opacity: visible ? 1 : 0,
       transform: visible ? "translateY(0)" : "translateY(12px)",
-      transition: "opacity 0.4s ease, transform 0.4s ease",
+      transition: "opacity var(--iptv-duration-slow) var(--iptv-ease-standard), transform var(--iptv-duration-slow) var(--iptv-ease-standard)",
     }}>
       {children}
     </div>
@@ -1134,7 +1134,7 @@ function getCardStaggerStyle(index) {
   const delayMs = Math.min(row * 50, 400);
   return {
     opacity: 0,
-    animation: `fadeSlideIn 0.4s ease ${delayMs}ms forwards`,
+    animation: `iptv-fade-slide-in var(--iptv-duration-slow) var(--iptv-ease-standard) ${delayMs}ms forwards`,
   };
 }
 
@@ -1225,6 +1225,17 @@ const HorizontalRow = ({ children }) => {
     </div>
   );
 };
+
+const CardPrimaryAction = ({ label, onActivate, onFocus, onBlur }) => (
+  <button
+    type="button"
+    className="iptv-card-primary-action"
+    aria-label={label}
+    onClick={onActivate}
+    onFocus={onFocus}
+    onBlur={onBlur}
+  />
+);
 
 export default function IptvModule({ onBack }) {
   const [form, setForm] = useState({
@@ -2910,8 +2921,8 @@ export default function IptvModule({ onBack }) {
     return {
       transform: active ? CARD_ACTIVE_TRANSFORM : "translateY(0) scale(1)",
       transition: CARD_BASE_TRANSITION,
-      boxShadow: active ? "0 12px 24px rgba(0,0,0,0.45)" : "0 0 0 rgba(0,0,0,0)",
-      borderColor: active ? "#ff0000" : "#ff000044",
+      boxShadow: active ? "var(--iptv-shadow-card)" : "none",
+      borderColor: active ? "var(--iptv-color-accent)" : "var(--iptv-color-border)",
       filter: active ? "brightness(1.05)" : "brightness(1)",
       outline: "none",
     };
@@ -2921,18 +2932,8 @@ export default function IptvModule({ onBack }) {
     Array.from({ length: count }).map((_, index) => (
       <div
         key={`skeleton-${index}`}
+        className="iptv-skeleton-card"
         aria-hidden="true"
-        style={{
-          width: "100%",
-          height: 126,
-          borderRadius: 12,
-          position: "relative",
-          overflow: "hidden",
-          border: "1px solid #ff000033",
-          background: "linear-gradient(90deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.05) 100%)",
-          backgroundSize: "220% 100%",
-          animation: "skeletonShimmer 1.2s ease-in-out infinite",
-        }}
       >
         <div
           style={{
@@ -3040,11 +3041,14 @@ export default function IptvModule({ onBack }) {
 
     return (
       <div style={{ padding: "0 20px" }}>
-        <div style={{ display: "flex", gap: 20, marginBottom: 28, flexWrap: "wrap", justifyContent: "center" }}>
+        <div className="iptv-quick-actions" style={{ display: "flex", gap: 20, marginBottom: 28, flexWrap: "wrap", justifyContent: "center" }}>
           <Tile
+            as="button"
+            type="button"
+            className="iptv-quick-action"
             style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
             onClick={() => handleNavClick("live")}
-            {...getKeyboardButtonProps("Abrir TV ao vivo", () => handleNavClick("live"))}
+            aria-label="Abrir TV ao vivo"
           >
             <FolderTitle style={{ fontSize: "1.8em" }}>TV ao Vivo</FolderTitle>
             <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
@@ -3052,9 +3056,12 @@ export default function IptvModule({ onBack }) {
             </div>
           </Tile>
           <Tile
+            as="button"
+            type="button"
+            className="iptv-quick-action"
             style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
             onClick={() => handleNavClick("movies")}
-            {...getKeyboardButtonProps("Abrir filmes", () => handleNavClick("movies"))}
+            aria-label="Abrir filmes"
           >
             <FolderTitle style={{ fontSize: "1.8em" }}>Filmes</FolderTitle>
             <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
@@ -3062,9 +3069,12 @@ export default function IptvModule({ onBack }) {
             </div>
           </Tile>
           <Tile
+            as="button"
+            type="button"
+            className="iptv-quick-action"
             style={{ width: 300, height: 180, cursor: "pointer", background: "linear-gradient(135deg, #2c0000 0%, #000 100%)", border: "1px solid #ff0000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
             onClick={() => handleNavClick("series")}
-            {...getKeyboardButtonProps("Abrir séries", () => handleNavClick("series"))}
+            aria-label="Abrir séries"
           >
             <FolderTitle style={{ fontSize: "1.8em" }}>Séries</FolderTitle>
             <div style={{ marginTop: 14, width: "100%", display: "flex", justifyContent: "center", color: "#ff0000", filter: "drop-shadow(0 0 6px #ff0000aa)" }}>
@@ -3109,14 +3119,10 @@ export default function IptvModule({ onBack }) {
                         setHoveredCardId(null);
                         setUserInteracting(false);
                       }}
-                      onFocus={() => setFocusedCardId(homeCardKey)}
-                      onBlur={() => setFocusedCardId(null)}
-                      onClick={() => playHomeItem(channel, row.key)}
                       onContextMenu={(event) => handleOpenCardContextMenu(event, {
                         displayName: channel.name,
                         playlistItem,
                       })}
-                      {...getKeyboardButtonProps(`Assistir ${channel.name}`, () => playHomeItem(channel, row.key))}
                       style={{
                         minWidth: 220,
                         width: 220,
@@ -3130,8 +3136,15 @@ export default function IptvModule({ onBack }) {
                         ...getCardInteractiveStyle(homeCardKey),
                       }}
                     >
+                      <CardPrimaryAction
+                        label={`Assistir ${channel.name}`}
+                        onActivate={() => playHomeItem(channel, row.key)}
+                        onFocus={() => setFocusedCardId(homeCardKey)}
+                        onBlur={() => setFocusedCardId(null)}
+                      />
                       <button
                         type="button"
+                        aria-label={channel.favoriteType === "series" ? `Alternar favorito da série ${channel.name}` : `Alternar favorito de ${channel.name}`}
                         onClick={(event) => {
                           event.stopPropagation();
                           if (channel.favoriteType === "series") {
@@ -3161,11 +3174,7 @@ export default function IptvModule({ onBack }) {
                       >
                         <FaStar size={14} />
                       </button>
-                      {channel.logo ? (
-                        <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
-                      ) : (
-                        <div style={{ padding: 10, color: "#ddd" }}>{channel.name}</div>
-                      )}
+                      <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
                       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: getCardInteractiveState(homeCardKey) ? "rgba(0,0,0,0.86)" : "rgba(0,0,0,0.7)", padding: 4, fontSize: 11 }}>
                         {channel.name}
                       </div>
@@ -3191,6 +3200,7 @@ export default function IptvModule({ onBack }) {
                     const kindLabel = channel.kind === "movie" ? "Filme" : "Série";
                     return (
                       <div
+                        className="iptv-poster-card"
                         key={channel.id}
                         onMouseEnter={() => setHoveredCardId(recCardKey)}
                         onMouseLeave={() => setHoveredCardId(null)}
@@ -3223,13 +3233,7 @@ export default function IptvModule({ onBack }) {
                           ...getCardInteractiveStyle(recCardKey),
                         }}
                       >
-                        {channel.logo ? (
-                          <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
-                        ) : (
-                          <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ddd", fontWeight: 700, padding: 8, textAlign: "center", fontSize: 12 }}>
-                            {channel.name}
-                          </div>
-                        )}
+                        <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
                         <div style={{ position: "absolute", top: 8, right: 8, background: channel.kind === "movie" ? "#f97316" : "#a78bfa", color: "#fff", fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>
                           {kindLabel}
                         </div>
@@ -3279,11 +3283,7 @@ export default function IptvModule({ onBack }) {
                             ...getCardInteractiveStyle(homePlaylistCardKey),
                           }}
                         >
-                          {item.logo ? (
-                            <CachedLogoImage src={item.logo} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
-                          ) : (
-                            <div style={{ padding: 10, color: "#ddd" }}>{item.name}</div>
-                          )}
+                          <CachedLogoImage src={item.logo} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
                           <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: getCardInteractiveState(homePlaylistCardKey) ? "rgba(0,0,0,0.86)" : "rgba(0,0,0,0.7)", padding: 4, fontSize: 11 }}>
                             {item.name}
                           </div>
@@ -3301,8 +3301,9 @@ export default function IptvModule({ onBack }) {
         {homeTab === "playlists" && (
           <div style={{ display: "grid", gap: 14 }}>
             {customPlaylists.length === 0 && (
-              <div style={{ border: "1px solid #ff000044", borderRadius: 12, background: "rgba(0,0,0,0.45)", padding: 16, color: "#ddd" }}>
-                Nenhuma playlist criada ainda.
+              <div className="iptv-empty-state">
+                <div className="iptv-empty-state-title">Nenhuma playlist criada</div>
+                <div>Use o menu de um filme, série ou canal para organizar seus favoritos.</div>
               </div>
             )}
             {customPlaylists.map((playlist) => (
@@ -3358,13 +3359,7 @@ export default function IptvModule({ onBack }) {
                           }}
                         >
                           <div style={{ height: 92, background: "linear-gradient(180deg, #3a0000 0%, #140000 100%)", position: "relative" }}>
-                            {item.logo ? (
-                              <CachedLogoImage src={item.logo} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
-                            ) : (
-                              <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ffd2d2", fontSize: 12, letterSpacing: 0.7 }}>
-                                SEM CAPA
-                              </div>
-                            )}
+                            <CachedLogoImage src={item.logo} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
                             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7), rgba(0,0,0,0.05))" }} />
                             <div style={{ position: "absolute", top: 8, left: 8, borderRadius: 999, border: `1px solid ${typeColor}`, background: "rgba(0,0,0,0.72)", color: typeColor, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>
                               {typeLabel}
@@ -3396,7 +3391,10 @@ export default function IptvModule({ onBack }) {
                     })}
                   </div>
                 ) : (
-                  <div style={{ color: "#bbb", fontSize: 13 }}>Sem itens nesta playlist.</div>
+                  <div className="iptv-empty-state" style={{ minHeight: 120 }}>
+                    <div className="iptv-empty-state-title">Playlist vazia</div>
+                    <div>Adicione itens pelo menu de contexto dos cartões.</div>
+                  </div>
                 )}
               </div>
             ))}
@@ -3415,29 +3413,25 @@ export default function IptvModule({ onBack }) {
       
       if (cats.length === 0) {
         return (
-          <div style={{ padding: "40px 20px", textAlign: "center", color: "#ddd" }}>
+          <div className="iptv-empty-state">
             {search.trim() ? (
               <>
-                <FolderTitle style={{ marginBottom: 10 }}>Nenhum resultado</FolderTitle>
-                <div>Nenhuma série encontrada para "<span style={{ color: "#ff6666" }}>{search}</span>"</div>
+                <div className="iptv-empty-state-title">Nenhum resultado</div>
+                <div>Nenhuma série encontrada para "<span className="iptv-empty-state-query">{search}</span>".</div>
               </>
             ) : (
               <>
-                <FolderTitle style={{ marginBottom: 10 }}>Nenhuma série encontrada</FolderTitle>
+                <div className="iptv-empty-state-title">Nenhuma série encontrada</div>
                 <div>Verifique se sua lista possui grupos identificados como "Series", "Séries", "Novelas", etc.</div>
               </>
             )}
-            <div style={{ marginTop: 20, fontSize: "0.9em", color: "#aaa" }}>
-               Debug: Total de itens carregados: {channels.length} <br/>
-               Filtro atual: {kind}
-            </div>
           </div>
         );
       }
 
       return (
-        <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
-          <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }} onScroll={handleScrollInteract}>
+        <div className="iptv-catalog-layout" style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
+          <aside className="iptv-category-sidebar" aria-label="Categorias de séries" style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }} onScroll={handleScrollInteract}>
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
             {cats.map((cat) => {
               const active = activeCategory === cat;
@@ -3446,6 +3440,8 @@ export default function IptvModule({ onBack }) {
                 <button
                   key={cat}
                   type="button"
+                  className="iptv-category-button"
+                  aria-pressed={active}
                   onClick={() => {
                     setSelected(null);
                     setBuffering(false);
@@ -3464,7 +3460,8 @@ export default function IptvModule({ onBack }) {
                     fontWeight: active ? 700 : 500,
                   }}
                 >
-                  {cat} ({count})
+                  <span>{cat}</span>
+                  <span className="iptv-category-count">{count}</span>
                 </button>
               );
             })}
@@ -3474,38 +3471,36 @@ export default function IptvModule({ onBack }) {
               {activeCategory || "Selecione uma categoria"}
             </FolderTitle>
             {activeCategoryLocked ? renderBlockedCategoryGate({ label: activeCategory, blockKey: activeCategory }) : (
-            <div key={`series-grid-${activeCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+            <div className="iptv-media-grid iptv-series-grid" key={`series-grid-${activeCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
               {seriesList.map((s, sIdx) => {
                 const seriesCardKey = `series-${activeCategory}-${s.name}`;
                 return (
                 <div
+                  className="iptv-poster-card"
                   key={s.name}
                   onMouseEnter={() => setHoveredCardId(seriesCardKey)}
                   onMouseLeave={() => setHoveredCardId(null)}
-                  onFocus={() => setFocusedCardId(seriesCardKey)}
-                  onBlur={() => setFocusedCardId(null)}
                   onContextMenu={(event) => handleOpenCardContextMenu(event, {
                     displayName: s.name,
                     playlistItem: buildPlaylistItemFromSeriesCard(s, activeCategory),
                   })}
-                  onClick={() => {
-                    setSelected(null);
-                    setBuffering(false);
-                    setSelectedCategory(activeCategory);
-                    setSelectedSeries(s.name);
-                    setViewState('seasons');
-                  }}
-                  {...getKeyboardButtonProps(`Abrir série ${s.name}`, () => {
-                    setSelected(null);
-                    setBuffering(false);
-                    setSelectedCategory(activeCategory);
-                    setSelectedSeries(s.name);
-                    setViewState("seasons");
-                  })}
                   style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative", ...getCardStaggerStyle(sIdx), ...getCardInteractiveStyle(seriesCardKey) }}
                 >
+                  <CardPrimaryAction
+                    label={`Abrir série ${s.name}`}
+                    onActivate={() => {
+                      setSelected(null);
+                      setBuffering(false);
+                      setSelectedCategory(activeCategory);
+                      setSelectedSeries(s.name);
+                      setViewState("seasons");
+                    }}
+                    onFocus={() => setFocusedCardId(seriesCardKey)}
+                    onBlur={() => setFocusedCardId(null)}
+                  />
                   <button
                     type="button"
+                    aria-label={`Alternar favorito da série ${s.name}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       toggleSeriesFavorite(activeCategory, s.name);
@@ -3528,7 +3523,7 @@ export default function IptvModule({ onBack }) {
                   >
                     <FaStar size={14} />
                   </button>
-                  {s.logo ? <CachedLogoImage src={s.logo} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ padding: 10 }}>{s.name}</div>}
+                  <CachedLogoImage src={s.logo} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.8)", padding: 6, fontSize: 12, textAlign: "center" }}>{s.name}</div>
                 </div>
               );
@@ -3555,36 +3550,35 @@ export default function IptvModule({ onBack }) {
         <div style={{ padding: "0 20px" }}>
           <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
           <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
-          <div key={`series-list-grid-${selectedCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
+          <div className="iptv-media-grid iptv-series-grid" key={`series-list-grid-${selectedCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
             {seriesList.map((s, sIdx) => {
               const seriesListCardKey = `series-list-${selectedCategory}-${s.name}`;
               return (
               <div
+                className="iptv-poster-card"
                 key={s.name}
                 onMouseEnter={() => setHoveredCardId(seriesListCardKey)}
                 onMouseLeave={() => setHoveredCardId(null)}
-                onFocus={() => setFocusedCardId(seriesListCardKey)}
-                onBlur={() => setFocusedCardId(null)}
                 onContextMenu={(event) => handleOpenCardContextMenu(event, {
                   displayName: s.name,
                   playlistItem: buildPlaylistItemFromSeriesCard(s, selectedCategory),
                 })}
-                onClick={() => {
-                  setSelected(null);
-                  setBuffering(false);
-                  setSelectedSeries(s.name);
-                  setViewState('seasons');
-                }}
-                {...getKeyboardButtonProps(`Abrir série ${s.name}`, () => {
-                  setSelected(null);
-                  setBuffering(false);
-                  setSelectedSeries(s.name);
-                  setViewState("seasons");
-                })}
                 style={{ aspectRatio: "2/3", background: "#000", border: "1px solid #ff000044", borderRadius: 12, cursor: "pointer", overflow: "hidden", position: "relative", ...getCardStaggerStyle(sIdx), ...getCardInteractiveStyle(seriesListCardKey) }}
               >
+                <CardPrimaryAction
+                  label={`Abrir série ${s.name}`}
+                  onActivate={() => {
+                    setSelected(null);
+                    setBuffering(false);
+                    setSelectedSeries(s.name);
+                    setViewState("seasons");
+                  }}
+                  onFocus={() => setFocusedCardId(seriesListCardKey)}
+                  onBlur={() => setFocusedCardId(null)}
+                />
                 <button
                   type="button"
+                  aria-label={`Alternar favorito da série ${s.name}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     toggleSeriesFavorite(selectedCategory, s.name);
@@ -3607,7 +3601,7 @@ export default function IptvModule({ onBack }) {
                 >
                   <FaStar size={14} />
                 </button>
-                {s.logo ? <CachedLogoImage src={s.logo} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ padding: 10 }}>{s.name}</div>}
+                <CachedLogoImage src={s.logo} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.8)", padding: 6, fontSize: 12, textAlign: "center" }}>{s.name}</div>
               </div>
             );
@@ -4037,8 +4031,8 @@ export default function IptvModule({ onBack }) {
 
     return (
     <FadeTransition transitionKey={`movie-list-${group}`}>
-    <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
-      <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
+    <div className="iptv-catalog-layout" style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
+      <aside className="iptv-category-sidebar" aria-label="Categorias de filmes" style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
         <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
         {movieCategories.map((category) => {
           const active = group === category.raw;
@@ -4046,6 +4040,8 @@ export default function IptvModule({ onBack }) {
             <button
               key={category.raw}
               type="button"
+              className="iptv-category-button"
+              aria-pressed={active}
               onClick={() => handleMovieCategoryClick(category)}
               style={{
                 width: "100%",
@@ -4060,7 +4056,8 @@ export default function IptvModule({ onBack }) {
                 fontWeight: active ? 700 : 500,
               }}
             >
-              {category.label} ({category.count})
+              <span>{category.label}</span>
+              <span className="iptv-category-count">{category.count}</span>
             </button>
           );
         })}
@@ -4142,15 +4139,17 @@ export default function IptvModule({ onBack }) {
           ) : (
           <>
             {movieItems.length === 0 && search.trim() && (
-              <div style={{ padding: "40px 20px", textAlign: "center", color: "#aaa" }}>
-                Nenhum resultado para "<span style={{ color: "#ff6666" }}>{search}</span>"
+              <div className="iptv-empty-state">
+                <div className="iptv-empty-state-title">Nenhum filme encontrado</div>
+                <div>Nenhum resultado para "<span className="iptv-empty-state-query">{search}</span>".</div>
               </div>
             )}
-            <div key={`movie-grid-${selectedMovieCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
+            <div className="iptv-media-grid iptv-movie-grid" key={`movie-grid-${selectedMovieCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
             {movieItems.map((channel, mIdx) => {
               const movieCardKey = `movie-${channel.id}`;
               return (
               <div
+                className="iptv-poster-card"
                 key={channel.id}
                 onMouseEnter={() => {
                   setHoveredCardId(movieCardKey);
@@ -4160,14 +4159,10 @@ export default function IptvModule({ onBack }) {
                   setHoveredCardId(null);
                   setUserInteracting(false);
                 }}
-                onFocus={() => setFocusedCardId(movieCardKey)}
-                onBlur={() => setFocusedCardId(null)}
                 onContextMenu={(event) => handleOpenCardContextMenu(event, {
                   displayName: channel.name,
                   playlistItem: buildPlaylistItemFromChannel(channel),
                 })}
-                onClick={() => playChannel(channel, true)}
-                {...getKeyboardButtonProps(`Reproduzir ${channel.name}`, () => playChannel(channel, true))}
                 style={{
                   width: "100%",
                   height: 126,
@@ -4181,8 +4176,15 @@ export default function IptvModule({ onBack }) {
                   ...getCardInteractiveStyle(movieCardKey),
                 }}
               >
+                <CardPrimaryAction
+                  label={`Reproduzir ${channel.name}`}
+                  onActivate={() => playChannel(channel, true)}
+                  onFocus={() => setFocusedCardId(movieCardKey)}
+                  onBlur={() => setFocusedCardId(null)}
+                />
                 <button
                   type="button"
+                  aria-label={`Alternar favorito de ${channel.name}`}
                   onClick={(event) => {
                     event.stopPropagation();
                     toggleFavorite(channel.id);
@@ -4205,13 +4207,7 @@ export default function IptvModule({ onBack }) {
                 >
                   <FaStar size={14} />
                 </button>
-                {channel.logo ? (
-                  <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
-                ) : (
-                  <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ddd", fontWeight: 700, padding: 8, textAlign: "center" }}>
-                    {channel.name}
-                  </div>
-                )}
+                <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
                 <div
                   style={{
                     position: "absolute",
@@ -4305,8 +4301,8 @@ export default function IptvModule({ onBack }) {
 
     return (
       <FadeTransition transitionKey={`live-list-${group}`}>
-      <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
-        <aside style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
+      <div className="iptv-catalog-layout" style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, height: "calc(100vh - 160px)", overflow: "hidden", alignItems: "stretch" }}>
+        <aside className="iptv-category-sidebar" aria-label="Categorias de TV ao vivo" style={{ background: "rgba(0,0,0,0.5)", border: "1px solid #ff000033", borderRadius: 12, padding: 12, height: "100%", overflowY: "auto" }}>
           <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 10 }}>Categorias</FolderTitle>
           {liveCategories.map((category) => {
             const active = group === category.raw;
@@ -4314,6 +4310,8 @@ export default function IptvModule({ onBack }) {
               <button
                 key={category.raw}
                 type="button"
+                className="iptv-category-button"
+                aria-pressed={active}
                 onClick={() => {
                   setShowPlayer(false);
                   setGroup(category.raw);
@@ -4331,7 +4329,8 @@ export default function IptvModule({ onBack }) {
                   fontWeight: active ? 700 : 500,
                 }}
               >
-                {category.label} ({category.count})
+                <span>{category.label}</span>
+                <span className="iptv-category-count">{category.count}</span>
               </button>
             );
           })}
@@ -4407,15 +4406,17 @@ export default function IptvModule({ onBack }) {
             ) : (
             <>
             {liveItems.length === 0 && search.trim() && (
-              <div style={{ padding: "40px 20px", textAlign: "center", color: "#aaa" }}>
-                Nenhum resultado para "<span style={{ color: "#ff6666" }}>{search}</span>"
+              <div className="iptv-empty-state">
+                <div className="iptv-empty-state-title">Nenhum canal encontrado</div>
+                <div>Nenhum resultado para "<span className="iptv-empty-state-query">{search}</span>".</div>
               </div>
             )}
-            <div key={`live-grid-${selectedLiveCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
+            <div className="iptv-media-grid iptv-live-grid" key={`live-grid-${selectedLiveCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
               {liveItems.map((channel, lIdx) => {
                 const liveCardKey = `live-${channel.id}`;
                 return (
                 <div
+                  className="iptv-landscape-card"
                   key={channel.id}
                   onMouseEnter={() => {
                     setHoveredCardId(liveCardKey);
@@ -4425,14 +4426,10 @@ export default function IptvModule({ onBack }) {
                     setHoveredCardId(null);
                     setUserInteracting(false);
                   }}
-                  onFocus={() => setFocusedCardId(liveCardKey)}
-                  onBlur={() => setFocusedCardId(null)}
                   onContextMenu={(event) => handleOpenCardContextMenu(event, {
                     displayName: channel.name,
                     playlistItem: buildPlaylistItemFromChannel(channel),
                   })}
-                  onClick={() => playChannel(channel, true)}
-                  {...getKeyboardButtonProps(`Reproduzir ${channel.name}`, () => playChannel(channel, true))}
                   style={{
                     width: "100%",
                     height: 126,
@@ -4446,8 +4443,15 @@ export default function IptvModule({ onBack }) {
                     ...getCardInteractiveStyle(liveCardKey),
                   }}
                 >
+                  <CardPrimaryAction
+                    label={`Reproduzir ${channel.name}`}
+                    onActivate={() => playChannel(channel, true)}
+                    onFocus={() => setFocusedCardId(liveCardKey)}
+                    onBlur={() => setFocusedCardId(null)}
+                  />
                   <button
                     type="button"
+                    aria-label={`Alternar favorito de ${channel.name}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       toggleFavorite(channel.id);
@@ -4470,13 +4474,7 @@ export default function IptvModule({ onBack }) {
                   >
                     <FaStar size={14} />
                   </button>
-                  {channel.logo ? (
-                    <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.85 }} />
-                  ) : (
-                    <div style={{ width: "100%", height: "100%", display: "grid", placeItems: "center", color: "#ddd", fontWeight: 700, padding: 8, textAlign: "center" }}>
-                      {channel.name}
-                    </div>
-                  )}
+                  <CachedLogoImage src={channel.logo} alt={channel.name} style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} />
                   <div
                     style={{
                       position: "absolute",
@@ -4550,7 +4548,7 @@ export default function IptvModule({ onBack }) {
         <VignetteOverlay />
         <LogoOverlay src={"topo.png"} alt="Logo" />
 
-        <AppContainer>
+        <AppContainer className="iptv-scope">
           <button
             type="button"
             style={{ ...baseButtonStyle, position: "fixed", top: 20, right: 20, zIndex: 99 }}
@@ -4559,8 +4557,8 @@ export default function IptvModule({ onBack }) {
             Menu Inicial
           </button>
 
-          <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
-            <Tile style={{ width: 520, minHeight: 280, cursor: "default" }} onClick={(e) => e.stopPropagation()}>
+          <div className="iptv-login-layout" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
+            <Tile className="iptv-login-card" style={{ width: 520, minHeight: 280, cursor: "default" }} onClick={(e) => e.stopPropagation()}>
               <FolderTitle style={{ fontSize: "1.5em", marginBottom: 8 }}>Entrar com M3U</FolderTitle>
               <ContentInfo style={{ marginBottom: 20, textAlign: "center" }}>
                 Cole a URL da sua lista M3U para carregar o conteúdo.
@@ -4569,28 +4567,27 @@ export default function IptvModule({ onBack }) {
               <form onSubmit={handleLogin} style={{ width: "100%", display: "grid", gap: 8 }}>
                 <label>URL da Lista (.m3u)</label>
                 <ModalInput 
+                  type={loadingLogin ? "password" : "url"}
                   value={form.url} 
                   onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))} 
                   placeholder="http://exemplo.com/lista.m3u" 
                   disabled={loadingLogin}
+                  autoComplete="off"
+                  aria-describedby="iptv-login-status"
                   required 
                 />
 
-                <button type="submit" style={{ ...baseButtonStyle, marginTop: 14 }} disabled={loadingLogin}>
+                <button className="iptv-primary-button" type="submit" style={{ ...baseButtonStyle, marginTop: 14 }} disabled={loadingLogin}>
                   {loadingLogin ? `Processando ${Math.round(newM3uProgress)}%` : "Carregar Lista"}
                 </button>
               </form>
 
               {(loadingLogin || newM3uError || newM3uDone || newM3uProgress > 0) && (
                 <div style={{ marginTop: 12, display: "grid", gap: 8, width: "100%" }}>
-                  <div style={{ width: "100%", height: 10, borderRadius: 999, background: "rgba(255,255,255,0.12)", overflow: "hidden", border: "1px solid #ff000044" }}>
+                  <div className="iptv-progress" role="progressbar" aria-label="Progresso do carregamento da lista" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(newM3uProgress)}>
                     <div
-                      style={{
-                        width: `${Math.max(0, Math.min(100, newM3uProgress))}%`,
-                        height: "100%",
-                        background: newM3uError ? "#ff4d4f" : "linear-gradient(90deg, #ff0000, #ff6b6b)",
-                        transition: "width 0.25s ease",
-                      }}
+                      className={`iptv-progress-fill${newM3uError ? " is-error" : ""}`}
+                      style={{ width: `${Math.max(0, Math.min(100, newM3uProgress))}%` }}
                     />
                   </div>
                   <div style={{ color: newM3uError ? "#ff8a8a" : "#ddd", fontSize: 13, textAlign: "left" }}>
@@ -4604,7 +4601,9 @@ export default function IptvModule({ onBack }) {
                 </div>
               )}
 
-              <ContentInfo style={{ marginTop: 14, textAlign: "center", width: "100%" }}>{status}</ContentInfo>
+              {!(loadingLogin || newM3uError || newM3uDone || newM3uProgress > 0) && (
+                <ContentInfo id="iptv-login-status" role="status" aria-live="polite" style={{ marginTop: 14, textAlign: "center", width: "100%" }}>{status}</ContentInfo>
+              )}
             </Tile>
           </div>
         </AppContainer>
@@ -4614,42 +4613,34 @@ export default function IptvModule({ onBack }) {
 
   return (
     <>
-      <BackgroundLayer />
+      <BackgroundLayer className="iptv-auth-background" />
       <VignetteOverlay />
-      <LogoOverlay src={"topo.png"} alt="Logo" />
 
       {loadingChannels && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 9999,
-          background: "rgba(0,0,0,0.85)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 16,
-        }}>
-          <div style={{ width: 48, height: 48, border: "3px solid #ff000033", borderTop: "3px solid #ff0000", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <div style={{ color: "#fff", fontSize: 18, fontWeight: 600 }}>Carregando conteúdo...</div>
-          <div style={{ color: "#aaa", fontSize: 13 }}>{contentLoadStage || "Preparando a lista de canais..."}</div>
-          <div style={{ width: "min(400px, 70vw)", marginTop: 8 }}>
-            <div style={{ width: "100%", height: 8, borderRadius: 999, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-              <div style={{ width: `${Math.max(0, Math.min(100, contentLoadProgress))}%`, height: "100%", background: "linear-gradient(90deg, #ff0000, #ff6b6b)", transition: "width 0.3s ease", borderRadius: 999 }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 12, color: "#ccc" }}>
-              <span>{Math.round(contentLoadProgress)}%</span>
-              {downloadMetrics.receivedBytes > 0 && (
-                <span>{downloadText} • {formatSpeed(downloadMetrics.speedBps)}</span>
-              )}
+        <div className="iptv-loading-overlay" role="status" aria-live="polite" aria-label="Carregando conteúdo IPTV">
+          <div className="iptv-loading-panel">
+            <div className="iptv-spinner" aria-hidden="true" />
+            <div style={{ color: "var(--iptv-color-text)", fontSize: 18, fontWeight: 700 }}>Carregando conteúdo</div>
+            <div style={{ color: "var(--iptv-color-text-muted)", fontSize: 13 }}>{contentLoadStage || "Preparando a lista de canais..."}</div>
+            <div style={{ width: "100%", marginTop: 8 }}>
+              <div className="iptv-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(contentLoadProgress)}>
+                <div className="iptv-progress-fill" style={{ width: `${Math.max(0, Math.min(100, contentLoadProgress))}%` }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: "var(--iptv-color-text-muted)" }}>
+                <span>{Math.round(contentLoadProgress)}%</span>
+                {downloadMetrics.receivedBytes > 0 && (
+                  <span>{downloadText} • {formatSpeed(downloadMetrics.speedBps)}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      <AppContainer style={{ padding: 0 }}>
-        <div style={{ height: "100vh", overflow: "hidden", position: "relative" }}>
+      <AppContainer className="iptv-scope iptv-app-shell" style={{ padding: 0 }}>
+        <div className="iptv-main-frame" style={{ height: "100vh", overflow: "hidden", position: "relative" }}>
           <header
+            className="iptv-header"
             style={{
               position: "absolute",
               top: 0,
@@ -4662,16 +4653,16 @@ export default function IptvModule({ onBack }) {
               alignItems: "center",
               gap: 16,
               padding: "14px 22px",
-              background: headerSolid ? "rgba(0,0,0,0.92)" : "linear-gradient(to bottom, rgba(0,0,0,0.86), rgba(0,0,0,0))",
-              borderBottom: headerSolid ? "1px solid #ff000044" : "1px solid transparent",
+              background: headerSolid ? "var(--iptv-color-surface)" : "linear-gradient(to bottom, rgba(5,5,5,0.96), rgba(5,5,5,0.78))",
+              borderBottom: headerSolid ? "1px solid var(--iptv-color-border)" : "1px solid rgba(255,255,255,0.06)",
               transition: "all 0.22s ease",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center" }}>
+            <div className="iptv-header-brand" style={{ display: "flex", alignItems: "center" }}>
               <img src={"topo.png"} alt="Logo" style={{ width: 60, height: 60, borderRadius: 12, objectFit: "cover" }} />
             </div>
 
-            <nav style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <nav className="iptv-nav" aria-label="Navegação IPTV" style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
               {NAV_ITEMS.map((item) => {
                 const active = item.key === "playlists"
                   ? activeNav === "home" && homeTab === "playlists"
@@ -4682,14 +4673,15 @@ export default function IptvModule({ onBack }) {
                     type="button"
                     onClick={() => handleNavClick(item.key)}
                     style={{
-                      background: active ? "#2c0000" : "transparent",
-                      color: "#fff",
-                      border: active ? "1px solid #ff0000" : "1px solid transparent",
+                      background: active ? "var(--iptv-color-surface-muted)" : "transparent",
+                      color: "var(--iptv-color-text)",
+                      border: active ? "1px solid var(--iptv-color-accent)" : "1px solid transparent",
                       borderRadius: 8,
                       padding: "6px 10px",
                       cursor: "pointer",
                       fontWeight: active ? 700 : 500,
                     }}
+                    aria-current={active ? "page" : undefined}
                   >
                     {item.label}
                   </button>
@@ -4697,14 +4689,15 @@ export default function IptvModule({ onBack }) {
               })}
             </nav>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ position: "relative", minWidth: 220 }}>
+            <div className="iptv-header-tools" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="iptv-search" style={{ position: "relative", minWidth: 220 }}>
                 <FaSearch style={{ position: "absolute", left: 10, top: 10, color: "#ff0000" }} />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar"
-                  style={{ width: "100%", background: "rgba(10,10,10,0.85)", border: "1px solid #ff000055", color: "#fff", borderRadius: 8, padding: "8px 10px 8px 30px", outline: "none" }}
+                  aria-label="Buscar conteúdo IPTV"
+                  style={{ width: "100%", background: "var(--iptv-color-surface)", border: "1px solid var(--iptv-color-border)", color: "var(--iptv-color-text)", borderRadius: 8, padding: "8px 10px 8px 30px", outline: "none" }}
                 />
               </div>
 
@@ -4833,9 +4826,13 @@ export default function IptvModule({ onBack }) {
             </div>
 
             <button
+              className="iptv-header-menu"
               ref={menuBtnRef}
               type="button"
               onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="Abrir menu da conta"
+              aria-expanded={menuOpen}
+              aria-controls="iptv-account-menu"
               style={{ ...baseButtonStyle, display: "flex", alignItems: "center", gap: 8, padding: "8px 10px" }}
             >
               <FaUserCircle />
@@ -4844,6 +4841,7 @@ export default function IptvModule({ onBack }) {
           </header>
           {menuOpen && (
             <div
+              id="iptv-account-menu"
               ref={menuRef}
               style={{
                 position: "absolute",
@@ -5044,8 +5042,9 @@ export default function IptvModule({ onBack }) {
                     </div>
                     <div style={{ overflowY: "auto", maxHeight: "58vh", display: "grid", gap: 8, paddingRight: 4 }}>
                       {filteredBlockableCategories.length === 0 ? (
-                        <div style={{ color: "#aaa", textAlign: "center", padding: "24px 12px" }}>
-                          Nenhuma categoria encontrada.
+                        <div className="iptv-empty-state" style={{ minHeight: 120 }}>
+                          <div className="iptv-empty-state-title">Nenhuma categoria encontrada</div>
+                          <div>Ajuste a busca ou selecione outro tipo de conteúdo.</div>
                         </div>
                       ) : (
                         filteredBlockableCategories.map((category) => {
@@ -5196,14 +5195,10 @@ export default function IptvModule({ onBack }) {
                 />
                 {(loadingLogin || newM3uError || newM3uDone || newM3uProgress > 0) && (
                   <div style={{ display: "grid", gap: 8 }}>
-                    <div style={{ width: "100%", height: 10, borderRadius: 999, background: "rgba(255,255,255,0.12)", overflow: "hidden", border: "1px solid #ff000044" }}>
+                    <div className="iptv-progress" role="progressbar" aria-label="Progresso da atualização da lista" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(newM3uProgress)}>
                       <div
-                        style={{
-                          width: `${Math.max(0, Math.min(100, newM3uProgress))}%`,
-                          height: "100%",
-                          background: newM3uError ? "#ff4d4f" : "linear-gradient(90deg, #ff0000, #ff6b6b)",
-                          transition: "width 0.25s ease",
-                        }}
+                        className={`iptv-progress-fill${newM3uError ? " is-error" : ""}`}
+                        style={{ width: `${Math.max(0, Math.min(100, newM3uProgress))}%` }}
                       />
                     </div>
                     <div style={{ color: newM3uError ? "#ff8a8a" : "#ddd", fontSize: 13 }}>
@@ -5257,6 +5252,7 @@ export default function IptvModule({ onBack }) {
           )}
 
           <div
+            className="iptv-content"
             ref={contentRef}
             onScroll={handleContentScroll}
             style={{ height: "100%", overflowY: "auto", paddingTop: APP_HEADER_HEIGHT + 12, paddingBottom: 56 }}
@@ -5265,7 +5261,7 @@ export default function IptvModule({ onBack }) {
           </div>
         </div>
 
-        <footer style={{
+        <footer className="iptv-footer" style={{
           position: "fixed",
           bottom: 0,
           left: 0,
@@ -5280,13 +5276,13 @@ export default function IptvModule({ onBack }) {
           alignItems: "center",
           pointerEvents: "none",
         }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, pointerEvents: "auto" }}>
-            <a href="#" style={{ color: "#ff0000" }}>Termos</a>
-            <a href="#" style={{ color: "#ff0000" }}>Privacidade</a>
-            <a href="#" style={{ color: "#ff0000" }}>Suporte</a>
-            <a href="#" style={{ color: "#ff0000" }}>Redes</a>
+          <div className="iptv-footer-links" style={{ display: "flex", flexWrap: "wrap", gap: 12, pointerEvents: "auto" }}>
+            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Termos</a>
+            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Privacidade</a>
+            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Suporte</a>
+            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Redes</a>
           </div>
-          <div style={{ color: "#888" }}>{status}</div>
+          <div className="iptv-footer-status" role="status" aria-live="polite" style={{ color: "#888" }}>{status}</div>
         </footer>
 
         {infoChannel && (
