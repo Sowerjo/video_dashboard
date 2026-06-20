@@ -126,7 +126,13 @@ ensure_lfs() {
 ensure_gh_login() {
   if ! gh auth status >/dev/null 2>&1; then
     printf 'Ainda nao autenticado. Iniciando login...\n'
-    gh auth login --web --git-protocol https
+    if [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
+      GH_BROWSER="${GH_BROWSER:-xdg-open}" gh auth login --web --git-protocol https
+    else
+      printf 'Sessao sem interface grafica detectada.\n'
+      printf 'Use gh auth login --with-token ou execute em uma sessao com navegador.\n'
+      return 1
+    fi
   else
     printf 'Ja autenticado com o GitHub.\n'
   fi
