@@ -529,4 +529,3 @@ var spotify_audio_element_default = SpotifyAudioElement;
 /***/ })
 
 }]);
-//# sourceMappingURL=reactPlayerSpotify.bundle.js.map

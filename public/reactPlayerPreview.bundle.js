@@ -115,4 +115,3 @@ var Preview_default = Preview;
 /***/ })
 
 }]);
-//# sourceMappingURL=reactPlayerPreview.bundle.js.map

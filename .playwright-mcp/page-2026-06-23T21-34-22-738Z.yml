@@ -1,0 +1,6 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]: Inspectable WebContents
+  - paragraph [ref=e4]:
+    - link "Mind Flix" [ref=e5] [cursor=pointer]:
+      - /url: https://chrome-devtools-frontend.appspot.com/serve_rev/@3d245521567d1b2c9c3f20b90c3612bfe2e687fd/inspector.html?ws=localhost:9222/devtools/page/D0513260E901A6C6609E5C21C5E9F4B5
+      - generic [ref=e6]: Mind Flix

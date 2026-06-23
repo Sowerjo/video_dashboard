@@ -29,5 +29,5 @@ module.exports = {
     extensions: [".js", ".jsx"]
   },
   target: "web",
-  devtool: "source-map"
+  devtool: false
 };

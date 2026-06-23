@@ -499,4 +499,3 @@ var tiktok_video_element_default = TikTokVideoElement;
 /***/ })
 
 }]);
-//# sourceMappingURL=reactPlayerTiktok.bundle.js.map

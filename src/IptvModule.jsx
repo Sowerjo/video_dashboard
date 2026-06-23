@@ -353,11 +353,13 @@ const ReactUrlPlayer = React.memo(({
   const [loadingState, setLoadingState] = useState("connecting"); // connecting, metadata, buffering, playing, error
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isBuffering, setIsBuffering] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   const [downloadSpeed, setDownloadSpeed] = useState(0); // bytes/s
   const loadStartRef = useRef(Date.now());
   const lastBufferedRef = useRef({ time: 0, bytes: 0 });
   const playerSource = playableSources[sourceIndex] || "";
   const isHlsSource = useMemo(() => /\.m3u8(\?|#|$)/i.test(playerSource || ""), [playerSource]);
+  const playerShellRef = useRef(null);
   const playerRef = useRef(null);
   const applyingVolumeRef = useRef(false);
 
@@ -366,6 +368,7 @@ const ReactUrlPlayer = React.memo(({
     setLoadingState("connecting");
     setElapsedSeconds(0);
     setIsBuffering(true);
+    setIsPaused(false);
     setDownloadSpeed(0);
     loadStartRef.current = Date.now();
     lastBufferedRef.current = { time: 0, bytes: 0 };
@@ -374,6 +377,7 @@ const ReactUrlPlayer = React.memo(({
   useEffect(() => {
     setLoadingState("connecting");
     setElapsedSeconds(0);
+    setIsPaused(false);
     setDownloadSpeed(0);
     loadStartRef.current = Date.now();
     lastBufferedRef.current = { time: 0, bytes: 0 };
@@ -579,6 +583,86 @@ const ReactUrlPlayer = React.memo(({
     return null;
   }, []);
 
+  const seekLocalPlayer = useCallback((deltaSeconds) => {
+    const mediaElement = getMediaElement();
+    if (!mediaElement) return;
+
+    const duration = Number(mediaElement.duration);
+    const currentTime = Number(mediaElement.currentTime) || 0;
+    const nextTime = Math.max(0, Number.isFinite(duration) ? Math.min(duration, currentTime + deltaSeconds) : currentTime + deltaSeconds);
+
+    try {
+      mediaElement.currentTime = nextTime;
+    } catch {
+      try {
+        playerRef.current?.seekTo?.(nextTime, "seconds");
+      } catch {
+      }
+    }
+  }, [getMediaElement]);
+
+  const toggleLocalPause = useCallback(() => {
+    setIsPaused((current) => {
+      const nextPaused = !current;
+      const mediaElement = getMediaElement();
+
+      try {
+        if (nextPaused) {
+          mediaElement?.pause?.();
+        } else {
+          const playPromise = mediaElement?.play?.();
+          playPromise?.catch?.(() => {});
+        }
+      } catch {
+      }
+
+      return nextPaused;
+    });
+  }, [getMediaElement]);
+
+  useEffect(() => {
+    const handleFullscreenPlayerKeyDown = (event) => {
+      const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!fullscreenElement || !playerShellRef.current || !fullscreenElement.contains(playerShellRef.current)) return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (castActive) {
+          handleCastSeek(10);
+        } else {
+          seekLocalPlayer(10);
+        }
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (castActive) {
+          handleCastSeek(-10);
+        } else {
+          seekLocalPlayer(-10);
+        }
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (castActive) {
+          handleCastPauseResume();
+        } else {
+          toggleLocalPause();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleFullscreenPlayerKeyDown, { capture: true });
+    return () => document.removeEventListener("keydown", handleFullscreenPlayerKeyDown, { capture: true });
+  }, [castActive, handleCastPauseResume, handleCastSeek, seekLocalPlayer, toggleLocalPause]);
+
   const syncVolumeToMediaElement = useCallback(() => {
     const mediaElement = getMediaElement();
     if (!mediaElement) return false;
@@ -686,13 +770,12 @@ const ReactUrlPlayer = React.memo(({
   }, [getMediaElement, onVolumeStateChange, playerSource, syncVolumeToMediaElement]);
 
   return (
-    <div 
-      style={{ 
-        width: "100%", 
-        height: "100%", 
+    <div
+      ref={playerShellRef}
+      style={{
+        width: "100%",
+        height: "100%",
         position: "relative",
-        border: "2px solid #ff0000",
-        boxShadow: "0 0 20px #ff0000, inset 0 0 20px rgba(255, 0, 0, 0.3)",
         borderRadius: "8px",
         overflow: "hidden"
       }}
@@ -705,7 +788,7 @@ const ReactUrlPlayer = React.memo(({
         ref={playerRef}
         key={playerSource || "empty-player"}
         src={playerSource}
-        playing={Boolean(playerSource) && !castActive}
+        playing={Boolean(playerSource) && !castActive && !isPaused}
         controls
         playsInline
         width="100%"
@@ -1555,6 +1638,227 @@ export default function IptvModule({ onBack }) {
   // Refs para proteção do volume
   const userVolumeRef = useRef(playerVolume);
   const volumeSetByUserRef = useRef(false);
+
+  // ─── Navegação cronológica (BrowserBack) ───────────────────────────────
+  // Refs espelho do estado de navegação — lidos no momento do push
+  const activeNavRef = useRef(activeNav);
+  const viewStateRef = useRef(viewState);
+  const selectedCategoryRef = useRef(selectedCategory);
+  const selectedSeriesRef = useRef(selectedSeries);
+  const selectedSeasonRef = useRef(selectedSeason);
+
+  // Mantém os refs em sincronia com o estado
+  activeNavRef.current = activeNav;
+  viewStateRef.current = viewState;
+  selectedCategoryRef.current = selectedCategory;
+  selectedSeriesRef.current = selectedSeries;
+  selectedSeasonRef.current = selectedSeason;
+
+  const navHistoryRef = useRef([]);
+  const NAV_HISTORY_MAX = 50;
+
+  const navHistoryPush = useCallback(() => {
+    navHistoryRef.current = navHistoryRef.current.slice(-(NAV_HISTORY_MAX - 1));
+    navHistoryRef.current.push({
+      activeNav: activeNavRef.current,
+      viewState: viewStateRef.current,
+      selectedCategory: selectedCategoryRef.current,
+      selectedSeries: selectedSeriesRef.current,
+      selectedSeason: selectedSeasonRef.current,
+    });
+  }, []);
+
+  const navHistoryGoBack = useCallback(() => {
+    const entry = navHistoryRef.current.pop();
+    if (!entry) return;
+    resetCatalogScroll();
+    // Ao voltar para home, limpa estado residual de séries
+    const goingToHome = entry.activeNav === "home";
+    setActiveNav(entry.activeNav);
+    setViewState(entry.viewState);
+    setSelectedCategory(goingToHome ? null : (entry.selectedCategory ?? null));
+    setSelectedSeries(goingToHome ? null : (entry.selectedSeries ?? null));
+    setSelectedSeason(goingToHome ? null : (entry.selectedSeason ?? null));
+    setShowPlayer(false);
+    setSelected(null);
+    setBuffering(false);
+    setSearch("");
+    setGroup("");
+    if (goingToHome) setHomeTab("inicio");
+  }, [resetCatalogScroll]);
+
+  const navHistoryGoHome = useCallback(() => {
+    navHistoryRef.current = [];
+    resetCatalogScroll();
+    setActiveNav("home");
+    setViewState("categories");
+    setSelectedCategory(null);
+    setSelectedSeries(null);
+    setSelectedSeason(null);
+    setShowPlayer(false);
+    setSelected(null);
+    setBuffering(false);
+    setSearch("");
+    setGroup("");
+    setHomeTab("inicio");
+  }, [resetCatalogScroll]);
+
+  // Handler de BrowserBack: press → cronológico, hold > 2s → home
+  // Em fullscreen, BrowserBack age apenas como Escape (sair do fullscreen)
+  useEffect(() => {
+    let holdTimer = null;
+    const LONG_PRESS_MS = 2000;
+
+    const onKeyDown = (event) => {
+      if (event.key !== "BrowserBack") return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.browserBackHandled = true;
+
+      // Se está em fullscreen, sair do fullscreen
+      if (document.fullscreenElement) {
+        if (document.fullscreenElement.requestFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if (document.fullscreenElement.webkitRequestFullScreen) {
+          document.fullscreenElement.webkitRequestFullScreen();
+        }
+        return;
+      }
+
+      holdTimer = window.setTimeout(() => {
+        navHistoryGoHome();
+      }, LONG_PRESS_MS);
+    };
+
+    const onKeyUp = (event) => {
+      if (event.key !== "BrowserBack") return;
+      // Se estava em fullscreen, já saiu no keydown — ignorar
+      if (event.target?.closest?.('[data-browserback-fullscreen-exit]')) return;
+      if (document.fullscreenElement) return;
+      if (holdTimer !== null) {
+        window.clearTimeout(holdTimer);
+        holdTimer = null;
+        // Soltou antes de 2s → volta cronologicamente
+        navHistoryGoBack();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown, { capture: true });
+    document.addEventListener("keyup", onKeyUp, { capture: true });
+    return () => {
+      document.removeEventListener("keydown", onKeyDown, { capture: true });
+      document.removeEventListener("keyup", onKeyUp, { capture: true });
+      if (holdTimer !== null) window.clearTimeout(holdTimer);
+    };
+  }, [navHistoryGoBack, navHistoryGoHome]);
+
+  // Navegação entre séries via MediaTrackNext/Previous
+  useEffect(() => {
+    const navigateSeries = (direction) => {
+      const allCards = Array.from(document.querySelectorAll(
+        ".iptv-media-grid .iptv-poster-card, [data-dpad-row] .iptv-poster-card"
+      ));
+      if (allCards.length === 0) return;
+
+      const activeEl = document.activeElement;
+      const currentIdx = allCards.findIndex((card) => card.contains(activeEl) || card === activeEl);
+      let targetCard;
+
+      if (currentIdx >= 0) {
+        const nextIdx = Math.max(0, Math.min(allCards.length - 1, currentIdx + direction));
+        targetCard = allCards[nextIdx];
+      } else {
+        targetCard = allCards[0];
+      }
+
+      if (targetCard) {
+        const trigger = targetCard.querySelector("[data-dpad-focusable], [role='button']") || targetCard;
+        trigger.focus();
+        // Dispara duplo click para abrir automaticamente
+        trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+      }
+    };
+
+    const onNextSeries = () => navigateSeries(1);
+    const onPrevSeries = () => navigateSeries(-1);
+
+    window.addEventListener("dpad-next-series", onNextSeries);
+    window.addEventListener("dpad-prev-series", onPrevSeries);
+    return () => {
+      window.removeEventListener("dpad-next-series", onNextSeries);
+      window.removeEventListener("dpad-prev-series", onPrevSeries);
+    };
+  }, []);
+
+  // Auto-foco no primeiro card ao mudar de viewState (evita foco no nav bar)
+  const firstSeasonCardRef = useRef(null);
+  const firstEpisodeCardRef = useRef(null);
+  const episodesPlayerContainerRef = useRef(null);
+  const moviePlayerContainerRef = useRef(null);
+  const livePlayerContainerRef = useRef(null);
+
+  const focusFirstSeasonCard = useCallback(() => {
+    if (firstSeasonCardRef.current) {
+      firstSeasonCardRef.current.focus();
+    }
+  }, []);
+
+  const focusFirstEpisodeCard = useCallback(() => {
+    if (firstEpisodeCardRef.current) {
+      firstEpisodeCardRef.current.focus();
+    }
+  }, []);
+
+  const requestElementFullscreen = useCallback((element) => {
+    if (!element) return;
+
+    const requestFullscreen =
+      element.requestFullscreen ||
+      element.webkitRequestFullscreen ||
+      element.webkitRequestFullScreen;
+
+    try {
+      const result = requestFullscreen?.call(element);
+      result?.catch?.(() => {});
+    } catch {
+    }
+  }, []);
+
+  const requestMoviePlayerFullscreen = useCallback(() => {
+    requestElementFullscreen(moviePlayerContainerRef.current);
+  }, [requestElementFullscreen]);
+
+  const requestLivePlayerFullscreen = useCallback(() => {
+    requestElementFullscreen(livePlayerContainerRef.current);
+  }, [requestElementFullscreen]);
+
+  const requestEpisodesPlayerFullscreen = useCallback(() => {
+    requestElementFullscreen(episodesPlayerContainerRef.current);
+  }, [requestElementFullscreen]);
+
+  const schedulePlayerFullscreen = useCallback((requestFullscreen) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        requestFullscreen();
+        window.setTimeout(requestFullscreen, 120);
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (viewState === "seasons") {
+      const raf = requestAnimationFrame(() => {
+        setTimeout(focusFirstSeasonCard, 0);
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+    if (viewState === "episodes") {
+      const raf = requestAnimationFrame(() => {
+        setTimeout(focusFirstEpisodeCard, 0);
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [viewState, focusFirstSeasonCard, focusFirstEpisodeCard]);
 
   const handleScrollInteract = useCallback(() => {
     setUserInteracting(true);
@@ -2704,6 +3008,8 @@ export default function IptvModule({ onBack }) {
   }, []);
 
   const handleNavClick = useCallback((navKey) => {
+    navHistoryPush();
+    if (typeof window.__dpadScheduleNavSkip === 'function') window.__dpadScheduleNavSkip();
     const nextNav = navKey === "playlists" ? "home" : navKey;
     resetCatalogScroll();
     setActiveNav(nextNav);
@@ -3018,7 +3324,7 @@ export default function IptvModule({ onBack }) {
     return lastEpisodesBySeries[seriesKey] || null;
   }, [lastEpisodesBySeries]);
 
-  const tryResumeFromLastEpisode = (channelLike) => {
+  const tryResumeFromLastEpisode = (channelLike, skipNavHistoryPush = false) => {
     const progress = getLastEpisodeForSeries(channelLike);
     if (!progress) return false;
     const normalizedSeries = String(progress.seriesName || "").trim().toLowerCase();
@@ -3031,23 +3337,39 @@ export default function IptvModule({ onBack }) {
       return sameSeason && sameEpisode;
     });
     if (!target) return false;
+    if (!skipNavHistoryPush) navHistoryPush();
     handleNavClick("series");
     setSelectedCategory(normalizeCategoryLabel(target.group));
     setSelectedSeries(parseEpisodeInfo(target.name).seriesName);
     setSelectedSeason(String(parseEpisodeInfo(target.name).season));
     setViewState("episodes");
     setBuffering(true);
+    setShowPlayer(true);
     setSelected(target);
     setStatus(`Retomando ${target.name}`);
+    queueMicrotask(() => {
+      requestEpisodesPlayerFullscreen();
+    });
     return true;
   };
 
   const playChannel = (channel, forceOpenPlayer = true) => {
+    // Salva o estado atual no histórico antes de abrir o player
+    navHistoryPush();
     nativeFallbackKeyRef.current = "";
     setSelected(channel);
 
     if (forceOpenPlayer) {
       setShowPlayer(true);
+    }
+
+    const channelKind = String(channel?.kind || "").toLowerCase();
+    if (forceOpenPlayer && channelKind === "movie") {
+      schedulePlayerFullscreen(requestMoviePlayerFullscreen);
+    }
+
+    if (forceOpenPlayer && channelKind === "live") {
+      schedulePlayerFullscreen(requestLivePlayerFullscreen);
     }
 
     setRecentlyPlayedIds((prev) => {
@@ -3056,7 +3378,7 @@ export default function IptvModule({ onBack }) {
       return next.slice(0, 10);
     });
 
-    if (String(channel?.kind || "").toLowerCase() === "series") {
+    if (channelKind === "series") {
       const info = parseEpisodeInfo(String(channel.name || ""));
       const payload = {
         seriesKey: makeSeriesProgressKey(channel.group, info.seriesName),
@@ -3156,6 +3478,8 @@ export default function IptvModule({ onBack }) {
   };
 
   const openFavoriteSeries = (seriesItem) => {
+    if (typeof window.__dpadScheduleNavSkip === 'function') window.__dpadScheduleNavSkip();
+    navHistoryPush();
     handleNavClick("series");
     setSelected(null);
     setBuffering(false);
@@ -3207,17 +3531,23 @@ export default function IptvModule({ onBack }) {
     }
 
     if (item.kind === "series") {
-      if (sourceRowKey === "continuar" && tryResumeFromLastEpisode(item)) {
+      if (sourceRowKey === "continuar" && tryResumeFromLastEpisode(item, true)) {
         return;
       }
-      const info = parseEpisodeInfo(item.name);
+      navHistoryPush();
       handleNavClick("series");
+      const info = parseEpisodeInfo(item.name);
       setSelectedCategory(normalizeCategoryLabel(item.group));
       setSelectedSeries(info.seriesName);
       setSelectedSeason(String(info.season));
       setViewState("episodes");
+      setShowPlayer(true);
       setBuffering(true);
       playChannel(item, false);
+      // Fullscreen do player dentro do gesto do usuário
+      queueMicrotask(() => {
+        requestEpisodesPlayerFullscreen();
+      });
       return;
     }
 
@@ -3709,6 +4039,7 @@ export default function IptvModule({ onBack }) {
                   className="iptv-category-button"
                   aria-pressed={active}
                   onClick={() => {
+                    navHistoryPush();
                     resetCatalogScroll();
                     setSelected(null);
                     setBuffering(false);
@@ -3760,6 +4091,7 @@ export default function IptvModule({ onBack }) {
                   <CardPrimaryAction
                     label={`Abrir série ${s.name}`}
                     onActivate={() => {
+                      navHistoryPush();
                       setSelected(null);
                       setBuffering(false);
                       setSelectedCategory(activeCategory);
@@ -3843,6 +4175,7 @@ export default function IptvModule({ onBack }) {
                 <CardPrimaryAction
                   label={`Abrir série ${s.name}`}
                   onActivate={() => {
+                    if (typeof window.__dpadScheduleNavSkip === 'function') window.__dpadScheduleNavSkip();
                     setSelected(null);
                     setBuffering(false);
                     setSelectedSeries(s.name);
@@ -3914,30 +4247,32 @@ export default function IptvModule({ onBack }) {
       const seasons = Object.keys(series.seasons).sort((a,b) => parseInt(a) - parseInt(b));
       
       return (
-        <div style={{ padding: "0 20px" }}>
+        <div data-dpad-scope="seasons-list" style={{ padding: "0 20px" }}>
           <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
           <FolderTitle style={{ marginBottom: 20 }}>{series.name}</FolderTitle>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-            {seasons.map((sea) => {
+          <div data-dpad-row="seasons-row" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            {seasons.map((sea, seaIdx) => {
               const seasonCardKey = `season-${selectedSeries}-${sea}`;
               return (
-              <div 
+              <div
                 key={sea}
+                ref={seaIdx === 0 ? firstSeasonCardRef : undefined}
+                tabIndex={0}
+                role="button"
                 onMouseEnter={() => setHoveredCardId(seasonCardKey)}
                 onMouseLeave={() => setHoveredCardId(null)}
                 onClick={() => {
-                  setSelected(null);
-                  setBuffering(false);
-                  setSelectedSeason(sea);
-                  setViewState('episodes');
-                }}
-                {...getKeyboardButtonProps(`Abrir temporada ${sea}`, () => {
-                  setSelected(null);
+                  if (typeof window.__dpadScheduleNavSkip === 'function') window.__dpadScheduleNavSkip();
+                  navHistoryPush();
+                  const episodesInSeason = series.seasons[sea] || [];
+                  const firstEp = episodesInSeason.sort((a,b) => a.episodeNum - b.episodeNum)[0] || null;
+                  setSelected(firstEp);
                   setBuffering(false);
                   setSelectedSeason(sea);
                   setViewState("episodes");
-                })}
-                style={{ padding: "20px 40px", background: "#1a0000", border: "1px solid #ff0000", borderRadius: 12, cursor: "pointer", fontSize: "1.2em", fontWeight: "bold", ...getCardInteractiveStyle(seasonCardKey) }}
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") e.currentTarget.click(); }}
+                style={{ padding: "20px 40px", background: "#1a0000", border: "1px solid #ff0000", borderRadius: 12, cursor: "pointer", fontSize: "1.2em", fontWeight: "bold", outline: "none", ...getCardInteractiveStyle(seasonCardKey) }}
               >
                 Temporada {sea}
               </div>
@@ -3977,6 +4312,7 @@ export default function IptvModule({ onBack }) {
       const currentEpisode = episodes.find((ep) => ep.id === selected?.id) || null;
       const currentEpisodeIndex = currentEpisode ? episodes.findIndex((ep) => ep.id === currentEpisode.id) : -1;
 
+      // Auto-seleciona o primeiro episódio ao entrar na view de episódios
       const handleEpisodeEnded = () => {
         const currentIdx = episodes.findIndex((ep) => ep.id === selected?.id);
         const nextEpisode = currentIdx >= 0 ? episodes[currentIdx + 1] : null;
@@ -4013,7 +4349,7 @@ export default function IptvModule({ onBack }) {
         <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "1fr 350px", gap: 20, minHeight: "calc(100vh - 140px)", alignItems: "start" }}>
            <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
              <button style={{ ...baseButtonStyle, width: "fit-content", marginBottom: 10 }} onClick={() => setViewState('seasons')}>Voltar</button>
-             <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", border: "1px solid #ff000044", aspectRatio: "16 / 9", width: "100%", maxHeight: "68vh", minHeight: 320, position: "relative", flex: "0 0 auto" }}>
+             <div data-episodes-player ref={episodesPlayerContainerRef} style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxHeight: "68vh", minHeight: 320, position: "relative", flex: "0 0 auto" }}>
                 <ReactUrlPlayer
                   src={toPlayableUrl(currentEpisode?.url)}
                   altSrc={currentEpisode?.altUrl || ""}
@@ -4048,21 +4384,22 @@ export default function IptvModule({ onBack }) {
              </div>
            </div>
            
-           <div style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12, border: "1px solid #ff000022", overflowY: "auto", maxHeight: "calc(100vh - 220px)", padding: 10 }} onScroll={handleScrollInteract}>
+           <div data-dpad-scope="episodes-list" data-dpad-row="episodes-list" style={{ background: "rgba(0,0,0,0.5)", borderRadius: 12, border: "1px solid #ff000022", overflowY: "auto", maxHeight: "calc(100vh - 220px)", padding: 10 }} onScroll={handleScrollInteract}>
               <FolderTitle style={{ fontSize: "1.1em", marginBottom: 10 }}>Temporada {selectedSeason}</FolderTitle>
               {episodes.map((ep, epIdx) => {
                 const episodeItemKey = `episode-${ep.id}`;
                 return (
                 <div
                   key={ep.id}
+                  ref={epIdx === 0 ? firstEpisodeCardRef : undefined}
                   onMouseEnter={() => setHoveredCardId(episodeItemKey)}
                   onMouseLeave={() => setHoveredCardId(null)}
                   onContextMenu={(event) => handleOpenCardContextMenu(event, {
                     displayName: ep.name,
                     playlistItem: buildPlaylistItemFromChannel(ep),
                   })}
-                  onClick={() => playChannel(ep, false)}
-                  {...getKeyboardButtonProps(`Reproduzir episódio ${ep.episodeNum}`, () => playChannel(ep, false))}
+                  onClick={() => { playChannel(ep, false); requestEpisodesPlayerFullscreen(); }}
+                  {...getKeyboardButtonProps(`Reproduzir episódio ${ep.episodeNum}`, () => { playChannel(ep, false); requestEpisodesPlayerFullscreen(); })}
                   style={{
                     padding: 10,
                     marginBottom: 8,
@@ -4264,7 +4601,7 @@ export default function IptvModule({ onBack }) {
                 {selected?.name || "Selecione um filme"}
               </FolderTitle>
             </div>
-            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
+            <div ref={moviePlayerContainerRef} style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
               <ReactUrlPlayer
                 src={toPlayableUrl(selected?.url)}
                 altSrc={selected?.altUrl || ""}
@@ -4343,7 +4680,7 @@ export default function IptvModule({ onBack }) {
                 {selected?.name || "Selecione um filme"}
               </FolderTitle>
             </div>
-            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1060, minHeight: 280, margin: "0 auto", position: "relative" }}>
+            <div ref={moviePlayerContainerRef} style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1060, minHeight: 280, margin: "0 auto", position: "relative" }}>
               <button
                 type="button"
                 onClick={() => {
@@ -4544,7 +4881,7 @@ export default function IptvModule({ onBack }) {
                 {selected?.name || "Selecione um canal"}
               </FolderTitle>
             </div>
-            <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
+            <div ref={livePlayerContainerRef} style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1220, maxHeight: "68vh", minHeight: 320, margin: "0 auto", flex: "0 0 auto", position: "relative" }}>
               <ReactUrlPlayer
                 src={toPlayableUrl(selected?.url)}
                 altSrc={selected?.altUrl || ""}
@@ -4622,7 +4959,7 @@ export default function IptvModule({ onBack }) {
                   {selected?.name || "Selecione um canal"}
                 </FolderTitle>
               </div>
-              <div style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1060, minHeight: 280, margin: "0 auto", position: "relative" }}>
+              <div ref={livePlayerContainerRef} style={{ background: "#000", borderRadius: 12, overflow: "hidden", aspectRatio: "16 / 9", width: "100%", maxWidth: 1060, minHeight: 280, margin: "0 auto", position: "relative" }}>
                 <button
                   type="button"
                   onClick={() => {

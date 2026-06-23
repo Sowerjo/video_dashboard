@@ -262,7 +262,8 @@ function findGridNeighbor(activeElement, key) {
   const container = activeElement.closest(".iptv-media-grid, [data-dpad-row]");
   if (!container) return null;
 
-  const activeItem = getDirectContainerItem(container, activeElement);
+  const activeItem = getDirectContainerItem(container, activeElement)
+    || activeElement.closest(".iptv-poster-card, [data-card-key], .iptv-card, li, .card");
   if (!activeItem) return { container, element: null };
 
   const horizontal = key === "ArrowLeft" || key === "ArrowRight";
@@ -290,7 +291,60 @@ function findGridNeighbor(activeElement, key) {
     };
   }
 
-  if (isRow) return { container, element: null };
+  if (isRow) {
+    // data-dpad-row is a flex-wrap container — allow vertical navigation across rows
+    if (key === "ArrowDown") {
+      const originRect = activeElement.getBoundingClientRect();
+      const originCenterY = originRect.top + originRect.height / 2;
+
+      // First try the next sibling
+      const nextSibling = getSiblingFocusable(activeItem, 1);
+      if (nextSibling) {
+        const siblingRect = nextSibling.element.getBoundingClientRect();
+        if (siblingRect.top > originRect.bottom - 4) {
+          // It's visually below — genuine next-row item
+          return { container, element: nextSibling.element };
+        }
+      }
+
+      // No next sibling or same row — find first item in next visual row
+      const step = 1;
+      let candidate = getSiblingFocusable(activeItem, step);
+      if (candidate) {
+        const siblingRect = candidate.element.getBoundingClientRect();
+        if (siblingRect.top > originRect.bottom - 4) {
+          return { container, element: candidate.element };
+        }
+        // Same row sibling exists; keep scanning for first item in next row
+        while (candidate) {
+          const candidateRect = candidate.element.getBoundingClientRect();
+          if (candidateRect.top > originRect.bottom - 4) {
+            return { container, element: candidate.element };
+          }
+          candidate = getSiblingFocusable(candidate.item, step);
+        }
+      }
+      return { container, element: null };
+    }
+
+    if (key === "ArrowUp") {
+      const originRect = activeElement.getBoundingClientRect();
+      const step = -1;
+      let candidate = getSiblingFocusable(activeItem, step);
+
+      while (candidate) {
+        const candidateRect = candidate.element.getBoundingClientRect();
+        if (candidateRect.bottom < originRect.top + 4) {
+          return { container, element: candidate.element };
+        }
+        candidate = getSiblingFocusable(candidate.item, step);
+      }
+      // No more items in previous row — try sidebar
+      return { container, element: findNearestCategoryButton(activeElement) };
+    }
+
+    return { container, element: null };
+  }
 
   let bestElement = null;
   let bestRowDistance = Infinity;
@@ -352,9 +406,38 @@ export default function useDpadNavigation() {
     let focusTimer;
     let lastGridFocusElement = null;
 
+    // Tracks when a view change just occurred — used to avoid re-focusing nav elements
+    const skipNavFocusRef = { current: false };
+    const scheduleNavSkip = () => {
+      skipNavFocusRef.current = true;
+      setTimeout(() => { skipNavFocusRef.current = false; }, 500);
+    };
+
     const focusFirstAvailable = () => {
       const activeElement = document.activeElement;
-      if (activeElement && activeElement !== document.body && activeElement.isConnected) return;
+      if (activeElement && activeElement !== document.body && activeElement.isConnected) {
+        // Active element is valid — but check if it's stuck in the nav after a view change
+        if (skipNavFocusRef.current) {
+          const isInNav = activeElement.closest?.(".iptv-nav") ||
+            activeElement.getAttribute?.("data-iptv-nav") ||
+            (activeElement.tabIndex >= 0 && activeElement.closest?.("[aria-label='Início']") ||
+              activeElement.closest?.("[aria-label='TV ao Vivo']") ||
+              activeElement.closest?.("[aria-label='Filmes']") ||
+              activeElement.closest?.("[aria-label='Séries']"));
+          if (isInNav) {
+            // Redirect focus to first content element outside nav
+            const navScope = document.querySelector(".iptv-nav, [data-iptv-nav]");
+            const allFocusable = getFocusableElements(document);
+            const firstContent = allFocusable.find(el => !navScope?.contains(el));
+            if (firstContent) {
+              focusElement(firstContent);
+              skipNavFocusRef.current = false;
+              return;
+            }
+          }
+        }
+        return;
+      }
       focusElement(getFocusableElements(getNavigationRoot(activeElement))[0]);
     };
 
@@ -363,10 +446,30 @@ export default function useDpadNavigation() {
       focusTimer = window.setTimeout(focusFirstAvailable, 40);
     };
 
+    // Exposed so IptvModule can trigger nav-skip on view changes
+    window.__dpadScheduleNavSkip = scheduleNavSkip;
+
     const handleKeyDown = (event) => {
       const activeElement = document.activeElement;
 
+      if (event.code === "MediaTrackNext" || event.key === "MediaTrackNext") {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent("dpad-next-series"));
+        return;
+      }
+
+      if (event.code === "MediaTrackPrevious" || event.key === "MediaTrackPrevious") {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent("dpad-prev-series"));
+        return;
+      }
+
       if (BACK_KEYS.has(event.key) && !isEditable(activeElement)) {
+        // BrowserBack já é tratado por IptvModule.jsx — apenas previne comportamento nativo
+        if (event.key === "BrowserBack") {
+          event.preventDefault();
+          return;
+        }
         event.preventDefault();
         activeElement?.dispatchEvent(new KeyboardEvent("keydown", {
           key: "Escape",

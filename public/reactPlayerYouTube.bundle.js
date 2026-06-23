@@ -878,4 +878,3 @@ var youtube_video_element_default = YoutubeVideoElement;
 /***/ })
 
 }]);
-//# sourceMappingURL=reactPlayerYouTube.bundle.js.map

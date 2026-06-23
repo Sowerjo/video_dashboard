@@ -784,4 +784,3 @@ var wistia_video_element_default = WistiaVideoElement;
 /***/ })
 
 }]);
-//# sourceMappingURL=reactPlayerWistia.bundle.js.map

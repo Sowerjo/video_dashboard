@@ -597,4 +597,3 @@ var twitch_video_element_default = TwitchVideoElement;
 /***/ })
 
 }]);
-//# sourceMappingURL=reactPlayerTwitch.bundle.js.map

@@ -4398,4 +4398,3 @@ var vimeo_video_element_default = VimeoVideoElement;
 /***/ })
 
 }]);
-//# sourceMappingURL=reactPlayerVimeo.bundle.js.map
