@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import ReactPlayer from "react-player";
 import {
   AppContainer,
@@ -34,7 +34,7 @@ import {
 import { MdSkipNext, MdSkipPrevious, MdReplay10, MdForward10 } from "react-icons/md";
 import "./iptv.css";
 
-const { ipcRenderer } = window.require("electron");
+const ipcRenderer = window.desktopApi;
 
 const NAV_ITEMS = [
   { key: "home", label: "Início" },
@@ -1200,6 +1200,7 @@ const HorizontalRow = ({ children }) => {
       )}
       <div
         ref={scrollRef}
+        data-dpad-row
         className="hide-scrollbar"
         style={{
           display: "flex",
@@ -1226,16 +1227,214 @@ const HorizontalRow = ({ children }) => {
   );
 };
 
-const CardPrimaryAction = ({ label, onActivate, onFocus, onBlur }) => (
-  <button
-    type="button"
-    className="iptv-card-primary-action"
-    aria-label={label}
-    onClick={onActivate}
-    onFocus={onFocus}
-    onBlur={onBlur}
-  />
-);
+const CATALOG_INITIAL_ITEMS = 120;
+const CATALOG_BATCH_ITEMS = 120;
+const CATALOG_MAX_RENDERED_ITEMS = 360;
+const CATALOG_PREFETCH_THRESHOLD = 48;
+
+const findScrollableParent = (node) => {
+  let current = node?.parentElement || null;
+  while (current) {
+    const overflowY = window.getComputedStyle(current).overflowY;
+    if (overflowY === "auto" || overflowY === "scroll") return current;
+    current = current.parentElement;
+  }
+  return document.scrollingElement || document.documentElement;
+};
+
+const ProgressiveGrid = ({ items, renderItem, ...gridProps }) => {
+  const [visibleRange, setVisibleRange] = useState(() => ({
+    start: 0,
+    end: Math.min(CATALOG_INITIAL_ITEMS, items.length),
+  }));
+  const [layoutMetrics, setLayoutMetrics] = useState({ columns: 1, rowHeight: 138 });
+  const gridRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const loadPendingRef = useRef(false);
+
+  const requestMore = useCallback(() => {
+    if (loadPendingRef.current) return;
+    loadPendingRef.current = true;
+    setVisibleRange((current) => {
+      const nextEnd = Math.min(items.length, current.end + CATALOG_BATCH_ITEMS);
+      const nextStart = Math.max(0, nextEnd - CATALOG_MAX_RENDERED_ITEMS);
+      return { start: nextStart, end: nextEnd };
+    });
+    window.requestAnimationFrame(() => {
+      loadPendingRef.current = false;
+    });
+  }, [items.length]);
+
+  const requestPrevious = useCallback(() => {
+    if (loadPendingRef.current) return;
+    loadPendingRef.current = true;
+    setVisibleRange((current) => {
+      const nextStart = Math.max(0, current.start - CATALOG_BATCH_ITEMS);
+      const nextEnd = Math.min(items.length, nextStart + CATALOG_MAX_RENDERED_ITEMS);
+      return { start: nextStart, end: nextEnd };
+    });
+    window.requestAnimationFrame(() => {
+      loadPendingRef.current = false;
+    });
+  }, [items.length]);
+
+  useLayoutEffect(() => {
+    loadPendingRef.current = false;
+    setVisibleRange({ start: 0, end: Math.min(CATALOG_INITIAL_ITEMS, items.length) });
+
+    const scrollParent = findScrollableParent(gridRef.current);
+    if (scrollParent) scrollParent.scrollTop = 0;
+  }, [items.length]);
+
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const item = grid.querySelector("[data-progressive-index]");
+    if (!item) return;
+
+    const gridStyles = window.getComputedStyle(grid);
+    const columnGap = Number.parseFloat(gridStyles.columnGap) || 0;
+    const rowGap = Number.parseFloat(gridStyles.rowGap) || columnGap || 0;
+    const itemRect = item.getBoundingClientRect();
+    if (!itemRect.width || !itemRect.height) return;
+
+    const columns = Math.max(1, Math.floor((grid.clientWidth + columnGap) / (itemRect.width + columnGap)));
+    const rowHeight = Math.max(1, itemRect.height + rowGap);
+    setLayoutMetrics((current) => (
+      current.columns === columns && Math.abs(current.rowHeight - rowHeight) < 1
+        ? current
+        : { columns, rowHeight }
+    ));
+  }, [visibleRange, items.length]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || visibleRange.end >= items.length) return undefined;
+
+    const scrollParent = findScrollableParent(sentinel);
+    const root = scrollParent === document.scrollingElement || scrollParent === document.documentElement
+      ? null
+      : scrollParent;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) requestMore();
+    }, { root, rootMargin: "600px 0px" });
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [items.length, requestMore, visibleRange.end]);
+
+  const handleFocusCapture = (event) => {
+    const grid = gridRef.current;
+    let item = event.target;
+    while (item && item.parentElement !== grid) item = item.parentElement;
+    if (!item) return;
+
+    const itemIndex = Number(item.getAttribute("data-progressive-index"));
+    if (!Number.isFinite(itemIndex)) return;
+
+    if (itemIndex >= visibleRange.end - CATALOG_PREFETCH_THRESHOLD) requestMore();
+    if (itemIndex <= visibleRange.start + CATALOG_PREFETCH_THRESHOLD) requestPrevious();
+  };
+
+  const visibleItems = items.slice(visibleRange.start, visibleRange.end);
+  const topSpacerRows = Math.floor(visibleRange.start / layoutMetrics.columns);
+  const topSpacerHeight = topSpacerRows * layoutMetrics.rowHeight;
+
+  return (
+    <div ref={gridRef} {...gridProps} onFocusCapture={handleFocusCapture}>
+      {topSpacerHeight > 0 && (
+        <div
+          data-progressive-spacer
+          aria-hidden="true"
+          style={{ gridColumn: "1 / -1", height: topSpacerHeight, pointerEvents: "none" }}
+        />
+      )}
+      {visibleItems.map((item, index) => {
+        const itemIndex = visibleRange.start + index;
+        const rendered = renderItem(item, itemIndex);
+        return React.isValidElement(rendered)
+          ? React.cloneElement(rendered, { "data-progressive-index": itemIndex })
+          : rendered;
+      })}
+      {visibleRange.end < items.length && (
+        <div
+          ref={sentinelRef}
+          data-progressive-sentinel
+          aria-hidden="true"
+          style={{ gridColumn: "1 / -1", height: 1, pointerEvents: "none" }}
+        />
+      )}
+    </div>
+  );
+};
+
+const FAVORITE_LONG_PRESS_MS = 1500;
+
+const CardPrimaryAction = ({ label, onActivate, onLongPress }) => {
+  const longPressTimerRef = useRef(null);
+  const longPressTriggeredRef = useRef(false);
+  const [isLongPressing, setIsLongPressing] = useState(false);
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = null;
+    setIsLongPressing(false);
+  };
+
+  useEffect(() => () => {
+    if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+  }, []);
+
+  const handleKeyDown = (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.repeat || longPressTimerRef.current) return;
+
+    longPressTriggeredRef.current = false;
+    setIsLongPressing(true);
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      longPressTriggeredRef.current = true;
+      setIsLongPressing(false);
+      onLongPress?.();
+    }, FAVORITE_LONG_PRESS_MS);
+  };
+
+  const handleKeyUp = (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    const wasLongPress = longPressTriggeredRef.current;
+    cancelLongPress();
+    longPressTriggeredRef.current = false;
+    if (!wasLongPress) onActivate();
+  };
+
+  const handleFocus = (event) => {
+    event.currentTarget.parentElement?.classList.add("is-card-focused");
+  };
+
+  const handleBlur = (event) => {
+    cancelLongPress();
+    longPressTriggeredRef.current = false;
+    event.currentTarget.parentElement?.classList.remove("is-card-focused");
+  };
+
+  return (
+    <button
+      type="button"
+      className={`iptv-card-primary-action${isLongPressing ? " is-long-pressing" : ""}`}
+      aria-label={`${label}. Segure Enter por 1,5 segundos para favoritar`}
+      onClick={onActivate}
+      onKeyDown={handleKeyDown}
+      onKeyUp={handleKeyUp}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+    />
+  );
+};
 
 export default function IptvModule({ onBack }) {
   const [form, setForm] = useState({
@@ -1254,6 +1453,7 @@ export default function IptvModule({ onBack }) {
   const kind = "all";
 
   const [search, setSearch] = useState("");
+  const deferredSearch = useDeferredValue(search);
   const [group, setGroup] = useState("");
 
   const [channels, setChannels] = useState([]);
@@ -1283,9 +1483,9 @@ export default function IptvModule({ onBack }) {
   const [selectedSeason, setSelectedSeason] = useState(null);
 
   const [hoveredCardId, setHoveredCardId] = useState(null);
-  const [focusedCardId, setFocusedCardId] = useState(null);
   const [headerSolid, setHeaderSolid] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [aboutMenuOpen, setAboutMenuOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [infoChannel, setInfoChannel] = useState(null);
   const [userInteracting, setUserInteracting] = useState(false);
@@ -1367,7 +1567,7 @@ export default function IptvModule({ onBack }) {
   }, []);
 
   useEffect(() => {
-    const onDownloadProgress = (_event, payload) => {
+    const onDownloadProgress = (payload) => {
       setDownloadMetrics({
         receivedBytes: Math.max(0, Number(payload?.receivedBytes || 0)),
         totalBytes: Math.max(0, Number(payload?.totalBytes || 0)),
@@ -1375,17 +1575,14 @@ export default function IptvModule({ onBack }) {
       });
     };
 
-    ipcRenderer.on("iptv-download-progress", onDownloadProgress);
-    return () => {
-      ipcRenderer.removeListener("iptv-download-progress", onDownloadProgress);
-    };
+    return ipcRenderer.on("iptv-download-progress", onDownloadProgress);
   }, []);
 
   // Chromecast status listener — usado para próximo episódio automático
   const castEndedCallbackRef = useRef(null);
   const castEndedHandledRef = useRef(false);
   useEffect(() => {
-    const onCastStatus = (_event, status) => {
+    const onCastStatus = (status) => {
       if (status.playerState === 'ENDED') {
         if (castEndedHandledRef.current) return; // already handled
         castEndedHandledRef.current = true;
@@ -1403,10 +1600,7 @@ export default function IptvModule({ onBack }) {
         castEndedHandledRef.current = false;
       }
     };
-    ipcRenderer.on("chromecast-status", onCastStatus);
-    return () => {
-      ipcRenderer.removeListener("chromecast-status", onCastStatus);
-    };
+    return ipcRenderer.on("chromecast-status", onCastStatus);
   }, []);
 
   // Auto-send to Chromecast when selected content changes with cast connected
@@ -1715,8 +1909,20 @@ export default function IptvModule({ onBack }) {
       }
     };
 
+    const closeMenuByEscape = (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+
     document.addEventListener("mousedown", closeMenuByOutsideClick);
-    return () => document.removeEventListener("mousedown", closeMenuByOutsideClick);
+    document.addEventListener("keydown", closeMenuByEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeMenuByOutsideClick);
+      document.removeEventListener("keydown", closeMenuByEscape);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) setAboutMenuOpen(false);
   }, [menuOpen]);
 
   useEffect(() => {
@@ -1747,8 +1953,9 @@ export default function IptvModule({ onBack }) {
     return map;
   }, [channels]);
 
-  const seriesCatalog = useMemo(() => {
+  const seriesIndexes = useMemo(() => {
     const catalog = new Map();
+    const data = {};
 
     channels.forEach((channel) => {
       if (channel.kind !== "series") return;
@@ -1766,10 +1973,26 @@ export default function IptvModule({ onBack }) {
           favoriteType: "series",
         });
       }
+
+      if (!data[groupName]) data[groupName] = {};
+      if (!data[groupName][info.seriesName]) {
+        data[groupName][info.seriesName] = {
+          name: info.seriesName,
+          logo: channel.logo,
+          seasons: {},
+        };
+      }
+
+      const series = data[groupName][info.seriesName];
+      const seasonKey = String(info.season);
+      if (!series.seasons[seasonKey]) series.seasons[seasonKey] = [];
+      series.seasons[seasonKey].push({ ...channel, episodeNum: info.episode });
     });
 
-    return catalog;
+    return { catalog, data };
   }, [channels]);
+
+  const seriesCatalog = seriesIndexes.catalog;
 
   const favorites = useMemo(() => {
     return favoriteIds
@@ -1793,7 +2016,7 @@ export default function IptvModule({ onBack }) {
   }, [recentlyPlayedIds, channelById]);
 
   const filteredChannels = useMemo(() => {
-    const searchNorm = normalizeSearchText(search);
+    const searchNorm = normalizeSearchText(deferredSearch);
     const source = activeNav === "minha-lista" ? favorites : channels;
 
     return source.filter((item) => {
@@ -1817,7 +2040,7 @@ export default function IptvModule({ onBack }) {
 
       return false;
     });
-  }, [channels, favorites, activeNav, group, search]);
+  }, [channels, favorites, activeNav, group, deferredSearch]);
 
   const recommendedItems = useMemo(() => {
     const pool = channels.filter((c) => {
@@ -1874,6 +2097,7 @@ export default function IptvModule({ onBack }) {
 
   const seriesData = useMemo(() => {
     if (activeNav !== "series") return {};
+    if (!deferredSearch.trim() && !group) return seriesIndexes.data;
 
     const data = {};
     const source = filteredChannels;
@@ -1908,12 +2132,12 @@ export default function IptvModule({ onBack }) {
     });
 
     return data;
-  }, [filteredChannels, activeNav]);
+  }, [activeNav, filteredChannels, group, deferredSearch, seriesIndexes.data]);
 
   const movieCategories = useMemo(() => {
     if (activeNav !== "movies") return [];
 
-    const searchNorm = normalizeSearchText(search);
+    const searchNorm = normalizeSearchText(deferredSearch);
     const byCategory = new Map();
 
     channels.forEach((item) => {
@@ -1934,12 +2158,12 @@ export default function IptvModule({ onBack }) {
     });
 
     return [...byCategory.values()].sort((a, b) => compareAdultCategoryLast(a.label, b.label) || b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
-  }, [channels, activeNav, search]);
+  }, [channels, activeNav, deferredSearch]);
 
   const liveCategories = useMemo(() => {
     if (activeNav !== "live") return [];
 
-    const searchNorm = normalizeSearchText(search);
+    const searchNorm = normalizeSearchText(deferredSearch);
     const byCategory = new Map();
 
     channels.forEach((item) => {
@@ -1960,7 +2184,7 @@ export default function IptvModule({ onBack }) {
     });
 
     return [...byCategory.values()].sort((a, b) => compareAdultCategoryLast(a.label, b.label) || b.count - a.count || a.label.localeCompare(b.label, "pt-BR"));
-  }, [channels, activeNav, search]);
+  }, [channels, activeNav, deferredSearch]);
 
   const blockableCategories = useMemo(() => {
     const labelsByKind = {
@@ -2472,8 +2696,16 @@ export default function IptvModule({ onBack }) {
     await ipcRenderer.invoke("iptv-exit-app");
   };
 
-  const handleNavClick = (navKey) => {
+  const resetCatalogScroll = useCallback(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: "auto" });
+    document.querySelectorAll(".iptv-catalog-scroll").forEach((element) => {
+      element.scrollTop = 0;
+    });
+  }, []);
+
+  const handleNavClick = useCallback((navKey) => {
     const nextNav = navKey === "playlists" ? "home" : navKey;
+    resetCatalogScroll();
     setActiveNav(nextNav);
     setShowPlayer(false);
     setSearch("");
@@ -2488,11 +2720,30 @@ export default function IptvModule({ onBack }) {
     }
     if (navKey === "playlists") {
       setHomeTab("playlists");
-    } else if (navKey !== "home") {
+    } else {
       setHomeTab("inicio");
     }
 
-  };
+  }, [resetCatalogScroll]);
+
+  useEffect(() => {
+    const handleHomeShortcut = (event) => {
+      if (event.key !== "Home") return;
+      const target = event.target;
+      if (target instanceof HTMLElement && target.matches("input, textarea, select, [contenteditable='true']")) return;
+
+      event.preventDefault();
+      setMenuOpen(false);
+      setContextMenuState(null);
+      handleNavClick("home");
+      window.requestAnimationFrame(() => {
+        document.querySelector('[data-iptv-nav="home"]')?.focus({ preventScroll: true });
+      });
+    };
+
+    document.addEventListener("keydown", handleHomeShortcut);
+    return () => document.removeEventListener("keydown", handleHomeShortcut);
+  }, [handleNavClick]);
 
   const persistLastEpisode = useCallback(async (payload) => {
     try {
@@ -2914,7 +3165,7 @@ export default function IptvModule({ onBack }) {
     setViewState("seasons");
   };
 
-  const getCardInteractiveState = (cardKey) => hoveredCardId === cardKey || focusedCardId === cardKey;
+  const getCardInteractiveState = (cardKey) => hoveredCardId === cardKey;
 
   const getCardInteractiveStyle = (cardKey) => {
     const active = getCardInteractiveState(cardKey);
@@ -3139,11 +3390,17 @@ export default function IptvModule({ onBack }) {
                       <CardPrimaryAction
                         label={`Assistir ${channel.name}`}
                         onActivate={() => playHomeItem(channel, row.key)}
-                        onFocus={() => setFocusedCardId(homeCardKey)}
-                        onBlur={() => setFocusedCardId(null)}
+                        onLongPress={() => {
+                          if (channel.favoriteType === "series") {
+                            toggleSeriesFavorite(channel.group, channel.name);
+                          } else {
+                            toggleFavorite(channel.id);
+                          }
+                        }}
                       />
                       <button
                         type="button"
+                        tabIndex={-1}
                         aria-label={channel.favoriteType === "series" ? `Alternar favorito da série ${channel.name}` : `Alternar favorito de ${channel.name}`}
                         onClick={(event) => {
                           event.stopPropagation();
@@ -3218,7 +3475,20 @@ export default function IptvModule({ onBack }) {
                             }, 100);
                           }
                         }}
-                        {...getKeyboardButtonProps(`Abrir ${channel.name}`, () => {})}
+                        {...getKeyboardButtonProps(`Abrir ${channel.name}`, () => {
+                          if (channel.kind === "movie") {
+                            handleNavClick("movies");
+                            setTimeout(() => playChannel(channel, true), 100);
+                          } else {
+                            const info = parseEpisodeInfo(channel.name);
+                            handleNavClick("series");
+                            setTimeout(() => {
+                              setSelectedCategory(normalizeCategoryLabel(channel.group));
+                              setSelectedSeries(info.seriesName);
+                              setViewState("seasons");
+                            }, 100);
+                          }
+                        })}
                         style={{
                           width: 160,
                           minWidth: 160,
@@ -3266,8 +3536,6 @@ export default function IptvModule({ onBack }) {
                             setHoveredCardId(null);
                             setUserInteracting(false);
                           }}
-                          onFocus={() => setFocusedCardId(homePlaylistCardKey)}
-                          onBlur={() => setFocusedCardId(null)}
                           onClick={() => playCustomPlaylistItem(item)}
                           {...getKeyboardButtonProps(`Reproduzir ${item.name}`, () => playCustomPlaylistItem(item))}
                           style={{
@@ -3339,8 +3607,6 @@ export default function IptvModule({ onBack }) {
                           key={`${playlist.id}-${item.id || index}`}
                           onMouseEnter={() => setHoveredCardId(playlistCardKey)}
                           onMouseLeave={() => setHoveredCardId(null)}
-                          onFocus={() => setFocusedCardId(playlistCardKey)}
-                          onBlur={() => setFocusedCardId(null)}
                           onClick={() => playCustomPlaylistItem(item)}
                           {...getKeyboardButtonProps(`Reproduzir ${item.name}`, () => playCustomPlaylistItem(item))}
                           style={{
@@ -3443,6 +3709,7 @@ export default function IptvModule({ onBack }) {
                   className="iptv-category-button"
                   aria-pressed={active}
                   onClick={() => {
+                    resetCatalogScroll();
                     setSelected(null);
                     setBuffering(false);
                     setSelectedCategory(cat);
@@ -3466,13 +3733,17 @@ export default function IptvModule({ onBack }) {
               );
             })}
           </aside>
-          <div style={{ height: "100%", minHeight: 0, overflowY: "auto", paddingRight: 4 }} onScroll={handleScrollInteract}>
+          <div className="iptv-catalog-scroll" style={{ height: "100%", minHeight: 0, overflowY: "auto", paddingRight: 4 }} onScroll={handleScrollInteract}>
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
               {activeCategory || "Selecione uma categoria"}
             </FolderTitle>
             {activeCategoryLocked ? renderBlockedCategoryGate({ label: activeCategory, blockKey: activeCategory }) : (
-            <div className="iptv-media-grid iptv-series-grid" key={`series-grid-${activeCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-              {seriesList.map((s, sIdx) => {
+            <ProgressiveGrid
+              className="iptv-media-grid iptv-series-grid"
+              key={`series-grid-${activeCategory}-${deferredSearch}`}
+              items={seriesList}
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}
+              renderItem={(s, sIdx) => {
                 const seriesCardKey = `series-${activeCategory}-${s.name}`;
                 return (
                 <div
@@ -3495,11 +3766,11 @@ export default function IptvModule({ onBack }) {
                       setSelectedSeries(s.name);
                       setViewState("seasons");
                     }}
-                    onFocus={() => setFocusedCardId(seriesCardKey)}
-                    onBlur={() => setFocusedCardId(null)}
+                    onLongPress={() => toggleSeriesFavorite(activeCategory, s.name)}
                   />
                   <button
                     type="button"
+                    tabIndex={-1}
                     aria-label={`Alternar favorito da série ${s.name}`}
                     onClick={(event) => {
                       event.stopPropagation();
@@ -3527,8 +3798,8 @@ export default function IptvModule({ onBack }) {
                   <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.8)", padding: 6, fontSize: 12, textAlign: "center" }}>{s.name}</div>
                 </div>
               );
-              })}
-            </div>
+              }}
+            />
             )}
           </div>
         </div>
@@ -3550,8 +3821,12 @@ export default function IptvModule({ onBack }) {
         <div style={{ padding: "0 20px" }}>
           <button style={{ ...baseButtonStyle, marginBottom: 20 }} onClick={() => setViewState('categories')}>Voltar</button>
           <FolderTitle style={{ marginBottom: 20 }}>{selectedCategory}</FolderTitle>
-          <div className="iptv-media-grid iptv-series-grid" key={`series-list-grid-${selectedCategory}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-            {seriesList.map((s, sIdx) => {
+          <ProgressiveGrid
+            className="iptv-media-grid iptv-series-grid"
+            key={`series-list-grid-${selectedCategory}-${deferredSearch}`}
+            items={seriesList}
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}
+            renderItem={(s, sIdx) => {
               const seriesListCardKey = `series-list-${selectedCategory}-${s.name}`;
               return (
               <div
@@ -3573,11 +3848,11 @@ export default function IptvModule({ onBack }) {
                     setSelectedSeries(s.name);
                     setViewState("seasons");
                   }}
-                  onFocus={() => setFocusedCardId(seriesListCardKey)}
-                  onBlur={() => setFocusedCardId(null)}
+                  onLongPress={() => toggleSeriesFavorite(selectedCategory, s.name)}
                 />
                 <button
                   type="button"
+                  tabIndex={-1}
                   aria-label={`Alternar favorito da série ${s.name}`}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -3605,8 +3880,8 @@ export default function IptvModule({ onBack }) {
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,0.8)", padding: 6, fontSize: 12, textAlign: "center" }}>{s.name}</div>
               </div>
             );
-            })}
-          </div>
+            }}
+          />
         </div>
       );
     }
@@ -3650,8 +3925,6 @@ export default function IptvModule({ onBack }) {
                 key={sea}
                 onMouseEnter={() => setHoveredCardId(seasonCardKey)}
                 onMouseLeave={() => setHoveredCardId(null)}
-                onFocus={() => setFocusedCardId(seasonCardKey)}
-                onBlur={() => setFocusedCardId(null)}
                 onClick={() => {
                   setSelected(null);
                   setBuffering(false);
@@ -3784,8 +4057,6 @@ export default function IptvModule({ onBack }) {
                   key={ep.id}
                   onMouseEnter={() => setHoveredCardId(episodeItemKey)}
                   onMouseLeave={() => setHoveredCardId(null)}
-                  onFocus={() => setFocusedCardId(episodeItemKey)}
-                  onBlur={() => setFocusedCardId(null)}
                   onContextMenu={(event) => handleOpenCardContextMenu(event, {
                     displayName: ep.name,
                     playlistItem: buildPlaylistItemFromChannel(ep),
@@ -3822,6 +4093,7 @@ export default function IptvModule({ onBack }) {
   };
 
   const handleMovieCategoryClick = (category) => {
+    resetCatalogScroll();
     setShowPlayer(false);
     setGroup(category.raw);
   };
@@ -4129,7 +4401,7 @@ export default function IptvModule({ onBack }) {
           </section>
         )}
 
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
+        <div className="iptv-catalog-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
           <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
             {selectedMovieCategory?.label || "Selecione uma categoria"}
           </FolderTitle>
@@ -4144,8 +4416,13 @@ export default function IptvModule({ onBack }) {
                 <div>Nenhum resultado para "<span className="iptv-empty-state-query">{search}</span>".</div>
               </div>
             )}
-            <div className="iptv-media-grid iptv-movie-grid" key={`movie-grid-${selectedMovieCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
-            {movieItems.map((channel, mIdx) => {
+            <ProgressiveGrid
+              className="iptv-media-grid iptv-movie-grid"
+              key={`movie-grid-${selectedMovieCategory?.value}-${deferredSearch}`}
+              items={movieItems}
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}
+              onScroll={handleScrollInteract}
+              renderItem={(channel, mIdx) => {
               const movieCardKey = `movie-${channel.id}`;
               return (
               <div
@@ -4179,11 +4456,11 @@ export default function IptvModule({ onBack }) {
                 <CardPrimaryAction
                   label={`Reproduzir ${channel.name}`}
                   onActivate={() => playChannel(channel, true)}
-                  onFocus={() => setFocusedCardId(movieCardKey)}
-                  onBlur={() => setFocusedCardId(null)}
+                  onLongPress={() => toggleFavorite(channel.id)}
                 />
                 <button
                   type="button"
+                  tabIndex={-1}
                   aria-label={`Alternar favorito de ${channel.name}`}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -4224,8 +4501,8 @@ export default function IptvModule({ onBack }) {
                 </div>
               </div>
             );
-            })}
-          </div>
+              }}
+            />
 
           {!canShowCategoryContent && (
             <div style={{ marginTop: 16, color: "#ddd" }}>
@@ -4313,6 +4590,7 @@ export default function IptvModule({ onBack }) {
                 className="iptv-category-button"
                 aria-pressed={active}
                 onClick={() => {
+                  resetCatalogScroll();
                   setShowPlayer(false);
                   setGroup(category.raw);
                 }}
@@ -4396,7 +4674,7 @@ export default function IptvModule({ onBack }) {
             </section>
           )}
 
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }} onScroll={handleScrollInteract}>
+          <div className="iptv-catalog-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }} onScroll={handleScrollInteract}>
             <FolderTitle style={{ textAlign: "left", fontSize: "1.08em", marginBottom: 12 }}>
               {selectedLiveCategory?.label || "Selecione uma categoria"}
             </FolderTitle>
@@ -4411,8 +4689,13 @@ export default function IptvModule({ onBack }) {
                 <div>Nenhum resultado para "<span className="iptv-empty-state-query">{search}</span>".</div>
               </div>
             )}
-            <div className="iptv-media-grid iptv-live-grid" key={`live-grid-${selectedLiveCategory?.value}`} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }} onScroll={handleScrollInteract}>
-              {liveItems.map((channel, lIdx) => {
+            <ProgressiveGrid
+              className="iptv-media-grid iptv-live-grid"
+              key={`live-grid-${selectedLiveCategory?.value}-${deferredSearch}`}
+              items={liveItems}
+              style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}
+              onScroll={handleScrollInteract}
+              renderItem={(channel, lIdx) => {
                 const liveCardKey = `live-${channel.id}`;
                 return (
                 <div
@@ -4446,11 +4729,11 @@ export default function IptvModule({ onBack }) {
                   <CardPrimaryAction
                     label={`Reproduzir ${channel.name}`}
                     onActivate={() => playChannel(channel, true)}
-                    onFocus={() => setFocusedCardId(liveCardKey)}
-                    onBlur={() => setFocusedCardId(null)}
+                    onLongPress={() => toggleFavorite(channel.id)}
                   />
                   <button
                     type="button"
+                    tabIndex={-1}
                     aria-label={`Alternar favorito de ${channel.name}`}
                     onClick={(event) => {
                       event.stopPropagation();
@@ -4491,8 +4774,8 @@ export default function IptvModule({ onBack }) {
                   </div>
                 </div>
               );
-              })}
-            </div>
+              }}
+            />
 
             {!selectedLiveCategory && (
               <div style={{ marginTop: 16, color: "#ddd" }}>
@@ -4671,6 +4954,7 @@ export default function IptvModule({ onBack }) {
                   <button
                     key={item.key}
                     type="button"
+                    data-iptv-nav={item.key}
                     onClick={() => handleNavClick(item.key)}
                     style={{
                       background: active ? "var(--iptv-color-surface-muted)" : "transparent",
@@ -4694,7 +4978,10 @@ export default function IptvModule({ onBack }) {
                 <FaSearch style={{ position: "absolute", left: 10, top: 10, color: "#ff0000" }} />
                 <input
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => {
+                    resetCatalogScroll();
+                    setSearch(e.target.value);
+                  }}
                   placeholder="Buscar"
                   aria-label="Buscar conteúdo IPTV"
                   style={{ width: "100%", background: "var(--iptv-color-surface)", border: "1px solid var(--iptv-color-border)", color: "var(--iptv-color-text)", borderRadius: 8, padding: "8px 10px 8px 30px", outline: "none" }}
@@ -4843,6 +5130,7 @@ export default function IptvModule({ onBack }) {
             <div
               id="iptv-account-menu"
               ref={menuRef}
+              data-dpad-scope
               style={{
                 position: "absolute",
                 top: APP_HEADER_HEIGHT - 8,
@@ -4884,6 +5172,32 @@ export default function IptvModule({ onBack }) {
               <button type="button" style={baseButtonStyle} onClick={handleClearAllApp}>
                 Limpar todo app
               </button>
+              <button
+                type="button"
+                style={{ ...baseButtonStyle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}
+                onClick={() => setAboutMenuOpen((prev) => !prev)}
+                aria-expanded={aboutMenuOpen}
+                aria-controls="iptv-about-menu"
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <FaInfoCircle /> Sobre
+                </span>
+                <span aria-hidden="true">{aboutMenuOpen ? "−" : "+"}</span>
+              </button>
+              {aboutMenuOpen && (
+                <div id="iptv-about-menu" className="iptv-about-menu">
+                  {["Termos", "Privacidade", "Suporte", "Redes"].map((item) => (
+                    <a
+                      key={item}
+                      href="#"
+                      className="iptv-about-link"
+                      onClick={(event) => event.preventDefault()}
+                    >
+                      {item}
+                    </a>
+                  ))}
+                </div>
+              )}
               <button type="button" style={baseButtonStyle} onClick={handleExitApp}>
                 Sair
               </button>
@@ -5255,35 +5569,11 @@ export default function IptvModule({ onBack }) {
             className="iptv-content"
             ref={contentRef}
             onScroll={handleContentScroll}
-            style={{ height: "100%", overflowY: "auto", paddingTop: APP_HEADER_HEIGHT + 12, paddingBottom: 56 }}
+            style={{ height: "100%", overflowY: "auto", paddingTop: APP_HEADER_HEIGHT + 12, paddingBottom: 16 }}
           >
             {renderContent()}
           </div>
         </div>
-
-        <footer className="iptv-footer" style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          background: "linear-gradient(to top, rgba(0,0,0,0.95) 60%, transparent)",
-          padding: "18px 20px 12px",
-          color: "#d1d1d1",
-          fontSize: 12,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          pointerEvents: "none",
-        }}>
-          <div className="iptv-footer-links" style={{ display: "flex", flexWrap: "wrap", gap: 12, pointerEvents: "auto" }}>
-            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Termos</a>
-            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Privacidade</a>
-            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Suporte</a>
-            <a href="#" style={{ color: "var(--iptv-color-text-muted)" }}>Redes</a>
-          </div>
-          <div className="iptv-footer-status" role="status" aria-live="polite" style={{ color: "#888" }}>{status}</div>
-        </footer>
 
         {infoChannel && (
           <div style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.78)", display: "grid", placeItems: "center", padding: 20 }} onClick={() => setInfoChannel(null)}>

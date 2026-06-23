@@ -1,4 +1,28 @@
-import styled, { keyframes } from "styled-components";
+import styled, { createGlobalStyle, keyframes } from "styled-components";
+
+export const DpadGlobalStyles = createGlobalStyle`
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [role="button"]:focus-visible,
+  [data-dpad-focusable]:focus-visible {
+    outline: 3px solid #fff !important;
+    outline-offset: 4px !important;
+    box-shadow: 0 0 0 6px #ff0000cc, 0 0 24px #ff0000 !important;
+  }
+
+  [role="button"]:focus-visible,
+  [data-dpad-focusable]:focus-visible {
+    transform: scale(1.04);
+  }
+
+  .playlist-action-btn:focus-visible,
+  .delete-playlist-btn:focus-visible {
+    opacity: 1 !important;
+  }
+`;
 
 // 🔄 Animações
 const gradientMove = keyframes`
@@ -128,7 +152,7 @@ export const ModalOverlay = styled.div`
   justify-content: center;
 `;
 
-export const Modal = styled.div`
+export const Modal = styled.div.attrs({ role: "dialog", "aria-modal": "true" })`
   background: rgba(17,17,17,0.85);
   border-radius: 22px;
   padding: 38px 46px;

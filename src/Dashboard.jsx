@@ -10,7 +10,7 @@ import {
 } from "./styles";
 import { FaTrashAlt, FaExpandAlt, FaFolder, FaCheck, FaBan, FaUndo, FaPlus, FaEdit, FaTimes, FaStickyNote } from "react-icons/fa";
 
-const { ipcRenderer } = window.require("electron");
+const ipcRenderer = window.desktopApi;
 
 const Dashboard = ({
   folders,
@@ -534,6 +534,9 @@ const Dashboard = ({
                           position: "relative",
                           overflow: "hidden"
                         }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Abrir subpasta ${sub.nome}`}
                           draggable
                           onDragStart={onDragStartSub(folder, subIdx)}
                           onDragEnter={onDragOverSub(folder, subIdx)}
@@ -714,6 +717,9 @@ const Dashboard = ({
                           opacity: draggingVideoFolderPath===folder.path && dragVideoPath===video.path ? 0.85 : 1,
                           boxShadow: draggingVideoFolderPath===folder.path && dragVideoPath===video.path ? '0 6px 16px rgba(0,0,0,0.35)' : 'none'
                         }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Reproduzir ${video.nome}`}
                           draggable
                           onDragStart={onDragStartVideo(folder, i)}
                           onDragEnter={onDragOverVideo(folder, i)}

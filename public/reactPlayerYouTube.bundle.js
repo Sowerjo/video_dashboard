@@ -1,5 +1,5 @@
 "use strict";
-(global["webpackChunkvideo_dashboard_app"] = global["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerYouTube"],{
+(self["webpackChunkvideo_dashboard_app"] = self["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerYouTube"],{
 
 /***/ "./node_modules/media-played-ranges-mixin/dist/index.js":
 /*!**************************************************************!*\

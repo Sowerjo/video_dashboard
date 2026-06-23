@@ -1,5 +1,5 @@
 "use strict";
-(global["webpackChunkvideo_dashboard_app"] = global["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerSpotify"],{
+(self["webpackChunkvideo_dashboard_app"] = self["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerSpotify"],{
 
 /***/ "./node_modules/spotify-audio-element/dist/react.js":
 /*!**********************************************************!*\

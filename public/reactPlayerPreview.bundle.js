@@ -1,5 +1,5 @@
 "use strict";
-(global["webpackChunkvideo_dashboard_app"] = global["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerPreview"],{
+(self["webpackChunkvideo_dashboard_app"] = self["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerPreview"],{
 
 /***/ "./node_modules/react-player/dist/Preview.js":
 /*!***************************************************!*\

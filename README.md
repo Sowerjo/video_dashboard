@@ -80,12 +80,16 @@ npm run dist
 - Target: Windows NSIS
 - Saída em `dist/`
 - Binários de `bin/` incluídos via `extraFiles`
-- `asar: false` para acesso a binários externos
+- Código da aplicação empacotado em `app.asar`; FFmpeg permanece externo em `bin/`
 
-Para ambientes sem assinatura:
+Para assinar o instalador e os executáveis, configure o certificado antes do build:
 ```bash
-npx electron-builder --win --config.win.signAndEditExecutable=false
+set WIN_CSC_LINK=C:\caminho\certificado.pfx
+set WIN_CSC_KEY_PASSWORD=senha-do-certificado
+npm run dist
 ```
+
+Sem certificado o build continua funcionando, mas será distribuído sem assinatura digital e pode ter reputação inferior em antivírus e no SmartScreen.
 
 ---
 
@@ -351,7 +355,10 @@ http://servidor.exemplo/series/user/pass/3001.mkv
 
 ## 7. Segurança
 
-- `nodeIntegration: true` e `contextIsolation: false` — projeto para uso desktop local.
+- `nodeIntegration: false`, `contextIsolation: true` e renderer sandboxed.
+- API do renderer limitada por preload com lista permitida de canais IPC.
+- Cache e dados mutáveis armazenados em `app.getPath("userData")`.
+- `webSecurity` permanece desativado para compatibilidade com streams IPTV sem CORS; não carregar interfaces web remotas no renderer.
 - Handler de `uncaughtException` para erros do Chromecast (evita crash).
 - URLs de stream contêm credenciais — nunca expor ou compartilhar.
 - Cache local de logos/posters usa hash SHA-1 (sem expor URLs originais).

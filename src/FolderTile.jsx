@@ -4,7 +4,7 @@ import { Tile, FolderTitle, ContentInfo } from "./styles";
 const FolderTile = ({ folder, onClick, children }) => {
   const thumb = folder.videos[0]?.thumb;
   return (
-    <Tile onClick={onClick} style={{ position: "relative" }}>
+    <Tile role="button" tabIndex={0} aria-label={`Abrir pasta ${folder.nome}`} onClick={onClick} style={{ position: "relative" }}>
       {children}
       {thumb
         ? <img

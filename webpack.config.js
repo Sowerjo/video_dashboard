@@ -28,6 +28,6 @@ module.exports = {
   resolve: {
     extensions: [".js", ".jsx"]
   },
-  target: "electron-renderer",
+  target: "web",
   devtool: "source-map"
 };

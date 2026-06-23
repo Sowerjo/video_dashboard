@@ -1,5 +1,5 @@
 "use strict";
-(global["webpackChunkvideo_dashboard_app"] = global["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerVimeo"],{
+(self["webpackChunkvideo_dashboard_app"] = self["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerVimeo"],{
 
 /***/ "./node_modules/@vimeo/player/dist/player.es.js":
 /*!******************************************************!*\
@@ -536,7 +536,7 @@ function _toPropertyKey(arg) {
  * @type {Boolean}
  */
 /* global global */
-var isNode = typeof global !== 'undefined' && {}.toString.call(global) === '[object global]';
+var isNode = typeof __webpack_require__.g !== 'undefined' && {}.toString.call(__webpack_require__.g) === '[object global]';
 
 /**
  * Get the name of the method for a given getter or setter.
@@ -668,7 +668,7 @@ if (!isNode && (!arrayIndexOfSupport || !postMessageSupport)) {
   throw new Error('Sorry, the Vimeo Player API is not available in this browser.');
 }
 
-var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof __webpack_require__.g !== 'undefined' ? __webpack_require__.g : typeof self !== 'undefined' ? self : {};
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;

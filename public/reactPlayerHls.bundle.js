@@ -1,5 +1,5 @@
 "use strict";
-(global["webpackChunkvideo_dashboard_app"] = global["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerHls"],{
+(self["webpackChunkvideo_dashboard_app"] = self["webpackChunkvideo_dashboard_app"] || []).push([["reactPlayerHls"],{
 
 /***/ "./node_modules/hls-video-element/dist/hls-video-element.js":
 /*!******************************************************************!*\

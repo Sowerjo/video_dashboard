@@ -17,36 +17,14 @@ import {
 } from "./styles";
 import { FaBars, FaPlus, FaSync, FaFileImport, FaFileExport } from "react-icons/fa";
 
-const { ipcRenderer } = window.require("electron");
-const fs             = window.require("fs");
-const path           = window.require("path");
-const { pathToFileURL } = window.require("url");
+const ipcRenderer = window.desktopApi;
 
-const VIDEO_EXTS = ['.mp4','.avi','.mkv','.mov','.webm','.wmv','.flv'];
-
-function scanFolder(folderPath, thumbsDir) {
-  const result = { videos: [], subfolders: [] };
-  for (const file of fs.readdirSync(folderPath)) {
-    const full = path.join(folderPath, file);
-    const stat = fs.statSync(full);
-    if (stat.isDirectory()) {
-      const sub = scanFolder(full, thumbsDir);
-      if (sub.videos.length || sub.subfolders.length) {
-        result.subfolders.push({
-          path: full,
-          nome: file,
-          videos: sub.videos,
-          subfolders: sub.subfolders
-        });
-      }
-    } else if (VIDEO_EXTS.includes(path.extname(file).toLowerCase())) {
-      const safeName = file.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '.jpg';
-      const thumbPath = path.join(thumbsDir, safeName);
-      const thumbURL  = fs.existsSync(thumbPath) ? pathToFileURL(thumbPath).href : null;
-      result.videos.push({ path: full, nome: file, thumb: thumbURL });
-    }
+async function scanFolder(folderPath) {
+  const response = await ipcRenderer.invoke('scan-video-folder', { folderPath });
+  if (!response?.ok) {
+    throw new Error(response?.error || 'Falha ao ler a pasta de vídeos.');
   }
-  return result;
+  return response.data || { videos: [], subfolders: [] };
 }
 
 const themes = {
@@ -135,7 +113,7 @@ export default function OfflineModule() {
 
   // Listener para progresso de thumbnails
   useEffect(() => {
-    const handleThumbProgress = (event, data) => {
+    const handleThumbProgress = (data) => {
       setThumbProgress(data);
       if (data.processed >= data.total) {
         setTimeout(() => {
@@ -145,8 +123,7 @@ export default function OfflineModule() {
       }
     };
 
-    ipcRenderer.on('thumbnail-progress', handleThumbProgress);
-    return () => ipcRenderer.removeListener('thumbnail-progress', handleThumbProgress);
+    return ipcRenderer.on('thumbnail-progress', handleThumbProgress);
   }, []);
 
   // 1) Leitura direta do config.json
@@ -181,8 +158,13 @@ export default function OfflineModule() {
         console.log('Thumbnail generation completed:', result);
         
         // Atualiza a UI apÃ³s a geraÃ§Ã£o
+        const scannedFolders = await Promise.all(folders.map(async (folder) => ({
+          path: folder.path,
+          data: await scanFolder(folder.path),
+        })));
+        const scansByPath = new Map(scannedFolders.map((item) => [item.path, item.data]));
         setFolders(prev => {
-          const scanned = prev.map(f => ({ ...f, ...scanFolder(f.path, thumbsDir) }));
+          const scanned = prev.map(f => ({ ...f, ...(scansByPath.get(f.path) || {}) }));
           // aplica ordem customizada de vÃ­deos e subpastas recursivamente
           return scanned.map(f => applyVideoOrdersRec(f, videoOrders, subfolderOrders));
         });
@@ -205,24 +187,28 @@ export default function OfflineModule() {
   }, [folders, watched, videoOrders, subfolderOrders]);
 
   // Handlers... (mantidos)
-  const handleRefresh = () => {
-    ipcRenderer.invoke('generate-thumbnails', folders)
-      .then(() => {
+  const handleRefresh = async () => {
+    await ipcRenderer.invoke('generate-thumbnails', folders);
+    const scannedFolders = await Promise.all(folders.map(async (folder) => ({
+      path: folder.path,
+      data: await scanFolder(folder.path),
+    })));
+    const scansByPath = new Map(scannedFolders.map((item) => [item.path, item.data]));
         setFolders(prev => {
-          const scanned = prev.map(f => ({ ...f, ...scanFolder(f.path, thumbsDir) }));
+          const scanned = prev.map(f => ({ ...f, ...(scansByPath.get(f.path) || {}) }));
           return scanned.map(f => applyVideoOrdersRec(f, videoOrders, subfolderOrders));
         });
-      });
   };
   const openModal = async () => {
     const p = await ipcRenderer.invoke('select-folder');
     if (!p) return;
-    setForm({ tipo:'', nome:path.basename(p), ano:'', path:p });
+    const folderName = String(p).split(/[\\/]/).filter(Boolean).pop() || String(p);
+    setForm({ tipo:'', nome:folderName, ano:'', path:p });
     setModalOpen(true);
   };
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    const data = scanFolder(form.path, thumbsDir);
+    const data = await scanFolder(form.path);
     setFolders(prev => [...prev, { ...form, ...data }]);
     setModalOpen(false);
   };
@@ -403,7 +389,7 @@ export default function OfflineModule() {
                     Atualizar
                   </button>
                   
-                  <label style={{
+                  <label role="button" tabIndex={0} aria-label="Importar configurações" style={{
                     width: "100%",
                     background: "transparent",
                     border: "none",

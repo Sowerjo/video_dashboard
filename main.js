@@ -37,7 +37,7 @@ let blockedCategoriesCache = [];
 
 const IPTV_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36';
 
-const PROJECT_CACHE_DIR = path.join(__dirname, 'cache');
+const PROJECT_CACHE_DIR = path.join(app.getPath('userData'), 'cache');
 const PLAYLIST_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'playlist');
 const LOCAL_PLAYLIST_PATH = path.join(PLAYLIST_CACHE_DIR, 'playlist.m3u');
 const LOGO_CACHE_DIR = path.join(PROJECT_CACHE_DIR, 'logos');
@@ -95,19 +95,33 @@ function createWindow() {
     height: 800,
     icon: path.join(__dirname, 'icon.ico'),
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
       webSecurity: false,
-      allowRunningInsecureContent: true,
     },
   });
 
   win.webContents.setUserAgent(IPTV_USER_AGENT);
 
   const indexPath = path.join(app.getAppPath(), 'public', 'index.html');
+  const indexUrl = pathToFileURL(indexPath);
   win.loadFile(indexPath).catch((err) => {
     console.error('Error loading index.html:', err);
     dialog.showErrorBox('Erro', `Falha ao carregar interface:\n${err.message}`);
+  });
+
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', (event, targetUrl) => {
+    try {
+      const target = new URL(targetUrl);
+      if (target.protocol !== 'file:' || target.pathname !== indexUrl.pathname) {
+        event.preventDefault();
+      }
+    } catch {
+      event.preventDefault();
+    }
   });
 }
 
@@ -130,7 +144,30 @@ function ensureProjectCacheDirs() {
   ensureDirSafe(TMDB_KEY_CACHE_DIR, 'tmdb key cache directory');
   ensureDirSafe(CUSTOM_PLAYLISTS_CACHE_DIR, 'custom playlists cache directory');
   ensureDirSafe(LAST_EPISODES_CACHE_DIR, 'last episodes cache directory');
+  ensureDirSafe(BLOCKED_CATEGORIES_CACHE_DIR, 'blocked categories cache directory');
   ensureDirSafe(thumbsDir, 'thumbnails cache directory');
+}
+
+function migrateLegacyProjectCache() {
+  const legacyCacheDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'app', 'cache')
+    : path.join(__dirname, 'cache');
+
+  if (path.resolve(legacyCacheDir) === path.resolve(PROJECT_CACHE_DIR)) return;
+  if (!fs.existsSync(legacyCacheDir)) return;
+
+  ensureDirSafe(PROJECT_CACHE_DIR, 'project cache directory');
+  for (const entry of fs.readdirSync(legacyCacheDir, { withFileTypes: true })) {
+    const sourcePath = path.join(legacyCacheDir, entry.name);
+    const destinationPath = path.join(PROJECT_CACHE_DIR, entry.name);
+    if (fs.existsSync(destinationPath)) continue;
+
+    try {
+      fs.cpSync(sourcePath, destinationPath, { recursive: entry.isDirectory(), errorOnExist: false });
+    } catch (error) {
+      console.warn(`Falha ao migrar cache legado: ${entry.name}`, error);
+    }
+  }
 }
 
 function readTmdbApiKeyFromCache() {
@@ -186,6 +223,7 @@ function removeFileIfExists(filePath) {
 }
 
 app.whenReady().then(() => {
+  migrateLegacyProjectCache();
   ensureProjectCacheDirs();
   readSynopsisDiskCache();
   readCustomPlaylistsDiskCache();
@@ -1278,6 +1316,53 @@ ipcMain.handle('save-config', (e, cfg) => {
 });
 
 ipcMain.handle('get-thumbs-path', () => thumbsDir);
+
+function scanVideoFolder(folderPath) {
+  const result = { videos: [], subfolders: [] };
+  const videoExtensions = new Set(['.mp4', '.avi', '.mkv', '.mov', '.webm', '.wmv', '.flv']);
+  let entries = [];
+
+  try {
+    entries = fs.readdirSync(folderPath, { withFileTypes: true });
+  } catch {
+    return result;
+  }
+
+  for (const entry of entries) {
+    const fullPath = path.join(folderPath, entry.name);
+    if (entry.isDirectory()) {
+      const nested = scanVideoFolder(fullPath);
+      if (nested.videos.length || nested.subfolders.length) {
+        result.subfolders.push({
+          path: fullPath,
+          nome: entry.name,
+          videos: nested.videos,
+          subfolders: nested.subfolders,
+        });
+      }
+      continue;
+    }
+
+    if (!videoExtensions.has(path.extname(entry.name).toLowerCase())) continue;
+    const safeName = entry.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
+    const thumbnailPath = path.join(thumbsDir, safeName);
+    result.videos.push({
+      path: fullPath,
+      nome: entry.name,
+      thumb: fs.existsSync(thumbnailPath) ? pathToFileURL(thumbnailPath).href : null,
+    });
+  }
+
+  return result;
+}
+
+ipcMain.handle('scan-video-folder', (_event, payload) => {
+  const folderPath = String(payload?.folderPath || '').trim();
+  if (!folderPath || !path.isAbsolute(folderPath)) {
+    return { ok: false, error: 'Pasta inválida.', data: { videos: [], subfolders: [] } };
+  }
+  return { ok: true, data: scanVideoFolder(folderPath) };
+});
 
 ipcMain.handle('select-folder', async () => {
   const res = await dialog.showOpenDialog({ properties: ['openDirectory'] });
